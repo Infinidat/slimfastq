@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
-
 #include <algorithm> 
 
 // local definitions
@@ -370,6 +369,9 @@ void QltSave::save_bucket() {
     if (bucket.index == 0)
         return;
 
+    rarely_if(not pager)
+        pager_init();
+
     FQQ_ALGO algo;
     int tree_num ;
     determine_algo_n_tree(&algo, &tree_num);
@@ -419,11 +421,8 @@ void QltSave::save_bucket() {
 
 void QltSave::save(const UCHAR* buf, size_t size) {
 
-    rarely_if(not pager)
-        pager_init();
-
     while (size) {
-        if (bucket.index >= BUCKET_SIZE)
+        rarely_if (bucket.index >= BUCKET_SIZE)
             save_bucket();
 
         size_t  num = std::min(size, (BUCKET_SIZE - bucket.index));

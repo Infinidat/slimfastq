@@ -81,10 +81,6 @@ void PagerSave::save_page() {
         not m_cur)
         return ;
 
-    if (m_buff[PAGER_PAGE] == -1ULL) 
-        fprintf(stderr, "breakpoint");
-
-
     assert(m_cur <= PAGER_PAGE);
     size_t cnt = fwrite(m_buff, sizeof(m_buff[0]), m_cur, m_out);
     if (cnt != m_cur) {
