@@ -2697,8 +2697,8 @@ int main(int argc, char **argv) {
 	unsigned char magic[8] = {'.', 'f', 'q', 'z',
 				  MAJOR_VERS,
 				  FORMAT_VERS,
-				  level,
-				  flags,
+				  uc(level),
+				  uc(flags),
 	};
 
 	if (8 != write(out_fd, magic, 8)) {
