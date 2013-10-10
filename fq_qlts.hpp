@@ -8,7 +8,8 @@
 
 #include "common.hpp"
 #include "config.hpp"
-#include "pager.hpp"
+#include "filer.hpp"
+#include "simple_model.hpp"
 
 
 #define MAX_CHARS 256
@@ -61,16 +62,16 @@ public:
 
     void save(const UCHAR* buf, size_t size);
     bool is_valid();
-    void pager_init();
+    void filer_init();
 private:
-    void save_tree(const UINT32* hist, int num);
+    void save_tree(const UINT32* hist, UCHAR num);
     void save_bucket ();
     void clear_bucket();
     void determine_algo_n_tree(FQQ_ALGO* p_algo, int* p_num);
     // FQQ_ALGO calc_algo();
     // UINT64   calc_variance(FQQ_ALGO algo) const ;
 
-    bool pager_put(UINT64 word);
+    // bool pager_put(UINT64 word);
     inline void put_char(UCHAR b);
     inline void put_w();
     inline void flush();
@@ -79,12 +80,19 @@ private:
     inline UCHAR algo_most(size_t i) const ;
     // inline UCHAR algo_prev_prev(size_t i, UCHAR prev) const;
 
-    PagerSave* pager;
+    FilerSave* filer;
     const Config* m_conf;
 
     struct {
         UINT32 algo_hist[FQQ_ALGO_LAST_DUMMY];
     } stats;
+
+#define RCARR_SIZE (1<<12)
+#define RCARR_MASK (RCARR_SIZE-1)
+    SIMPLE_MODEL<64> rcarr[RCARR_SIZE];
+    UINT32 rcarr_last;
+    RangeCoder rcoder;
+
     struct {
         // big buffer
         UCHAR  buf [BUCKET_SIZE];
@@ -111,7 +119,7 @@ private:
     UCHAR algo_prev(UCHAR o, UCHAR p) const ;
     UCHAR algo_most(UCHAR o, UCHAR p1, UCHAR p2, UCHAR p3) const ;
 
-    PagerLoad* pager;
+    FilerLoad* filer;
     struct {
         size_t index;
         size_t size;

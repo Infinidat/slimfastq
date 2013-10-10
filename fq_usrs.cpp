@@ -251,7 +251,7 @@ int UsrSave::encode() {
             pager_init();
             rec.pager_init();
             gen.pager_init();
-            qlt.pager_init();
+            qlt.filer_init();
 
             while (m_last.rec_count < recs_l and
                    (valid = get_record(&p_rec, &p_rec_end, &p_gen, &p_qlt)) and

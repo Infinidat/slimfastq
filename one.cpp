@@ -733,7 +733,7 @@ protected:
 
     char *fq_decompress(char *in, int comp_len, int *uncomp_len);
 
-    void load_hash_freqs(const char *fn);
+    // void load_hash_freqs(const char *fn);
 };
 
 
@@ -834,38 +834,38 @@ fqz::~fqz() {
  * Arguably we should also compute the stats once and then not update
  * during encoding.
  */
-void fqz::load_hash_freqs(const char *fn) {
-    unsigned char c4[4];
-    int ctx = 0;
-    FILE *fp = fopen(fn, "rb");
-
-    fprintf(stderr, "Loading %s...", fn);
-    fflush(stderr);
-
-    if (!fp) {
-	perror(fn);
-	return;
-    }
-
-    while (1 == fread(c4, 4, 1, fp)) {
-	int st[4];
-	st[0] = c4[0] + 1;
-	st[1] = c4[1] + 1;
-	st[2] = c4[2] + 1;
-	st[3] = c4[3] + 1;
-
-	assert(ctx < (1<<(2*NS)));
-	// if (extreme_seq) {
-	//     model_seq16[ctx++].reset(st);
-	// } else {
-	    model_seq8[ctx++].reset(st);
-	// }
-    }
-
-    fclose(fp);
-
-    fprintf(stderr, "done\n");
-}
+// void fqz::load_hash_freqs(const char *fn) {
+//     unsigned char c4[4];
+//     int ctx = 0;
+//     FILE *fp = fopen(fn, "rb");
+// 
+//     fprintf(stderr, "Loading %s...", fn);
+//     fflush(stderr);
+// 
+//     if (!fp) {
+// 	perror(fn);
+// 	return;
+//     }
+// 
+//     while (1 == fread(c4, 4, 1, fp)) {
+// 	int st[4];
+// 	st[0] = c4[0] + 1;
+// 	st[1] = c4[1] + 1;
+// 	st[2] = c4[2] + 1;
+// 	st[3] = c4[3] + 1;
+// 
+// 	assert(ctx < (1<<(2*NS)));
+// 	// if (extreme_seq) {
+// 	//     model_seq16[ctx++].reset(st);
+// 	// } else {
+// 	    model_seq8[ctx++].reset(st);
+// 	// }
+//     }
+// 
+//     fclose(fp);
+// 
+//     fprintf(stderr, "done\n");
+// } // load_hash_freqs
 
 
 /* -------------------------------------------------------------------------
@@ -2732,3 +2732,14 @@ int main(int argc, char **argv) {
 	return r ? 1 : 0;
     }
 }
+
+/*
+* Local variables:
+*  c-indent-level: 8
+*  c-basic-offset: 8
+*  tab-width: 8
+* End:
+*/
+
+// *  version-control: t
+// *  kept-new-versions: 5

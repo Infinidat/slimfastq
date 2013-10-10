@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
-#include <algorithm> 
+#include <algorithm>
 
 // local definitions
 #define MASK_STAMP 0xffffff00
@@ -152,7 +152,7 @@ enum FQQ_STMP {
 };
 
 QltSave::QltSave(const Config* conf ) : FQQBase() {
-    pager = NULL ;
+    filer = NULL ;
     m_conf = conf;
     clear_bucket();
     BZERO(stats);
@@ -164,78 +164,81 @@ QltSave::~QltSave() {
             stats.algo_hist[FQQ_ALGO_SELF],
             stats.algo_hist[FQQ_ALGO_PREV],
             stats.algo_hist[FQQ_ALGO_MOST] );
-    if (pager)
-        delete pager;
+    if (filer)
+        delete filer;
 }
 
 bool QltSave::is_valid() {
     return
         m_valid and
-        pager and
-        pager->is_valid();
+        filer and
+        filer->is_valid();
 }
 
-void QltSave::pager_init() {
+void QltSave::filer_init() {
     save_bucket();
-    DELETE(pager);
-    pager = new PagerSave(m_conf->open_w("qlt"));
+    clear_bucket();
 }
 
-bool QltSave::pager_put(UINT64 word) {
+// bool QltSave::pager_put(UINT64 word) {
+// 
+//     return pager->put(word);
+// }
 
-    return pager->put(word);
-}
+void QltSave::save_tree(const UINT32* hist, UCHAR num) {
 
-void QltSave::save_tree(const UINT32* hist, int num) {
-    UINT64 n = FQQ_STMP_TREE;
-    pager_put((n<<32) | num);
+    filer->put4(FQQ_STMP_TREE);
+    filer->put (num);
 
     int num_verify=0;
     for (int i = 0 ; i < MAX_CHARS; i++)
         if (hist[i]) {
             num_verify++;
-            n = i;
-            pager_put((n<<32) | hist[i]);
+            filer->put(i);
+            filer->put4(hist[i]);
         }
     assert(num_verify == num);
 }
 
-void QltSave::put_w() {
-    pager_put(m_wrd);
-    m_bit = 0;
-    m_wrd = 0;
-}
-
+// void QltSave::put_w() {
+//     pager_put(m_wrd);
+//     m_bit = 0;
+//     m_wrd = 0;
+// }
+// 
 void QltSave::flush() {
-    if (m_bit)
-        put_w();
+    // if (m_bit)
+    //     put_w();
 }
 
 void QltSave::put_char(UCHAR b) {
 
-    const HFBits &cb = m_cbits[b];
-    // je-TODO (one day): can we do the whole chunk with mask?
-    // something like:
-    // if (m_bits + cb.nbits <=64) {
-    //     m_wrd |= cb.vbits << m_bit; <<== must pre-reverse vbits for this noe
-    //     m_bit += cb.nbits ; 
-    //     if (++ m_bit >= 64)
-    //         put_w();
+    rcarr_last = ((rcarr_last <<6) + b) & RCARR_MASK;
+    rcarr[rcarr_last].encodeSymbol(&rcoder, b);
+    
+    // const HFBits &cb = m_cbits[b];
+    // // je-TODO (one day): can we do the whole chunk with mask?
+    // // something like:
+    // // if (m_bits + cb.nbits <=64) {
+    // //     m_wrd |= cb.vbits << m_bit; <<== must pre-reverse vbits for this noe
+    // //     m_bit += cb.nbits ; 
+    // //     if (++ m_bit >= 64)
+    // //         put_w();
+    // // }
+    // // else
+    // for (int n = cb.nbits-1; n >= 0; n --) {
+    // 
+    //     if (cb.vbits & (1ULL<<n))
+    //         // reverting bits on the way ...
+    //         m_wrd |= (1ULL<<m_bit);
+    // 
+    //     // if (++ m_bit >= 64)
+    //     //     put_w();
     // }
-    // else
-    for (int n = cb.nbits-1; n >= 0; n --) {
-
-        if (cb.vbits & (1ULL<<n))
-            // reverting bits on the way ...
-            m_wrd |= (1ULL<<m_bit);
-
-        if (++ m_bit >= 64)
-            put_w();
-    }
 }
 
 UCHAR QltSave::algo_self(size_t i) const {
-    return bucket.buf[i];
+    return bucket.buf[i] - '!';
 }
 
 inline static UCHAR hist_wrapper(UCHAR c, UCHAR p, UCHAR w) {
@@ -272,6 +275,14 @@ void QltSave::clear_bucket() {
     bucket.hist_range = 0;
     bucket.hist_first = 0;
     bzero(bucket.hist, sizeof(bucket.hist));
+    for (int i = 0; i < RCARR_SIZE; i++)
+        // TODO: faster init (bzero?)
+        rcarr[i].init();
+    rcarr_last = 0;
+    rcoder.init(filer);
+
+    DELETE(filer);
+    filer = new FilerSave(m_conf->open_w("qlt"));
 }
 
 static UINT64 sum_cbits(HFNode* leaf) {
@@ -369,9 +380,6 @@ void QltSave::save_bucket() {
     if (bucket.index == 0)
         return;
 
-    rarely_if(not pager)
-        pager_init();
-
     FQQ_ALGO algo;
     int tree_num ;
     determine_algo_n_tree(&algo, &tree_num);
@@ -388,10 +396,14 @@ void QltSave::save_bucket() {
 
     const size_t size = bucket.index;
     // save header
-    UINT64 n = FQQ_STMP_DATA | algo;
-    pager_put((n<<32)|size);
-    n = bucket.hist_first;
-    pager_put((n<<32)|bucket.hist_range);
+    // UINT64 n = FQQ_STMP_DATA | algo;
+    // pager_put((n<<32)|size);
+    // n = bucket.hist_first;
+    // pager_put((n<<32)|bucket.hist_range);
+    filer->put4(FQQ_STMP_DATA);
+    filer->put(algo);
+    filer->put(bucket.hist_first);
+    filer->put(bucket.hist_range);
 
     // save data
     switch (algo) {
@@ -437,35 +449,39 @@ void QltSave::save(const UCHAR* buf, size_t size) {
 }
 
 QltLoad::QltLoad(const Config* conf) : FQQBase() {
-    pager = new PagerLoad(conf->open_r("qlt"), &m_valid);
+    filer = new FilerLoad(conf->open_r("qlt"), &m_valid);
     bzero(&bucket, sizeof(bucket));
 }
 
 QltLoad::~QltLoad() {
-    delete pager;
+    DELETE(filer);
 }
 
 #define CHECK_VALID if (not m_valid) return
 bool QltLoad::is_valid() {
-    return m_valid and pager->is_valid();
+    return m_valid and filer and filer->is_valid();
 }
 
 void QltLoad::load_tree() {
     UINT32 hist[MAX_CHARS] ;
     bzero(hist, sizeof(hist));
 
-    UINT64 n = pager->get();
-    CHECK_VALID;
-    UINT32 stmp = (n>>32) & MASK_STAMP;
+    // UINT64 n = pager->get();
+    // CHECK_VALID;
+    // UINT32 stmp = (n>>32) & MASK_STAMP;
+    UINT32 stmp = filer->get4();
     assert(stmp == FQQ_STMP_TREE);
+    // bucket.tree_size = n & MASK_32;
+    // assert(bucket.tree_size <= MAX_CHARS);
+    bucket.tree_size = filer->get();
 
-    bucket.tree_size = n & MASK_32;
-    assert(bucket.tree_size <= MAX_CHARS);
+    for (UCHAR i = 0; i < bucket.tree_size; i++)
+        hist[filer->get()] = filer->get4();
 
-    for (UCHAR i = 0; i < bucket.tree_size; i++) {
-        n = pager->get();
-        hist[(n>>32) & MASK_08] = n & MASK_32;
-    }
+// {
+//         n = pager->get();
+//         hist[(n>>32) & MASK_08] = n & MASK_32;
+//     }
         // hist[pager->get()] = pager->get32();
 
     CHECK_VALID;
@@ -482,49 +498,54 @@ void QltLoad::load_bucket() {
 
     bzero(&bucket, sizeof(bucket));
     load_tree();
-    UINT64 n = pager->get();
-    CHECK_VALID;
-
-    UINT32 stamp = (n>>32) & MASK_STAMP ;
-    assert(stamp == FQQ_STMP_DATA);
-    bucket.algo = (FQQ_ALGO) ((n>>32) & MASK_08);
-    bucket.size = n & MASK_32;
-
-    n = pager->get();
-    bucket.hist_first = (n>>32) & MASK_32;
-    bucket.hist_range = n & MASK_32;
+    // UINT64 n = pager->get();
+    // CHECK_VALID;
+    // 
+    // UINT32 stamp = (n>>32) & MASK_STAMP ;
+    // assert(stamp == FQQ_STMP_DATA);
+    // bucket.algo = (FQQ_ALGO) ((n>>32) & MASK_08);
+    // bucket.size = n & MASK_32;
+    // 
+    // n = pager->get();
+    // bucket.hist_first = (n>>32) & MASK_32;
+    // bucket.hist_range = n & MASK_32;
+    UINT32 stmp = filer->get4();
+    assert(stmp == FQQ_STMP_DATA);
+    bucket.algo       = filer->get();
+    bucket.hist_first = filer->get();
+    bucket.hist_range = filer->get();
     bucket.hist_lastc = bucket.hist_first + bucket.hist_range;
 
     m_wrd = 0;
     m_bit = 0;
 }
 
-void QltLoad::get_w() {
-    m_wrd = pager->get();
-    m_bit = 64;
-}
-
-bool QltLoad::get_b() {
-    if (m_bit == 0)
-        get_w();
-
-    return !! (m_wrd & (1ULL << (64 - (m_bit--))));
-}
+// void QltLoad::get_w() {
+//     m_wrd = pager->get();
+//     m_bit = 64;
+// }
+// 
+// bool QltLoad::get_b() {
+//     if (m_bit == 0)
+//         get_w();
+// 
+//     return !! (m_wrd & (1ULL << (64 - (m_bit--))));
+// }
 
 UCHAR QltLoad::get_char() {
-    HFNode* node = m_tree;
-    UINT32   sanity = 64;
-    while (--sanity) {
-        if (node->is_leaf) {
-            bucket.index++;
-            return node->symbol;
-        }
-        node =
-            get_b() ?
-            node->one :
-            node->zero;
-    }
-    assert(!is_valid());
+    // HFNode* node = m_tree;
+    // UINT32   sanity = 64;
+    // while (--sanity) {
+    //     if (node->is_leaf) {
+    //         bucket.index++;
+    //         return node->symbol;
+    //     }
+    //     node =
+    //         get_b() ?
+    //         node->one :
+    //         node->zero;
+    // }
+    // assert(!is_valid());
     return 0;                   // happy compiler
 }
 
