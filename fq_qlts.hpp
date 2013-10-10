@@ -79,6 +79,8 @@ private:
     inline UCHAR algo_prev(size_t i) const ;
     inline UCHAR algo_most(size_t i) const ;
     // inline UCHAR algo_prev_prev(size_t i, UCHAR prev) const;
+    void range_init();
+    void range_done();
 
     FilerSave* filer;
     const Config* m_conf;
@@ -87,9 +89,9 @@ private:
         UINT32 algo_hist[FQQ_ALGO_LAST_DUMMY];
     } stats;
 
-#define RCARR_SIZE (1<<12)
+#define RCARR_SIZE (1<<16)
 #define RCARR_MASK (RCARR_SIZE-1)
-    SIMPLE_MODEL<64> rcarr[RCARR_SIZE];
+    SIMPLE_MODEL<64>* rcarr;
     UINT32 rcarr_last;
     RangeCoder rcoder;
 

@@ -152,8 +152,12 @@ enum FQQ_STMP {
 };
 
 QltSave::QltSave(const Config* conf ) : FQQBase() {
-    filer = NULL ;
+    // filer = NULL ;
     m_conf = conf;
+    filer = new FilerSave(m_conf->open_w("qlt"));
+    rcarr = new SIMPLE_MODEL<64>[RCARR_SIZE];
+    assert(rcarr);
+
     clear_bucket();
     BZERO(stats);
 }
@@ -164,8 +168,7 @@ QltSave::~QltSave() {
             stats.algo_hist[FQQ_ALGO_SELF],
             stats.algo_hist[FQQ_ALGO_PREV],
             stats.algo_hist[FQQ_ALGO_MOST] );
-    if (filer)
-        delete filer;
+    DELETE(filer);
 }
 
 bool QltSave::is_valid() {
@@ -176,8 +179,10 @@ bool QltSave::is_valid() {
 }
 
 void QltSave::filer_init() {
+    assert(0); // TODO:
     save_bucket();
-    clear_bucket();
+    DELETE(filer);
+    filer = new FilerSave(m_conf->open_w("qlt"));
 }
 
 // bool QltSave::pager_put(UINT64 word) {
@@ -206,10 +211,10 @@ void QltSave::save_tree(const UINT32* hist, UCHAR num) {
 //     m_wrd = 0;
 // }
 // 
-void QltSave::flush() {
-    // if (m_bit)
-    //     put_w();
-}
+// void QltSave::flush() {
+//     // if (m_bit)
+//     //     put_w();
+// }
 
 void QltSave::put_char(UCHAR b) {
 
@@ -270,19 +275,19 @@ UCHAR QltSave::algo_most(size_t i) const {
 //                      bucket.hist_range);
 // }
 
+void QltSave::range_init() {
+
+    for (int i = 0; i < RCARR_SIZE; i++)
+        // TODO: faster init (bzero?)
+        rcarr[i].init();
+    rcarr_last = 0;
+}
+
 void QltSave::clear_bucket() {
     bucket.index = 0;
     bucket.hist_range = 0;
     bucket.hist_first = 0;
     bzero(bucket.hist, sizeof(bucket.hist));
-    for (int i = 0; i < RCARR_SIZE; i++)
-        // TODO: faster init (bzero?)
-        rcarr[i].init();
-    rcarr_last = 0;
-    rcoder.init(filer);
-
-    DELETE(filer);
-    filer = new FilerSave(m_conf->open_w("qlt"));
 }
 
 static UINT64 sum_cbits(HFNode* leaf) {
@@ -405,6 +410,9 @@ void QltSave::save_bucket() {
     filer->put(bucket.hist_first);
     filer->put(bucket.hist_range);
 
+    rcoder.init(filer);
+    range_init();
+
     // save data
     switch (algo) {
 
@@ -426,8 +434,10 @@ void QltSave::save_bucket() {
     case FQQ_ALGO_LAST_DUMMY:
     default: assert(false);
     }
+    
+    rcoder.done();
+    // flush();
 
-    flush();
     clear_bucket();
 }
 

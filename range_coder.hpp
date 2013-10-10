@@ -49,7 +49,9 @@ public:
 
     RangeCoder(){}
     // void FinishEncode( void ) {
-    ~RangeCoder() {
+    ~RangeCoder(){}
+
+    void done() {
         if (m_out)
             for (int i=0; i<8; i++) {
                 m_out->put(low >> 56);
