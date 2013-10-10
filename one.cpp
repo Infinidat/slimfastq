@@ -91,6 +91,7 @@ public:
     }
 
     void StartDecode( void ) { 
+        code=0; // compiler warnings ..
         low=0;  
         range=(uint)-1;
         for (int i=0; i<8; i++)
