@@ -65,8 +65,8 @@ FQQBase::FQQBase() {
     m_tree = NULL;
     m_valid = true;
 
-    m_bit = 0;
-    m_wrd = 0;
+    // m_bit = 0;
+    // m_wrd = 0;
 }
 
 FQQBase::~FQQBase() {
@@ -190,20 +190,20 @@ void QltSave::filer_init() {
 //     return pager->put(word);
 // }
 
-void QltSave::save_tree(const UINT32* hist, UCHAR num) {
-
-    filer->put4(FQQ_STMP_TREE);
-    filer->put (num);
-
-    int num_verify=0;
-    for (int i = 0 ; i < MAX_CHARS; i++)
-        if (hist[i]) {
-            num_verify++;
-            filer->put(i);
-            filer->put4(hist[i]);
-        }
-    assert(num_verify == num);
-}
+// void QltSave::save_tree(const UINT32* hist, UCHAR num) {
+// 
+//     filer->put4(FQQ_STMP_TREE);
+//     filer->put (num);
+// 
+//     int num_verify=0;
+//     for (int i = 0 ; i < MAX_CHARS; i++)
+//         if (hist[i]) {
+//             num_verify++;
+//             filer->put(i);
+//             filer->put4(hist[i]);
+//         }
+//     assert(num_verify == num);
+// }
 
 // void QltSave::put_w() {
 //     pager_put(m_wrd);
@@ -218,8 +218,8 @@ void QltSave::save_tree(const UINT32* hist, UCHAR num) {
 
 void QltSave::put_char(UCHAR b) {
 
-    rcarr_last = ((rcarr_last <<6) + b) & RCARR_MASK;
     rcarr[rcarr_last].encodeSymbol(&rcoder, b);
+    rcarr_last = ((rcarr_last <<6) + b) & RCARR_MASK;
     
     // const HFBits &cb = m_cbits[b];
     // // je-TODO (one day): can we do the whole chunk with mask?
@@ -243,7 +243,7 @@ void QltSave::put_char(UCHAR b) {
 }
 
 UCHAR QltSave::algo_self(size_t i) const {
-    return bucket.buf[i] - '!';
+    return UCHAR(bucket.buf[i] - '!');
 }
 
 inline static UCHAR hist_wrapper(UCHAR c, UCHAR p, UCHAR w) {
@@ -397,7 +397,7 @@ void QltSave::save_bucket() {
     stats.algo_hist[algo] ++;
 
     // save tree
-    save_tree(bucket.hist[algo], tree_num);
+    // save_tree(bucket.hist[algo], tree_num);
 
     const size_t size = bucket.index;
     // save header
@@ -409,6 +409,7 @@ void QltSave::save_bucket() {
     filer->put(algo);
     filer->put(bucket.hist_first);
     filer->put(bucket.hist_range);
+    filer->put4(size);
 
     rcoder.init(filer);
     range_init();
@@ -460,6 +461,7 @@ void QltSave::save(const UCHAR* buf, size_t size) {
 
 QltLoad::QltLoad(const Config* conf) : FQQBase() {
     filer = new FilerLoad(conf->open_r("qlt"), &m_valid);
+    rcarr = new SIMPLE_MODEL<64>[RCARR_SIZE];
     bzero(&bucket, sizeof(bucket));
 }
 
@@ -472,42 +474,43 @@ bool QltLoad::is_valid() {
     return m_valid and filer and filer->is_valid();
 }
 
-void QltLoad::load_tree() {
-    UINT32 hist[MAX_CHARS] ;
-    bzero(hist, sizeof(hist));
-
-    // UINT64 n = pager->get();
-    // CHECK_VALID;
-    // UINT32 stmp = (n>>32) & MASK_STAMP;
-    UINT32 stmp = filer->get4();
-    assert(stmp == FQQ_STMP_TREE);
-    // bucket.tree_size = n & MASK_32;
-    // assert(bucket.tree_size <= MAX_CHARS);
-    bucket.tree_size = filer->get();
-
-    for (UCHAR i = 0; i < bucket.tree_size; i++)
-        hist[filer->get()] = filer->get4();
-
-// {
-//         n = pager->get();
-//         hist[(n>>32) & MASK_08] = n & MASK_32;
+// void QltLoad::load_tree() {
+//     UINT32 hist[MAX_CHARS] ;
+//     bzero(hist, sizeof(hist));
+// 
+//     // UINT64 n = pager->get();
+//     // CHECK_VALID;
+//     // UINT32 stmp = (n>>32) & MASK_STAMP;
+//     UINT32 stmp = filer->get4();
+//     assert(stmp == FQQ_STMP_TREE);
+//     // bucket.tree_size = n & MASK_32;
+//     // assert(bucket.tree_size <= MAX_CHARS);
+//     bucket.tree_size = filer->get();
+// 
+//     for (UCHAR i = 0; i < bucket.tree_size; i++)
+//         hist[filer->get()] = filer->get4();
+// 
+// // {
+// //         n = pager->get();
+// //         hist[(n>>32) & MASK_08] = n & MASK_32;
+// //     }
+//         // hist[pager->get()] = pager->get32();
+// 
+//     CHECK_VALID;
+//     int num_verify;
+//     set_tree(new_tree(hist, &num_verify));
+//     if (DEBUG) {
+//         BZERO(m_cbits);
+//         fill_cbits(m_tree);
 //     }
-        // hist[pager->get()] = pager->get32();
-
-    CHECK_VALID;
-    int num_verify;
-    set_tree(new_tree(hist, &num_verify));
-    if (DEBUG) {
-        BZERO(m_cbits);
-        fill_cbits(m_tree);
-    }
-    assert (num_verify == bucket.tree_size);
-}
+//     assert (num_verify == bucket.tree_size);
+// }
  
 void QltLoad::load_bucket() {
 
     bzero(&bucket, sizeof(bucket));
-    load_tree();
+
+    // load_tree();
     // UINT64 n = pager->get();
     // CHECK_VALID;
     // 
@@ -525,9 +528,13 @@ void QltLoad::load_bucket() {
     bucket.hist_first = filer->get();
     bucket.hist_range = filer->get();
     bucket.hist_lastc = bucket.hist_first + bucket.hist_range;
+    bucket.size = filer->get4();
 
-    m_wrd = 0;
-    m_bit = 0;
+    rcoder.init(filer);
+    range_init();
+
+    // m_wrd = 0;
+    // m_bit = 0;
 }
 
 // void QltLoad::get_w() {
@@ -542,7 +549,18 @@ void QltLoad::load_bucket() {
 //     return !! (m_wrd & (1ULL << (64 - (m_bit--))));
 // }
 
+void QltLoad::range_init() {
+
+    for (int i = 0; i < RCARR_SIZE; i++)
+        // TODO: faster init (bzero?)
+        rcarr[i].init();
+    rcarr_last = 0;
+}
+
 UCHAR QltLoad::get_char() {
+    UCHAR b = rcarr[rcarr_last].decodeSymbol(&rcoder);
+    rcarr_last = ((rcarr_last <<6) + b) & RCARR_MASK;
+
     // HFNode* node = m_tree;
     // UINT32   sanity = 64;
     // while (--sanity) {
@@ -556,7 +574,11 @@ UCHAR QltLoad::get_char() {
     //         node->zero;
     // }
     // assert(!is_valid());
-    return 0;                   // happy compiler
+    return b;                   // happy compiler
+}
+
+UCHAR QltLoad::algo_self(UCHAR o) const {
+    return UCHAR(o + '!');
 }
 
 UCHAR QltLoad::algo_prev(UCHAR o, UCHAR p) const {
@@ -599,7 +621,7 @@ UINT32 QltLoad::load(UCHAR* buf, const size_t size) {
 
         case FQQ_ALGO_SELF: {
             for (;offset < limit; offset++)
-                buf[offset] = get_char();
+                buf[offset] = algo_self(get_char());
         } break;
 
         case FQQ_ALGO_PREV: {
@@ -657,6 +679,7 @@ UINT32 QltLoad::load(UCHAR* buf, const size_t size) {
         case FQQ_ALGO_LAST_DUMMY:
         default: assert(0);
         }
+        rcoder.done();
     }
     for (int i = 0; i < 3; i++)
         bucket.prev[i] = buf[offset-1-i];

@@ -49,8 +49,8 @@ protected:
     HFNode* m_tree;
     HFBits  m_cbits[MAX_CHARS];
 
-    UINT64  m_wrd;
-    UCHAR   m_bit; // up to 64
+    // UINT64  m_wrd;
+    // UCHAR   m_bit; // up to 64
 
     bool    m_valid;
 };
@@ -80,7 +80,6 @@ private:
     inline UCHAR algo_most(size_t i) const ;
     // inline UCHAR algo_prev_prev(size_t i, UCHAR prev) const;
     void range_init();
-    void range_done();
 
     FilerSave* filer;
     const Config* m_conf;
@@ -118,8 +117,15 @@ private:
     inline void get_w();
     inline bool get_b();
     UCHAR get_char();
+    UCHAR algo_self(UCHAR o) const ;
     UCHAR algo_prev(UCHAR o, UCHAR p) const ;
     UCHAR algo_most(UCHAR o, UCHAR p1, UCHAR p2, UCHAR p3) const ;
+
+    void range_init();
+
+    SIMPLE_MODEL<64>* rcarr;
+    UINT32 rcarr_last;
+    RangeCoder rcoder;
 
     FilerLoad* filer;
     struct {
