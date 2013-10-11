@@ -36,7 +36,7 @@ clean: profclean
 # SOURCES = jfastq.cpp config.cpp fq_qlts.cpp pager.cpp fq_usrs.cpp
 # HEADERS = common.hpp config.hpp fq_qlts.hpp pager.hpp fq_usrs.hpp
 
-SOURCES= $(filter-out one.cpp molder.cpp, $(shell ls *.cpp))
+SOURCES= $(filter-out utest.cpp one.cpp molder.cpp, $(shell ls *.cpp))
 HEADERS= $(shell echo *.hpp)
 jfastq: $(SOURCES) $(HEADERS)
 	g++ $(FLAGS) -o $@ $(SOURCES)
@@ -57,6 +57,14 @@ molder: molder.cpp pager.cpp pager.hpp
 
 tags:
 	etags $(SOURCES) $(HEADERS)
+
+UTSRC=filer.cpp
+UTHDR=filer.hpp
+jfastq.utest: utest.cpp $(UTSRC) $(UTHDR)
+	g++ $(FLAGS) $(UTSRC) $< -o $@
+
+utest: jfastq.utest
+	./jfastq.utest
 
 # small: all
 # 	./jfastq -f ../data/small.fq -u ../data/small.fq -O

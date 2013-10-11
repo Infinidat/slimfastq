@@ -44,7 +44,7 @@ void FilerLoad::load_page() {
 UINT64 FilerLoad::getN(int N) {
     UINT64 val = 0;
     for (int i = N-1; i>=0; i--)
-        val |= (get() << (8*i));
+        val |= (UINT64(get()) << (8*i));
     return val;
 }
 
