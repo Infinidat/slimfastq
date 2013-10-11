@@ -41,13 +41,13 @@ public:
     ~FQQBase();
 
 protected:
-    void fill_cbits(HFNode* leaf);
-    void dump_cbits();
+    // void fill_cbits(HFNode* leaf);
+    // void dump_cbits();
     //    HFNode* build_tree(UINT32* hist, int* p_num=NULL);
     void set_tree(HFNode* tree);
 
     HFNode* m_tree;
-    HFBits  m_cbits[MAX_CHARS];
+    // HFBits  m_cbits[MAX_CHARS];
 
     // UINT64  m_wrd;
     // UCHAR   m_bit; // up to 64

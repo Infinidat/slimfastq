@@ -58,10 +58,10 @@ molder: molder.cpp pager.cpp pager.hpp
 tags:
 	etags $(SOURCES) $(HEADERS)
 
-UTSRC=filer.cpp
-UTHDR=filer.hpp
-jfastq.utest: utest.cpp $(UTSRC) $(UTHDR)
-	g++ $(FLAGS) $(UTSRC) $< -o $@
+UTSRC= $(filter-out one.cpp molder.cpp jfastq.cpp, $(shell ls *.cpp))
+UTHDR= $(shell ls *.hpp)
+jfastq.utest: $(UTSRC) $(UTHDR)
+	g++ $(FLAGS) $(UTSRC) -o $@
 
 utest: jfastq.utest
 	./jfastq.utest

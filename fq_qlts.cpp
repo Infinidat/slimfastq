@@ -73,48 +73,48 @@ FQQBase::~FQQBase() {
     set_tree(NULL);
 }
 
-void FQQBase::fill_cbits(HFNode* leaf) {
-
-    if (leaf == NULL)
-        ;
-    else if (leaf->is_leaf) {
-        UCHAR  nbits = 0;
-        UINT64 vbits = 0;
-
-        HFNode* node = leaf;
-        while ( node->parent) {
-            // Order:
-            // LSB is level zero
-            HFNode* par = node->parent;
-
-            if (node == par->one)
-                vbits |= (1ULL<<nbits);
-
-            nbits ++ ;
-            node = par ;
-        }
-        assert(nbits <= 64);
-
-        m_cbits[leaf->symbol].nbits = nbits;
-        m_cbits[leaf->symbol].vbits = vbits;
-    }
-    else {
-        fill_cbits(leaf->zero);
-        fill_cbits(leaf->one );
-    }
-}
-
-void FQQBase::dump_cbits() {
-    for (int i = 0, j=0; i < MAX_CHARS; i++)
-        if (m_cbits[i].nbits > 0) 
-            fprintf(stderr,
-                    ( i < 33 ?
-                      "%d: %2u:0x%08llx :: %s" :                      
-                      "'%c' %2u:0x%08llx :: %s"
-                     ), i, m_cbits[i].nbits, m_cbits[i].vbits, ++j%4?"":"\n");
-
-    fprintf(stderr, "\n");
-}
+// void FQQBase::fill_cbits(HFNode* leaf) {
+// 
+//     if (leaf == NULL)
+//         ;
+//     else if (leaf->is_leaf) {
+//         UCHAR  nbits = 0;
+//         UINT64 vbits = 0;
+// 
+//         HFNode* node = leaf;
+//         while ( node->parent) {
+//             // Order:
+//             // LSB is level zero
+//             HFNode* par = node->parent;
+// 
+//             if (node == par->one)
+//                 vbits |= (1ULL<<nbits);
+// 
+//             nbits ++ ;
+//             node = par ;
+//         }
+//         assert(nbits <= 64);
+// 
+//         m_cbits[leaf->symbol].nbits = nbits;
+//         m_cbits[leaf->symbol].vbits = vbits;
+//     }
+//     else {
+//         fill_cbits(leaf->zero);
+//         fill_cbits(leaf->one );
+//     }
+// }
+// 
+// void FQQBase::dump_cbits() {
+//     for (int i = 0, j=0; i < MAX_CHARS; i++)
+//         if (m_cbits[i].nbits > 0) 
+//             fprintf(stderr,
+//                     ( i < 33 ?
+//                       "%d: %2u:0x%08llx :: %s" :                      
+//                       "'%c' %2u:0x%08llx :: %s"
+//                      ), i, m_cbits[i].nbits, m_cbits[i].vbits, ++j%4?"":"\n");
+// 
+//     fprintf(stderr, "\n");
+// }
 
 void FQQBase::set_tree(HFNode* tree) {
     if (m_tree)
@@ -390,8 +390,8 @@ void QltSave::save_bucket() {
     determine_algo_n_tree(&algo, &tree_num);
 
     assert(m_tree);
-    BZERO (m_cbits);
-    fill_cbits(m_tree);
+    // BZERO (m_cbits);
+    // fill_cbits(m_tree);
 
    // fprintf(stderr, "%s\n", algo == FQQ_ALGO_SELF ? "self": algo  == FQQ_ALGO_MOST ? "most" : "prev");
     stats.algo_hist[algo] ++;
@@ -560,6 +560,7 @@ void QltLoad::range_init() {
 UCHAR QltLoad::get_char() {
     UCHAR b = rcarr[rcarr_last].decodeSymbol(&rcoder);
     rcarr_last = ((rcarr_last <<6) + b) & RCARR_MASK;
+    bucket.index++;
 
     // HFNode* node = m_tree;
     // UINT32   sanity = 64;
@@ -604,6 +605,7 @@ UCHAR QltLoad::algo_most(UCHAR o, UCHAR p1, UCHAR p2, UCHAR p3) const {
 UINT32 QltLoad::load(UCHAR* buf, const size_t size) {
 
     assert(size > 3);           // I'm too lazy to handle all the special cases
+    assert(filer->is_valid());
 
     size_t offset = 0;
     while (offset < size) {
@@ -679,7 +681,6 @@ UINT32 QltLoad::load(UCHAR* buf, const size_t size) {
         case FQQ_ALGO_LAST_DUMMY:
         default: assert(0);
         }
-        rcoder.done();
     }
     for (int i = 0; i < 3; i++)
         bucket.prev[i] = buf[offset-1-i];

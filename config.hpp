@@ -46,6 +46,7 @@ public:
     bool        has_info(const char* key) const;
     bool        get_bool(const char* key) const;
     long long   get_long(const char* key, long long val=0) const;
+
 private:
     void usage() const;
     const char* get_filename(const char* suffix) const;
