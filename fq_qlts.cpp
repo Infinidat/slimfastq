@@ -454,6 +454,9 @@ void QltSave::save(const UCHAR* buf, size_t size) {
         UCHAR b = UCHAR(buf[i] - '!');
         rarely_if(b >= 64)
             croak("Illegal quality value 0x%x. Aborting\n", buf[i]);
+
+        PREFETCH(rcarr + last);
+
         rcarr[last].encodeSymbol(&rcoder, b);
         last = ((last <<6) + b) & RCARR_MASK;
     }
@@ -626,7 +629,11 @@ UINT32 QltLoad::load(UCHAR* buf, const size_t size) {
 
     UINT32 last = 0;
     for (size_t i = 0; i < size ; i++) {
+
+        PREFETCH(rcarr + last);
+
         UCHAR b = rcarr[last].decodeSymbol(&rcoder);
+
         buf[i] = UCHAR('!' + b);
         last = ((last <<6) + b) & RCARR_MASK;
     }
