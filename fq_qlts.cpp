@@ -282,10 +282,11 @@ void QltSave::filer_init() {
 
 void QltSave::range_init() {
 
-    for (int i = 0; i < RCARR_SIZE; i++)
-        // TODO: faster init (bzero?)
-        rcarr[i].init();
-    rcarr_last = 0;
+    bzero(rcarr, sizeof(rcarr[0])*RCARR_SIZE);
+    // for (int i = 0; i < RCARR_SIZE; i++)
+    //     // TODO: faster init (bzero?)
+    //     rcarr[i].init();
+    // rcarr_last = 0;
 }
 
 // void QltSave::clear_bucket() {
@@ -569,10 +570,11 @@ bool QltLoad::is_valid() {
 
 void QltLoad::range_init() {
 
-    for (int i = 0; i < RCARR_SIZE; i++)
-        // TODO: faster init (bzero?)
-        rcarr[i].init();
-    rcarr_last = 0;
+    bzero(rcarr, sizeof(rcarr[0])*RCARR_SIZE);
+    // for (int i = 0; i < RCARR_SIZE; i++)
+    //     // TODO: faster init (bzero?)
+    //     rcarr[i].init();
+    // rcarr_last = 0;
 }
 
 // UCHAR QltLoad::get_char() {

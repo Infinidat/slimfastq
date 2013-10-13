@@ -12,88 +12,172 @@ template <int NSYM>
 class SIMPLE_MODEL {
     enum { STEP=8 };
 
-    UINT32 TotFreq;  // Total frequency
-    UINT32 BubCnt;   // Periodic counter for bubble sort step
+    UINT32 total;     // Total frequency
+    UINT32 counter;   // Periodic counter for bubble sort step
+    UINT32 iend ;     // Make it 4 bytes alignment (could be as Symbol)
 
     // Array of Symbols approximately sorted by Freq. 
     struct SymFreqs {
-        UINT16 Symbol;
-        UINT16 Freq;
-    } sentinel, F[NSYM+1];
-
-protected:
+        UINT16 symbol;
+        UINT16 freq;
+    } F[NSYM];
 
     void normalize() {
+        total=0;
+        for (UINT32 i = 0; i <= iend; i++)
+            total += 
+                F[i].freq -= F[i].freq >> 1;
+
         /* Faster than F[i].Freq for 0 <= i < NSYM */
-        TotFreq=0;
-        for (SymFreqs *s = F; s->Freq; s++) {
-            s->Freq -= s->Freq>>1;
-            TotFreq += s->Freq;
+        // for (SymFreqs *s = F; s->Freq; s++) {
+        //     s->Freq -= s->Freq>>1;
+        //     total += s->Freq;
+        // }
+    }
+
+    UINT32 expand_to(UINT16 sym) {
+        assert(sym >= iend);
+        assert(sym < NSYM);
+        while (iend <= sym) {
+            F[iend].freq = 1;
+            F[iend].symbol = iend;
+            iend ++;
+            total ++;
         }
+        return total;
     }
 
 public:
     SIMPLE_MODEL() {}
 
-    void init() {
-        for ( int i=0; i<NSYM; i++ ) {
-            F[i].Symbol = i;
-            F[i].Freq   = 1;
-        }
-
-        TotFreq         = NSYM;
-        sentinel.Symbol = 0;
-        sentinel.Freq   = MAX_FREQ; // Always first; simplifies sorting.
-        BubCnt          = 0;
-
-        F[NSYM].Freq = 0; // terminates normalize() loop. See below.
-    }
+    // void init() { - just bzero me
+    //     BZERO(F);
+    //     total = 0;
+    //     counter = 0;
+    //     return ;
+    // 
+    //     // for ( int i=0; i<NSYM; i++ ) {
+    //     //     F[i].symbol = i;
+    //     //     F[i].freq   = 1;
+    //     // }
+    //     // 
+    //     // total         = NSYM;
+    //     // // sentinel.symbol = 0;
+    //     // // sentinel.freq   = MAX_FREQ; // Always first; simplifies sorting.
+    //     // counter          = 0;
+    // 
+    //     // F[NSYM].Freq = 0; // terminates normalize() loop. See below.
+    // }
 
     inline void encodeSymbol(RangeCoder *rc, UINT16 sym) {
-        SymFreqs *s = F;
-        UINT32 AccFreq  = 0;
+        UINT32 sumfreq  = 0;
+        UINT32 i = 0;
 
-        while (s->Symbol != sym)
-            AccFreq += s++->Freq;
+        likely_if( sym < iend)
+            while (F[i].symbol != sym)
+                sumfreq += F[i++].freq ;
+        else
+            sumfreq = (expand_to((i=sym))-1);
 
-        rc->Encode(AccFreq, s->Freq, TotFreq);
-        s->Freq += STEP;
-        TotFreq += STEP;
+        UINT32 vtot = total + NSYM - iend;
+        rc->Encode(sumfreq, F[i].freq, vtot);
+        F[i].freq += STEP;
+        total += STEP;
 
-        if (TotFreq > MAX_FREQ)
+        if (vtot + STEP > MAX_FREQ)
             normalize();
 
-        /* Keep approx sorted */
-        if (((++BubCnt&15)==0) && s[0].Freq > s[-1].Freq) {
-            SymFreqs t = s[0];
-            s[0] = s[-1];
-            s[-1] = t;
+
+        if (((++counter&15)==0) and
+            i and
+            F[i].freq > F[i-1].freq) {
+            SymFreqs t = F[i];
+            F[i] = F[i-1];
+            F[i-1] = t;
         }
+
+        // SymFreqs *s = F;
+        // while (s->symbol != sym)
+        //     sumfreq += s++->Freq;
+        // 
+        // rc->Encode(sumfreq, s->Freq, total);
+        // s->Freq += STEP;
+        // total += STEP;
+        // 
+        // if (total > MAX_FREQ)
+        //     normalize();
+        // 
+        // Keep approx sorted
+        // if (((++counter&15)==0) && s[0].Freq > s[-1].Freq) {
+        //     SymFreqs t = s[0];
+        //     s[0] = s[-1];
+        //     s[-1] = t;
+        // }
     }
 
     inline UINT16 decodeSymbol(RangeCoder *rc) {
-        SymFreqs* s = F;
-        UINT32 freq = rc->GetFreq(TotFreq);
-        UINT32 AccFreq;
+        // SymFreqs* s = F;
+        
+        UINT32 vtot = total + NSYM - iend;
+        UINT32 freq = rc->GetFreq(vtot);
+        UINT32 sumfreq = 0;
+        UINT32 i;
 
-        for (AccFreq = 0; (AccFreq += s->Freq) <= freq; s++);
-        AccFreq -= s->Freq;
+        for ( i = 0;
+              i < NSYM;
+              i ++ ) {
+            rarely_if(i >= iend)
+                expand_to(i);
 
-        rc->Decode(AccFreq, s->Freq, TotFreq);
-        s->Freq += STEP;
-        TotFreq += STEP;
+            if (sumfreq +  F[i].freq <= freq)
+                sumfreq += F[i].freq;
+            else
+                break;
+        }
 
-        if (TotFreq > MAX_FREQ)
+        // while ( sumfreq + F[i].freq <= freq  ) {
+        //     rarely_if(i+1 > iend and i+1 < NSYM)
+        //         expand_to(i+1);
+        // 
+        //     sumfreq += F[i++].freq;
+        // }
+
+        rc->Decode(sumfreq, F[i].freq, vtot);
+        F[i].freq += STEP;
+        total += STEP;
+
+        if (vtot + STEP > MAX_FREQ)
             normalize();
 
         /* Keep approx sorted */
-        if (((++BubCnt&15)==0) && s[0].Freq > s[-1].Freq) {
-            SymFreqs t = s[0];
-            s[0] = s[-1];
-            s[-1] = t;
-            return t.Symbol;
+        if (((++counter&15)==0) and
+            i and
+            F[i].freq > F[i-1].freq) {
+            SymFreqs t = F[i];
+            F[i] = F[i-1];
+            F[--i] = t;
+            // return t.symbol;
         }
+        return F[i].symbol;
 
-        return s->Symbol;
+        // for (sumfreq = 0; (sumfreq += s->Freq) <= freq; s++);
+        // sumfreq -= s->Freq;
+        // 
+        // rc->Decode(sumfreq, s->Freq, total);
+        // s->Freq += STEP;
+        // total += STEP;
+        // 
+        // if (total > MAX_FREQ)
+        //     normalize();
+        // 
+        // /* Keep approx sorted */
+        // if (((++counter&15)==0) && s[0].freq > s[-1].freq) {
+        //     SymFreqs t = s[0];
+        //     s[0] = s[-1];
+        //     s[-1] = t;
+        //     return t.symbol;
+        // }
+        // 
+        // return s->symbol;
     }
 };

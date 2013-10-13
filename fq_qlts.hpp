@@ -94,7 +94,7 @@ private:
 #define RCARR_SIZE (1<<16)
 #define RCARR_MASK (RCARR_SIZE-1)
     SIMPLE_MODEL<64>* rcarr;
-    UINT32 rcarr_last;
+    // UINT32 rcarr_last;
     RangeCoder rcoder;
 
     // struct {
@@ -128,7 +128,7 @@ private:
     void range_init();
 
     SIMPLE_MODEL<64>* rcarr;
-    UINT32 rcarr_last;
+    // UINT32 rcarr_last;
     RangeCoder rcoder;
 
     FilerLoad* filer;
