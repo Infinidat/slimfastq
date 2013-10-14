@@ -448,11 +448,23 @@ void QltSave::range_init() {
 //     clear_bucket();
 // }
 
+#define KILLER_BEE 0
+
 void QltSave::save(const UCHAR* buf, size_t size) {
     UINT32 last = 0;
-    for (size_t i = 0; i < size ; i++) {
+#if KILLER_BEE
+    size_t len = size;
+    while (len and buf[len] == '#')
+        -- len;
+
+    for (size_t i = 0; i < len ; i++)
+#else
+    for (size_t i = 0; i < size ; i++)
+#endif
+{
         UCHAR b = UCHAR(buf[i] - '!');
-        rarely_if(b >= 64)
+
+        rarely_if(b >= 63)
             croak("Illegal quality value 0x%x. Aborting\n", buf[i]);
 
         PREFETCH(rcarr + last);
@@ -461,7 +473,11 @@ void QltSave::save(const UCHAR* buf, size_t size) {
         last = ((last <<6) + b) & RCARR_MASK;
     }
 
-    return;
+#if KILLER_BEE
+    if (len != size)
+        rcarr[last].encodeSymbol(&rcoder, 63);
+#endif
+
     // while (size) {
     //     rarely_if (bucket.index >= BUCKET_SIZE)
     //         save_bucket();
@@ -634,7 +650,15 @@ UINT32 QltLoad::load(UCHAR* buf, const size_t size) {
 
         UCHAR b = rcarr[last].decodeSymbol(&rcoder);
 
+#if KILLER_BEE
+        likely_if(b < 63)
+            buf[i] = UCHAR('!' + b);
+        else 
+            for (; i < size; i++)
+                buf[i] = '#';
+#else
         buf[i] = UCHAR('!' + b);
+#endif
         last = ((last <<6) + b) & RCARR_MASK;
     }
     return m_valid ? size : 0;

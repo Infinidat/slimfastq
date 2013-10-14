@@ -55,7 +55,7 @@ void test_filer() {
 
 void fill_buf(UCHAR* buf, int start, int size) {
     for (int i = 0; i < size ; i++)
-        buf[i] = '!' + (UCHAR(i*7+start) & 0x3f);
+        buf[i] = '!' + ((i*7+start) % 63);
 }
 
 void test_qlt() {

@@ -24,7 +24,7 @@ sub carp($) {
     use Term::ANSIColor qw(:constants);
     $Term::ANSIColor::AUTORESET = 1;
     my $errstr = RED " *********************************";
-    die "$errstr\n@_\n$errstr\n";
+    die "$errstr\nError:\n@_\n$errstr\n";
 }
 my $l = 0;
 while (1) {

@@ -18,6 +18,7 @@ prof-opt: jfastq.prof
 		./jfastq.prof -f /tmp/mytst -u $$f -O -P ; \
 		./jfastq.prof -f /tmp/mytst -u /tmp/mytst.copy -O -d ; \
 		done
+	echo done
 	make opt
 	make profclean
 

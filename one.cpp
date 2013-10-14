@@ -359,12 +359,12 @@ struct BASE_MODEL {
     BASE_MODEL();
     BASE_MODEL(int *start);
     void reset();
-    void reset(int *start);
+    // void reset(int *start);
     inline void encodeSymbol(RangeCoder *rc, uint sym);
-    inline void updateSymbol(uint sym);
+    // inline void updateSymbol(uint sym);
     inline uint decodeSymbol(RangeCoder *rc);
-    inline uint getTopSym(void);
-    inline uint getSummFreq(void);
+    // inline uint getTopSym(void);
+    // inline uint getSummFreq(void);
 
 protected:
     void   rescaleRare();
@@ -378,12 +378,12 @@ BASE_MODEL<st_t>::BASE_MODEL()
     reset();
 }
 
-template <typename st_t>
-BASE_MODEL<st_t>::BASE_MODEL(int *start) {
-    for (int i = 0; i < 4; i++) {
-	Stats[i] =  start[i];
-    }
-}
+// template <typename st_t>
+// BASE_MODEL<st_t>::BASE_MODEL(int *start) {
+//     for (int i = 0; i < 4; i++) {
+// 	Stats[i] =  start[i];
+//     }
+// }
 
 template <typename st_t>
 void BASE_MODEL<st_t>::reset() {
@@ -391,12 +391,12 @@ void BASE_MODEL<st_t>::reset() {
 	Stats[i] = 3*STEP;
 }
 
-template <typename st_t>
-void BASE_MODEL<st_t>::reset(int *start) {
-    for (int i = 0; i < 4; i++) {
-	Stats[i] =  start[i];
-    }
-}
+// template <typename st_t>
+// void BASE_MODEL<st_t>::reset(int *start) {
+//     for (int i = 0; i < 4; i++) {
+// 	Stats[i] =  start[i];
+//     }
+// }
 
 template <typename st_t>
 void BASE_MODEL<st_t>::rescaleRare()
@@ -476,35 +476,35 @@ inline void BASE_MODEL<st_t>::encodeSymbol(RangeCoder *rc, uint sym) {
     return;
 }
 
-template <typename st_t>
-inline void BASE_MODEL<st_t>::updateSymbol(uint sym) {
-    int SummFreq = (Stats[0] + Stats[1]) + (Stats[2] + Stats[3]);
-    if ( SummFreq>=WSIZ ) {
-	rescaleRare();
-    }
-
-    /* known symbol */
-    Stats[sym] += STEP;            
-}
+// template <typename st_t>
+// inline void BASE_MODEL<st_t>::updateSymbol(uint sym) {
+//     int SummFreq = (Stats[0] + Stats[1]) + (Stats[2] + Stats[3]);
+//     if ( SummFreq>=WSIZ ) {
+// 	rescaleRare();
+//     }
+// 
+//     /* known symbol */
+//     Stats[sym] += STEP;            
+// }
 
 /*
  * Returns the bias of the best symbol compared to all other symbols.
  * This is a measure of how well adapted this model thinks it is to the
  * incoming probabilities.
  */
-template <typename st_t>
-inline uint BASE_MODEL<st_t>::getTopSym(void) {
-/* Max of 4 */
-    #define M4(a) ((a)[0]>(a)[1]?((a)[0]>(a)[2]?((a)[0]>(a)[3]?(a)[0]:(a)[3]):((a)[2]>(a)[3]?(a)[2]:(a)[3])):((a)[1]>(a)[2]?((a)[1]>(a)[3]?(a)[1]:(a)[3]):((a)[2]>(a)[3]?(a)[2]:(a)[3])))
-    return M4(Stats);
-    #undef  M4
-}
+// template <typename st_t>
+// inline uint BASE_MODEL<st_t>::getTopSym(void) {
+// /* Max of 4 */
+//     #define M4(a) ((a)[0]>(a)[1]?((a)[0]>(a)[2]?((a)[0]>(a)[3]?(a)[0]:(a)[3]):((a)[2]>(a)[3]?(a)[2]:(a)[3])):((a)[1]>(a)[2]?((a)[1]>(a)[3]?(a)[1]:(a)[3]):((a)[2]>(a)[3]?(a)[2]:(a)[3])))
+//     return M4(Stats);
+//     #undef  M4
+// }
 
-template <typename st_t>
-inline uint BASE_MODEL<st_t>::getSummFreq(void) {
-    int SummFreq = (Stats[0] + Stats[1]) + (Stats[2] + Stats[3]);
-    return SummFreq;
-}
+// template <typename st_t>
+// inline uint BASE_MODEL<st_t>::getSummFreq(void) {
+//     int SummFreq = (Stats[0] + Stats[1]) + (Stats[2] + Stats[3]);
+//     return SummFreq;
+// }
 
 template <typename st_t>
 inline uint BASE_MODEL<st_t>::decodeSymbol(RangeCoder *rc) {

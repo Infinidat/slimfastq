@@ -1,4 +1,8 @@
 
+
+
+// Based on James Bonfield's excellent fqz_comp
+
 #ifdef  ZP_SIMPLE_MODULE_H
 #error  Do not load me twice
 #endif
