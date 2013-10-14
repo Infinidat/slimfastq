@@ -155,8 +155,8 @@ QltSave::QltSave(const Config* conf )  { // : FQQBase() {
     // filer = NULL ;
     m_conf = conf;
     filer = new FilerSave(m_conf->open_w("qlt"));
-    rcarr = new SIMPLE_MODEL<64>[RCARR_SIZE];
-    assert(rcarr);
+    ranger = new PowerRanger<6>[RANGER_SIZE];
+    assert(ranger);
 
     rcoder.init(filer);
     range_init();
@@ -282,7 +282,7 @@ void QltSave::filer_init() {
 
 void QltSave::range_init() {
 
-    bzero(rcarr, sizeof(rcarr[0])*RCARR_SIZE);
+    bzero(ranger, sizeof(ranger[0])*RANGER_SIZE);
     // for (int i = 0; i < RCARR_SIZE; i++)
     //     // TODO: faster init (bzero?)
     //     rcarr[i].init();
@@ -467,15 +467,15 @@ void QltSave::save(const UCHAR* buf, size_t size) {
         rarely_if(b >= 63)
             croak("Illegal quality value 0x%x. Aborting\n", buf[i]);
 
-        PREFETCH(rcarr + last);
+        PREFETCH(ranger + last);
 
-        rcarr[last].encodeSymbol(&rcoder, b);
-        last = ((last <<6) + b) & RCARR_MASK;
+        ranger[last].encodeSymbol(&rcoder, b);
+        last = ((last <<6) + b) & RANGER_MASK;
     }
 
 #if KILLER_BEE
     if (len != size)
-        rcarr[last].encodeSymbol(&rcoder, 63);
+        ranger[last].encodeSymbol(&rcoder, 63);
 #endif
 
     // while (size) {
@@ -495,7 +495,7 @@ void QltSave::save(const UCHAR* buf, size_t size) {
 
 QltLoad::QltLoad(const Config* conf) { // : FQQBase() {
     filer = new FilerLoad(conf->open_r("qlt"), &m_valid);
-    rcarr = new SIMPLE_MODEL<64>[RCARR_SIZE];
+    ranger = new PowerRanger<6>[RANGER_SIZE];
     // bzero(&bucket, sizeof(bucket));
 
     rcoder.init(filer);
@@ -589,7 +589,7 @@ bool QltLoad::is_valid() {
 
 void QltLoad::range_init() {
 
-    bzero(rcarr, sizeof(rcarr[0])*RCARR_SIZE);
+    bzero(ranger, sizeof(ranger[0])*RANGER_SIZE);
     // for (int i = 0; i < RCARR_SIZE; i++)
     //     // TODO: faster init (bzero?)
     //     rcarr[i].init();
@@ -646,9 +646,9 @@ UINT32 QltLoad::load(UCHAR* buf, const size_t size) {
     UINT32 last = 0;
     for (size_t i = 0; i < size ; i++) {
 
-        PREFETCH(rcarr + last);
+        PREFETCH(ranger + last);
 
-        UCHAR b = rcarr[last].decodeSymbol(&rcoder);
+        UCHAR b = ranger[last].decodeSymbol(&rcoder);
 
 #if KILLER_BEE
         likely_if(b < 63)
@@ -659,7 +659,7 @@ UINT32 QltLoad::load(UCHAR* buf, const size_t size) {
 #else
         buf[i] = UCHAR('!' + b);
 #endif
-        last = ((last <<6) + b) & RCARR_MASK;
+        last = ((last <<6) + b) & RANGER_MASK;
     }
     return m_valid ? size : 0;
 

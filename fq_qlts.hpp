@@ -9,7 +9,7 @@
 #include "common.hpp"
 #include "config.hpp"
 #include "filer.hpp"
-#include "simple_model.hpp"
+#include "power_ranger.hpp"
 
 
 // #define MAX_CHARS 256
@@ -91,9 +91,9 @@ private:
     //     UINT32 algo_hist[FQQ_ALGO_LAST_DUMMY];
     // } stats;
 
-#define RCARR_SIZE (1<<16)
-#define RCARR_MASK (RCARR_SIZE-1)
-    SIMPLE_MODEL<64>* rcarr;
+#define RANGER_SIZE (1<<16)
+#define RANGER_MASK (RANGER_SIZE-1)
+    PowerRanger<6>* ranger;
     // UINT32 rcarr_last;
     RangeCoder rcoder;
 
@@ -127,7 +127,7 @@ private:
 
     void range_init();
 
-    SIMPLE_MODEL<64>* rcarr;
+    PowerRanger<6>* ranger;
     // UINT32 rcarr_last;
     RangeCoder rcoder;
 

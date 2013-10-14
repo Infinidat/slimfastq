@@ -3,10 +3,10 @@
 
 // Based on James Bonfield's excellent fqz_comp
 
-#ifdef  ZP_SIMPLE_MODULE_H
+#ifdef  ZP_POWER_RANGER_H
 #error  Do not load me twice
 #endif
-#define ZP_SIMPLE_MODULE_H
+#define ZP_POWER_RANGER_H
 
 #include "range_coder.hpp"
 
@@ -22,9 +22,12 @@
 
 #define MAX_FREQ (1<<16)-32
 
-template <int NSYM>
-class SIMPLE_MODEL {
-    enum { STEP=8 };
+template <int NBITS>
+class PowerRanger {
+    enum {
+        STEP=8,
+        NSYM=(1<<NBITS),
+    };
 
     UINT32 total;     // Total frequency
     UINT32 counter;   // Periodic counter for bubble sort step
