@@ -8,7 +8,7 @@
 
 #include "common.hpp"
 #include "config.hpp"
-#include "pager.hpp"
+// #include "pager.hpp"
 #include <stdio.h>
 
 #include "filer.hpp"
@@ -25,16 +25,19 @@ public:                         // for utest
     int m_len[10];
 
     struct {
+        UINT64 line_n;
         UINT64 tile;
-        UINT64 index;
         UINT64 x;
         UINT64 y;
         UINT64 n[4];
+        UINT64 rec_count;
+        UINT64 rec_count_tag;
         UCHAR alal;
     } m_last;
 
     int    m_type;
     bool   m_valid;
+    
 
     const Config* m_conf;
 
@@ -44,12 +47,12 @@ public:                         // for utest
 
     // Yeh yeh, I know it should be getter and putter but I'll keep it aligned
     void puter(int i, int j, UCHAR c);
-    void put_i(int i, long long num, long long* old=NULL);
-    bool put_u(int i, UINT64    num, UINT64   * old=NULL);
+    void put_i(int i, long long num, UINT64* old=NULL);
+    bool put_u(int i, UINT64    num, UINT64* old=NULL);
 
     UCHAR     geter(int i, int j);
-    long long get_i(int i, long long* old=NULL);
-    UINT64    get_u(int i, UINT64   * old=NULL);
+    long long get_i(int i, UINT64* old=NULL);
+    UINT64    get_u(int i, UINT64* old=NULL);
 };
 
 class RecSave : public RecBase {
@@ -57,27 +60,31 @@ public:
     RecSave(const Config* conf);
     ~RecSave();
 
-    bool save(const UCHAR* buf, const UCHAR* end, bool gentype);
-    void pager_init();
+    bool save(const UCHAR* buf, const UCHAR* end);
+    // void pager_init();
 private:
-    bool is_allele(char a);
-    bool save_1(const UCHAR* buf, const UCHAR* end, bool gentype);
-    bool save_3(const UCHAR* buf, const UCHAR* end, bool gentype);
-    bool save_5(const UCHAR* buf, const UCHAR* end, bool gentype);
+    // enum { UT_ALLELE,
+    //        UT_BASES,
+    //        UT_END } UpdateType;
+    // void update(UpdateType type, UINT64 val);
+    // bool is_allele(char a);
+    void save_allele(char a);
+    bool save_1(const UCHAR* buf, const UCHAR* end);
+    bool save_3(const UCHAR* buf, const UCHAR* end);
+    bool save_5(const UCHAR* buf, const UCHAR* end);
 
     void determine_rec_type(const UCHAR* buf, const UCHAR* end);
     int  get_rec_type(const char* start);
-    void putgap(UINT64 gap);
-    void putgap(UINT64 num, UINT64& old);
+    // void putgap(UINT64 gap);
+    // void putgap(UINT64 num, UINT64& old);
     // void putgap(UINT64 gap, bool flag);
 
-    PagerSave16* pager;
-    PagerSave02* pager2;
+    // PagerSave16* pager;
+    // PagerSave02* pager2;
     FilerSave* filer;
 
     struct {
         UINT32 big_gaps;
-        UINT32 big_gaps8;
     } stats;
 };
 
@@ -87,21 +94,22 @@ public:
     ~RecLoad();
 
     inline bool is_valid() {return m_valid;}
-    size_t load(UCHAR* buf, bool *gentype);
+    size_t load(UCHAR* buf);
 
 private:
-    size_t load_1(UCHAR* buf, bool *gentype);
-    size_t load_3(UCHAR* buf, bool *gentype);
-    size_t load_5(UCHAR* buf, bool *gentype);
+    // update();
+    size_t load_1(UCHAR* buf);
+    size_t load_3(UCHAR* buf);
+    size_t load_5(UCHAR* buf);
 
-    UINT16 get16();
-    UINT64 getgap();
-    UINT64 getgap(UINT64& old);
+    // UINT16 get16();
+    // UINT64 getgap();
+    // UINT64 getgap(UINT64& old);
     // UINT64 getgap(bool * flag);
     void determine_ids(int size) ;
 
-    PagerLoad16* pager;
-    PagerLoad02* pager2;
+    // PagerLoad16* pager;
+    // PagerLoad02* pager2;
 
     FilerLoad* filer;
 };

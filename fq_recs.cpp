@@ -22,7 +22,7 @@ UCHAR RecBase::geter(int i, int j) {
     return ranger[i][j].get(&rcoder);
 }
 
-void RecBase::put_i(int i, long long num, long long * old) {
+void RecBase::put_i(int i, long long num, UINT64 * old) {
     if (old) {
         // assert(num >= *old); what's worse?
         long long t = num - *old;
@@ -83,7 +83,7 @@ bool RecBase::put_u(int i, UINT64 num, UINT64* old) {
     return true;
 }
 
-long long RecBase::get_i(int i, long long* old) {
+long long RecBase::get_i(int i, UINT64* old) {
     long long num = geter(i, 0);
     rarely_if(num == 0x80 ) {
         num  = geter(i, 1);
@@ -111,7 +111,7 @@ long long RecBase::get_i(int i, long long* old) {
         num ;
 }
 
-UINT64    RecBase::get_u(int i, UINT64* old) {
+UINT64 RecBase::get_u(int i, UINT64* old) {
 
     UINT64 num = geter(i, 0);
     rarely_if(num > 0x7f) {
@@ -155,51 +155,53 @@ RecSave::RecSave(const Config* conf) {
     range_init();
 }
 
-void RecSave::pager_init() {
-    assert(0);                  // TODO
-    // DELETE( pager);
-    // DELETE( pager2);
-    // BZERO(m_last);
-    // pager  = new PagerSave16(m_conf->open_w("rec"));
-    // pager2 = new PagerSave02(m_conf->open_w("rec2"));
-}
+// void RecSave::pager_init() {
+//     assert(0);                  // TODO
+//     // DELETE( pager);
+//     // DELETE( pager2);
+//     // BZERO(m_last);
+//     // pager  = new PagerSave16(m_conf->open_w("rec"));
+//     // pager2 = new PagerSave02(m_conf->open_w("rec2"));
+// }
 
 RecSave::~RecSave() {
     // flush();
     // delete pager;
     // delete pager2;
+    // udpate(UT_END, -1ULL);
+    rcoder.done();
     DELETE(filer);
-    fprintf(stderr, "::: REC gaps 4bytes: %u, 8bytes: %u\n", stats.big_gaps, stats.big_gaps8);
+    fprintf(stderr, "::: REC oversized gaps: %u\n", stats.big_gaps);
 }
 
-void RecSave::putgap(UINT64 num, UINT64& old) {
-    // for X Y values, we must negative gaps
-    // I'll keep it local because it's hairy
-    long long gap = num - old ;
-    old = num ;
-
-    // gap:
-    // from negative 0xffe (0xf002 to  0xf000: save short
-    // negative 0xfff (0xf001) means save int (32 bits) gap
-    // read int:
-    // negative 1 (0xffffffff) means save long (64 bits) gap
-    likely_if (gap >  -0xffe and
-               gap <= 0xf000) {
-        pager->put16((UINT16) gap);
-        return;
-    }
-    pager->put16(0xf001);
-    if (gap >  0x7fffffff or
-        gap < -0x80000000 ) {
-        UINT32 gap32 = (UINT32) gap;
-        pager->put16(0xffff & (gap32 >> 16));
-        pager->put16(0xffff & (gap32));
-        return;
-    }
-    pager->put16(0xffff);
-    pager->put16(0xffff);
-    croak("TODO: support oversized gap: %lld: ", gap);
-}
+// void RecSave::putgap(UINT64 num, UINT64& old) {
+//     // for X Y values, we must negative gaps
+//     // I'll keep it local because it's hairy
+//     long long gap = num - old ;
+//     old = num ;
+// 
+//     // gap:
+//     // from negative 0xffe (0xf002 to  0xf000: save short
+//     // negative 0xfff (0xf001) means save int (32 bits) gap
+//     // read int:
+//     // negative 1 (0xffffffff) means save long (64 bits) gap
+//     likely_if (gap >  -0xffe and
+//                gap <= 0xf000) {
+//         pager->put16((UINT16) gap);
+//         return;
+//     }
+//     pager->put16(0xf001);
+//     if (gap >  0x7fffffff or
+//         gap < -0x80000000 ) {
+//         UINT32 gap32 = (UINT32) gap;
+//         pager->put16(0xffff & (gap32 >> 16));
+//         pager->put16(0xffff & (gap32));
+//         return;
+//     }
+//     pager->put16(0xffff);
+//     pager->put16(0xffff);
+//     croak("TODO: support oversized gap: %lld: ", gap);
+// }
 
 // void RecSave::putgap(UINT64 gap) {
 // 
@@ -482,28 +484,52 @@ static void num_to_is (UINT64 num, char* is, int len) {
     }
 }
 
+// void RecSave::update(UpdateType type, UINT64 val) {
+//     // 0 is for updates
+//     put_u(0, rec_count, &rec_count_tag);
+//     put_u(0, type);
+//     put_u(0, val);
+//     switch (type) {
+//     case UT_ALLELE: m_last.alal = val; break;
+//     case UT_BASES : num_to_is(val, (char*)m_ids[2], m_len[2]); break;
+//     case UT_TYLE  : m_last.tile = val; break;
+//     case UT_END: break;
+//     }
+// }
+
 #define ATOI(X) atoll((const char*)X)
 
-bool RecSave::is_allele(char a) {
+// bool RecSave::is_allele(char a) {
+// 
+//     if (a == '1')
+//         return false;
+// 
+//     if (m_last.alal != a) {
+//         m_last.alal  = a;
+//         put_i(0, -1);
+//         put_u(1,  a);
+//         // pager->put16(0xfff0);
+//         // pager->put16(a);
+//     }   return true;
+// }
 
-    if (a == '1')
-        return false;
-
-    if (m_last.alal != a) {
-        m_last.alal  = a;
-        pager->put16(0xfff0);
-        pager->put16(a);
-    }   return true;
+void RecSave::save_allele(char a) {
+    if (m_last.alal == a)
+        return;
+    m_last.alal  = a;
+    put_i(0, -1);
+    put_u(1,  a);
 }
 
-bool RecSave::save_1(const UCHAR* buf, const UCHAR* end, bool gentype) {
+bool RecSave::save_1(const UCHAR* buf, const UCHAR* end) {
     // @SRR043409.575 61ED1AAXX100429:3:1:1039:1223/1
     // @SRR043409.578 61ED1AAXX100429:3:1:1040:4755/1
     const UCHAR* p = n_front('.', buf);
     UINT64 line_n = ATOI(p);
 
     p = n_backw('/', end-1);
-    bool is_alal = is_allele(*p);
+    // bool is_alal = is_allele(*p);
+    save_allele(*p);
 
     if (m_type == 2) {
         // Also has sequent number
@@ -511,10 +537,12 @@ bool RecSave::save_1(const UCHAR* buf, const UCHAR* end, bool gentype) {
         p = backto('#', end-1, end-16);
         assert(end-p == m_len[2]);
         if (strncmp((const char*)p, m_ids[2], m_len[2])) {
-            pager->put16(0xfffc);
             UINT64 iseq_num = is_to_num(p, m_len[2]);
-            pager->putgap(iseq_num );
-            num_to_is(iseq_num, (char*)m_ids[2], m_len[2]);
+            num_to_is(iseq_num, (char*)m_ids[2], m_len[2]); 
+            put_i(0, -2);
+            put_u(1, iseq_num);
+            // pager->put16(0xfffc);
+            // pager->putgap(iseq_num );
         }
     }
 
@@ -527,35 +555,43 @@ bool RecSave::save_1(const UCHAR* buf, const UCHAR* end, bool gentype) {
     p = n_backw(':', p-2);
     UINT64 t = ATOI(p);
 
-    if (t != m_last.tile) {
-        pager->put16(0xfffe);
-        putgap(t, m_last.tile);
+    if (m_last.tile != t) {
+        m_last.tile  = t;
+        put_i(0, -3);
+        put_i(1,  t);
+        // pager->put16(0xfffe);
+        // putgap(t, m_last.tile);
     }
 
     // UINT64 line_g = line_n- m_last.index;
-    // m_last.index = line_n;
-    // putgap(line_g);
-    if (line_n < m_last.index)
-        croak("Sanity failure - decrising line number: %llu", line_n);
-    pager->putgap(line_n -  m_last.index); // first item
-    m_last.index = line_n ;
 
-    putgap(x, m_last.x);
-    putgap(y, m_last.y);
+    // if (line_n < m_last.index)
+    //     croak("Sanity failure - decrising line number: %llu", line_n);
+    // pager->putgap(line_n -  m_last.index); // first item
+    // m_last.index = line_n ;
 
-    pager2->put02((gentype ? 2 : 0) +
-                  (is_alal ? 1 : 0));
+    put_i(0, line_n, &m_last.line_n); // limited to 2G gaps (TODO?)
 
+    // putgap(x, m_last.x);
+    // putgap(y, m_last.y);
+    put_i(2, x, &m_last.x);
+    put_i(3, y, &m_last.y);
+
+    // pager2->put02((gentype ? 2 : 0) +
+    //               (is_alal ? 1 : 0));
+
+    // put_i(4, (gentype ? 2 : 0) + (is_alal ? 1 : 0));
     return m_valid;
 }
 
-bool RecSave::save_3(const UCHAR* buf, const UCHAR* end, bool gentype) {
+bool RecSave::save_3(const UCHAR* buf, const UCHAR* end) {
 
     const UCHAR* p = n_front('.', buf);
     UINT64 line_n = ATOI(p);
 
     p = n_backw('/', end-1);
-    bool is_alal = is_allele(*p);
+    // bool is_alal = is_allele(*p);
+    save_allele(*p);
 
     // map n1..n4 to n0 .. n3
     UINT64 n[4];
@@ -566,33 +602,37 @@ bool RecSave::save_3(const UCHAR* buf, const UCHAR* end, bool gentype) {
     }
 
     for (int i = n_last; i ; i--)
-        if (n[i] != m_last.n[i]) {
-            pager->put16(0xffff-i);
-            pager->putgap(n[i]);
-            m_last.n[i] = n[i];
+        rarely_if (n[i] != m_last.n[i]) {
+            put_i(0, -2-i);
+            put_i(1, n[i], &(m_last.n[i]));
+            // pager->put16(0xffff-i);
+            // pager->putgap(n[i]);
+            // m_last.n[i] = n[i];
         }
 
-    rarely_if (line_n < m_last.index or
-               n[0] < m_last.n[0])
-        croak("Sanity failure - decrising line/n[0] number: %llu", line_n);
+    // rarely_if (line_n < m_last.index or
+    //            n[0] < m_last.n[0])
+    //     croak("Sanity failure - decrising line/n[0] number: %llu", line_n);
+    // 
+    // pager->putgap(line_n - m_last.index); // first item
+    // m_last.index = line_n ;
+    // pager->putgap(n[0]);
+    put_i(0, line_n, &m_last.line_n);
+    put_i(2, n[0], &m_last.n[0]);
 
-    pager->putgap(line_n - m_last.index); // first item
-    m_last.index = line_n ;
-
-    pager->putgap(n[0]);
-
-    pager2->put02((gentype ? 2 : 0) +
-                  (is_alal ? 1 : 0));
+    // pager2->put02((gentype ? 2 : 0) +
+    //               (is_alal ? 1 : 0));
     
     return m_valid;
 }
 
-bool RecSave::save_5(const UCHAR* buf, const UCHAR* end, bool gentype) {
+bool RecSave::save_5(const UCHAR* buf, const UCHAR* end) {
     const UCHAR* p = n_front('.', buf);
     UINT64 line_n = ATOI(p);
 
     p = n_backw('/', end-1);
-    bool is_alal = is_allele(*p);
+    // bool is_alal = is_allele(*p);
+    save_allele(*p);
 
     p = n_backw(' ', p-2);
     UINT64 line_2 = ATOI(p);
@@ -600,37 +640,41 @@ bool RecSave::save_5(const UCHAR* buf, const UCHAR* end, bool gentype) {
     rarely_if ((m_last.n[0] == 0) !=
                (line_n == line_2)) {
         m_last.n[0] = (line_n != line_2);
-        pager->put16(0xfffd + m_last.n[0]);
+        // pager->put16(0xfffd + m_last.n[0]);
+        put_i(0, (line_n == line_2) ? -2 : -3);
     }
     
-    pager->putgap(line_n - m_last.index); // first item
-    m_last.index = line_n ;
+    // pager->putgap(line_n - m_last.index); // first item
+    // m_last.index = line_n ;
+    put_i(0, line_n, &m_last.line_n);
 
     rarely_if (m_last.n[0]) {
-        putgap(line_2, line_n);
+        // putgap(line_2, line_n);
+        put_i(2, line_2, &line_n);
     }
 
-    pager2->put02((gentype ? 2 : 0) +
-                  (is_alal ? 1 : 0));
+    // pager2->put02((gentype ? 2 : 0) +
+    //               (is_alal ? 1 : 0));
 
     return m_valid;
 }
 
 #undef ATOI
 
-bool RecSave::save(const UCHAR* buf, const UCHAR* end, bool gentype) {
+bool RecSave::save(const UCHAR* buf, const UCHAR* end) {
 
     rarely_if(not m_type )
         determine_rec_type(buf, end);
-    rarely_if(not pager)
-        pager_init();
+    // rarely_if(not pager)
+    //     pager_init();
 
+    m_last.rec_count ++;
     switch(m_type) {
-    case 5:  return save_5(buf, end, gentype);
+    case 5:  return save_5(buf, end);
     case 4 :
-    case 3 : return save_3(buf, end, gentype);
+    case 3 : return save_3(buf, end);
     case 2 :                    // TODO: verify multiplexed sample index number
-    case 1 : return save_1(buf, end, gentype);
+    case 1 : return save_1(buf, end);
     default: ;
     }
     croak("unexpected record type");
@@ -650,8 +694,12 @@ void RecLoad::determine_ids(int size) {
 
 RecLoad::RecLoad(const Config* conf) {
     m_valid = true;
-    pager  = new PagerLoad16(conf->open_r("rec") , &m_valid);
-    pager2 = new PagerLoad02(conf->open_r("rec2"), &m_valid);
+    // pager  = new PagerLoad16(conf->open_r("rec") , &m_valid);
+    // pager2 = new PagerLoad02(conf->open_r("rec2"), &m_valid);
+    filer = new FilerLoad(conf->open_r("rec"), &m_valid);
+    assert(filer);
+    rcoder.init(filer);
+    range_init();
 
     BZERO(m_ids);
     BZERO(m_last);
@@ -689,85 +737,114 @@ RecLoad::RecLoad(const Config* conf) {
 }
 
 RecLoad::~RecLoad() {
-    delete pager;
-    delete pager2;
+    // delete pager;
+    // delete pager2;
 }
 
-UINT64 RecLoad::getgap(UINT64& old) {
+// void RecLoad::update() {
+//     int sanity = UT_END;
+//     while (m_last.rec_count == m_last.rec_count_tag) {
+//         if (not sanity --)
+//             croak("RecLoad: illegal update item");
+// 
+//         UpdateType type = get_u(0);
+//         switch(type) {
+//         case UT_ALLELE:
+//         }
+//         get_u(0, &m_last.rec_count_tag);
+//     }
+// }
 
-    UINT64 gap = pager->get16();
-    if (gap != 0xf001) {
-        old += (gap <= 0xf000) ? gap : (short int) gap;
-        return old;
-    }
-    gap  = pager->get16();
-    gap <<= 16;
-    gap |= pager->get16();
-    if (gap != 0xffffffff) {
-        old += (int) gap;
-        return old;
-    }
+// UINT64 RecLoad::getgap(UINT64& old) {
+// 
+//     UINT64 gap = pager->get16();
+//     if (gap != 0xf001) {
+//         old += (gap <= 0xf000) ? gap : (short int) gap;
+//         return old;
+//     }
+//     gap  = pager->get16();
+//     gap <<= 16;
+//     gap |= pager->get16();
+//     if (gap != 0xffffffff) {
+//         old += (int) gap;
+//         return old;
+//     }
+// 
+//     croak("TODO: support oversized gap: %lld: ", gap);
+// 
+//     old += gap;
+//     return old;
+// }
 
-    croak("TODO: support oversized gap: %lld: ", gap);
-
-    old += gap;
-    return old;
-}
-
-size_t RecLoad::load_1(UCHAR* buf, bool *gentype) {
+size_t RecLoad::load_1(UCHAR* buf) {
     // @SRR043409.575 61ED1AAXX100429:3:1:1039:1223/1        
 
-    UINT16 predict = pager->predict();
-    rarely_if( predict == 0)
-        return 0;
-    rarely_if (predict >= 0xfff0 and predict != 0xffff)
-        while (predict >= 0xfff0 and predict != 0xffff) {
-            pager->get16();
-            switch(predict) {
-            case 0xfffc:
-                num_to_is(pager->getgap(), (char*)m_ids[2], m_len[2]);
-                break;
-            case 0xfffe:
-                getgap(m_last.tile);
-                break;
-            case 0xfff0:
-                m_last.alal = 0xff & pager->get16();
-                break;
-            default:
-                croak("unexpected exception: %u", predict);
-            }
-            predict = pager->predict();
+    long long gap = get_i(0);
+    while (RARELY(gap <= 0)) {
+        switch (gap) {
+        case  0: return 0;
+        case -1: m_last.alal = get_u(1); break;
+        case -2: num_to_is(get_u(1), (char*)m_ids[2], m_len[2]); break;
+        case -3: m_last.tile = get_u(1); break;
+        default: croak("REC: bad line gap value: %lld", gap);
         }
+        gap = get_i(0);
+    }
 
-    m_last.index += pager->getgap();
-    getgap(m_last.x);
-    getgap(m_last.y);
+    // UINT16 predict = pager->predict();
+    // rarely_if( predict == 0)
+    //     return 0;
+    // rarely_if (predict >= 0xfff0 and predict != 0xffff)
+    //     while (predict >= 0xfff0 and predict != 0xffff) {
+    //         pager->get16();
+    //         switch(predict) {
+    //         case 0xfffc:
+    //             num_to_is(pager->getgap(), (char*)m_ids[2], m_len[2]);
+    //             break;
+    //         case 0xfffe:
+    //             getgap(m_last.tile);
+    //             break;
+    //         case 0xfff0:
+    //             m_last.alal = 0xff & pager->get16();
+    //             break;
+    //         default:
+    //             croak("unexpected exception: %u", predict);
+    //         }
+    //         predict = pager->predict();
+    //     }
 
-    int ang = pager2->get02();
-    bool is_alal = !! (ang & 1);
-        *gentype = !! (ang & 2);
+    m_last.line_n += gap;
+    // m_last.index += pager->getgap();
+    // getgap(m_last.x);
+    // getgap(m_last.y);
+    get_i(2, &m_last.x);
+    get_i(3, &m_last.y);
+
+    // int ang = pager2->get02();
+    // bool is_alal = !! (ang & 1);
+    //     *gentype = !! (ang & 2);
 
     size_t count =
         m_type == 1 ? 
         sprintf((char*)buf, "%s.%lld %s:%llu:%llu:%llu/%c",
                 m_ids[0],
-                m_last.index,
+                m_last.line_n,
                 m_ids[1],
                 m_last.tile,
                 m_last.x,
                 m_last.y,
-                (is_alal ? m_last.alal : '1')
+                m_last.alal
                 ) :
 
         sprintf((char*)buf, "%s.%lld %s:%llu:%llu:%llu#%s/%c",
                 m_ids[0],
-                m_last.index,
+                m_last.line_n,
                 m_ids[1],
                 m_last.tile,
                 m_last.x,
                 m_last.y,
                 m_ids[2],
-                (is_alal ? m_last.alal : '1')
+                m_last.alal
                 );
 
 
@@ -792,116 +869,148 @@ size_t RecLoad::load_1(UCHAR* buf, bool *gentype) {
     // return m_valid ? p-buf : 0;
 }
 
-size_t RecLoad::load_3(UCHAR* buf, bool *gentype) {
+size_t RecLoad::load_3(UCHAR* buf) {
 
-    UINT16 predict = pager->predict();
-    rarely_if( predict == 0)
-        return 0;
-    rarely_if (predict >= 0xfff0 and predict != 0xffff)
-        while (predict >= 0xfff0 and predict != 0xffff) {
-            pager->get16();
-            switch(predict) {
-            case 0xfffe:
-            case 0xfffd:
-            case 0xfffc: 
-                m_last.n[0xffff-predict] = pager->getgap();
-                break;
+    // UINT16 predict = pager->predict();
+    // rarely_if( predict == 0)
+    //     return 0;
+    // rarely_if (predict >= 0xfff0 and predict != 0xffff)
+    //     while (predict >= 0xfff0 and predict != 0xffff) {
+    //         pager->get16();
+    //         switch(predict) {
+    //         case 0xfffe:
+    //         case 0xfffd:
+    //         case 0xfffc: 
+    //             m_last.n[0xffff-predict] = pager->getgap();
+    //             break;
+    // 
+    //         case 0xfff0:
+    //             m_last.alal = 0xff & pager->get16();
+    //             break;
+    //         default:
+    //             croak("unexpected exception: %u", predict);
+    //         }
+    //         predict = pager->predict();
+    //     }
 
-            case 0xfff0:
-                m_last.alal = 0xff & pager->get16();
-                break;
-            default:
-                croak("unexpected exception: %u", predict);
-            }
-            predict = pager->predict();
-        }
+    long long gap = get_i(0);
+    while (RARELY(gap <= 0)) {
+        if      (gap == 0) return 0;
+        else if (gap == -1) 
+            m_last.alal = get_u(1);
+        else if (gap == -2 or gap < -5)
+            croak("REC: bad gap value: %d", gap);
+        else
+            get_i(1, &(m_last.n[0-gap-2]));
+        gap = get_i(0);
+    }
 
-    m_last.index += pager->getgap();
-    m_last.n[0]   = pager->getgap();
+    // m_last.index += pager->getgap();
+    // m_last.n[0]   = pager->getgap();
+    m_last.line_n += gap;
+    get_i(2, &m_last.n[0]);
 
-    int ang = pager2->get02();
-    bool is_alal = !! (ang & 1);
-    /**/*gentype = !! (ang & 2);
+    // int ang = pager2->get02();
+    // bool is_alal = !! (ang & 1);
+    // /**/*gentype = !! (ang & 2);
     size_t count =
         m_type == 3 ?
         sprintf((char*) buf, "%s.%lld %s_%llu_%llu_%llu_%llu/%c",
                 m_ids[0],
-                m_last.index,
+                m_last.line_n,
                 m_ids[1],
                 m_last.n[3],
                 m_last.n[2],
                 m_last.n[1],
                 m_last.n[0],
-                (is_alal ? m_last.alal : '1')
+                m_last.alal
                 ) :
         sprintf((char*) buf, "%s.%lld %s_%llu_%llu_%llu/%c",
                 m_ids[0],
-                m_last.index,
+                m_last.line_n,
                 m_ids[1],
                 m_last.n[2],
                 m_last.n[1],
                 m_last.n[0],
-                (is_alal ? m_last.alal : '1')
+                m_last.alal
                 ) ;
         
     return m_valid ? count : 0;
 }
 
-size_t RecLoad::load_5(UCHAR* buf, bool *gentype) {
+size_t RecLoad::load_5(UCHAR* buf) {
 
-    UINT16 predict = pager->predict();
-    rarely_if( predict == 0)
-        return 0;
-    rarely_if (predict >= 0xfff0 and predict != 0xffff)
-        while (predict >= 0xfff0 and predict != 0xffff) {
-            pager->get16();
-            switch(predict) {
-            case 0xfffe:
-            case 0xfffd:
-                m_last.n[0] = (predict == 0xfffe);
-                break;
+    // UINT16 predict = pager->predict();
+    // rarely_if( predict == 0)
+    //     return 0;
+    // rarely_if (predict >= 0xfff0 and predict != 0xffff)
+    //     while (predict >= 0xfff0 and predict != 0xffff) {
+    //         pager->get16();
+    //         switch(predict) {
+    //         case 0xfffe:
+    //         case 0xfffd:
+    //             m_last.n[0] = (predict == 0xfffe);
+    //             break;
+    // 
+    //         case 0xfff0:
+    //             m_last.alal = 0xff & pager->get16();
+    //             break;
+    //         default:
+    //             croak("unexpected exception: %u", predict);
+    //         }
+    //         predict = pager->predict();
+    //     }
 
-            case 0xfff0:
-                m_last.alal = 0xff & pager->get16();
-                break;
-            default:
-                croak("unexpected exception: %u", predict);
-            }
-            predict = pager->predict();
+    long long gap = get_i(0);
+    while (RARELY(gap <= 0)) {
+        switch (gap) {
+        case  0: return 0;
+        case -1: m_last.alal = get_u(1); break;
+        case -2: m_last.n[0] = 0; break;
+        case -3: m_last.n[0] = 1; break;
+        default: croak("REC: bad line gap value: %lld", gap);
         }
+        gap = get_i(0);
+    }
 
-    m_last.index += pager->getgap();
-    UINT64 line_2 = m_last.index;
-    rarely_if(m_last.n[0])
-        getgap(line_2);
 
-    int ang = pager2->get02();
-    bool is_alal = !! (ang & 1);
-        *gentype = !! (ang & 2);
+    // m_last.index += pager->getgap();
+    // UINT64 line_2 = m_last.index;
+    // rarely_if(m_last.n[0])
+    //     getgap(line_2);
+    m_last.line_n += gap;
+    UINT64 line_2 = m_last.line_n;
+    rarely_if (m_last.n[0])
+        get_i(2, &line_2);
+
+    // int ang = pager2->get02();
+    // bool is_alal = !! (ang & 1);
+    //     *gentype = !! (ang & 2);
 
     size_t count =
         sprintf((char*)buf, "%s.%lld %lld/%c",
                 m_ids[0],
-                m_last.index,
+                m_last.line_n,
                 line_2,
-                (is_alal ? m_last.alal : '1')
+                m_last.alal
                 );
 
     return m_valid ? count : 0;
 }
 
-size_t RecLoad::load(UCHAR* buf, bool *gentype) {
+size_t RecLoad::load(UCHAR* buf) {
     // get one record to buf
     // size_t count = 0;
     if (not m_valid)
         return 0;
 
+    m_last.rec_count ++;
     switch (m_type) {
-    case 5 : return load_5(buf, gentype);
+    case 5 : return load_5(buf);
     case 4 :
-    case 3 : return load_3(buf, gentype);
+    case 3 : return load_3(buf);
     case 2 : 
-    case 1 : return load_1(buf, gentype);
+    case 1 : return load_1(buf);
     default:;
     }
     croak("Illegal type: %d", m_type);

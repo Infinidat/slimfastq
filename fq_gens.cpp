@@ -58,12 +58,12 @@ void GenSave::putgapNn(UINT64 gap) {
         m_stats.big_gaps ++;
 }
 
-void GenSave::save(const UCHAR* gen, UCHAR* qlt, size_t size, bool* is_raw) {
+void GenSave::save(const UCHAR* gen, UCHAR* qlt, size_t size) {
 
     rarely_if(not pager)
         pager_init();
 
-    *is_raw = 1; // TODO: allow indexing
+    // *is_raw = 1; // TODO: allow indexing
 
     for (size_t i = 0; i < size; i ++) {
         UCHAR n=0;

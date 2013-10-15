@@ -16,7 +16,7 @@ public:
     GenSave(const Config* conf);
     ~GenSave();
 
-    void save(const UCHAR* gen, UCHAR* qlt, size_t size, bool* gentype);
+    void save(const UCHAR* gen, UCHAR* qlt, size_t size);
     void pager_init();
 
 private:

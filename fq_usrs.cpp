@@ -230,47 +230,48 @@ int UsrSave::encode() {
 
     UINT32  sanity = m_conf->profiling ? 100000 : 1000000000;
     UCHAR *p_rec, *p_rec_end, *p_gen, *p_qlt;
-    bool gentype = 0;
+    // bool gentype = 0;
 
     RecSave rec(m_conf);
     GenSave gen(m_conf);
     QltSave qlt(m_conf);
 
     if (m_conf->partition.size) {
-        // TODO: unite cases
-        size_t recs_l = estimate_rec_limit();
-        m_conf->set_info("partition.size", m_conf->partition.size);
-        m_conf->set_info("partition.n_rec", recs_l);
-        PagerSave ppart(m_conf->open_w("part"));
-        ppart.put(0);          // version
-        bool valid = true;
-        assert(m_page_count);
-        while (valid) {
-            UINT64 offs = ((m_page_count-1)*PLL_SIZE) + m_cur - PLL_STRT;
-            m_conf->set_part_offs(offs);
-            pager_init();
-            rec.pager_init();
-            gen.pager_init();
-            qlt.filer_init();
-
-            while (m_last.rec_count < recs_l and
-                   (valid = get_record(&p_rec, &p_rec_end, &p_gen, &p_qlt)) and
-                    ++ m_rec_total < sanity ) {
-                gen.save(p_gen, p_qlt, m_llen, &gentype);
-                rec.save(p_rec, p_rec_end, gentype);
-                qlt.save(p_qlt, m_llen);
-            }
-            ppart.put(offs);
-            ppart.put(m_last.rec_count);
-        }
+        assert(0);              // TODO
+        // // TODO: unite cases
+        // size_t recs_l = estimate_rec_limit();
+        // m_conf->set_info("partition.size", m_conf->partition.size);
+        // m_conf->set_info("partition.n_rec", recs_l);
+        // PagerSave ppart(m_conf->open_w("part"));
+        // ppart.put(0);          // version
+        // bool valid = true;
+        // assert(m_page_count);
+        // while (valid) {
+        //     UINT64 offs = ((m_page_count-1)*PLL_SIZE) + m_cur - PLL_STRT;
+        //     m_conf->set_part_offs(offs);
+        //     pager_init();
+        //     rec.pager_init();
+        //     gen.pager_init();
+        //     qlt.filer_init();
+        // 
+        //     while (m_last.rec_count < recs_l and
+        //            (valid = get_record(&p_rec, &p_rec_end, &p_gen, &p_qlt)) and
+        //             ++ m_rec_total < sanity ) {
+        //         gen.save(p_gen, p_qlt, m_llen);
+        //         rec.save(p_rec, p_rec_end);
+        //         qlt.save(p_qlt, m_llen);
+        //     }
+        //     ppart.put(offs);
+        //     ppart.put(m_last.rec_count);
+        // }
     }
     else {
 
         while(get_record(&p_rec, &p_rec_end, &p_gen, &p_qlt) and
               ++ m_rec_total < sanity ) {
 
-            gen.save(p_gen, p_qlt, m_llen, &gentype);
-            rec.save(p_rec, p_rec_end, gentype);
+            gen.save(p_gen, p_qlt, m_llen);
+            rec.save(p_rec, p_rec_end);
             qlt.save(p_qlt, m_llen);
         }
     }
@@ -419,14 +420,14 @@ int UsrLoad::decode() {
     UCHAR* b_gen = m_gen+1 ;
     UCHAR* b_rec = m_rec+1 ;
 
-    bool gentype = false;
+    // bool gentype = false;
 
     while (n_recs --) {
 
         rarely_if (m_last.rec_count == m_last.index)
             update();
 
-        m_rec_size = rec.load(b_rec, &gentype);
+        m_rec_size = rec.load(b_rec);
         rarely_if (not m_rec_size) {
             // if (m_conf->is_part())
             //     return 0;       // TODO: track num records for partition
