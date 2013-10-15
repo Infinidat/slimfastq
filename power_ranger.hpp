@@ -3,9 +3,7 @@
 
 // Based on James Bonfield's excellent fqz_comp
 
-#ifdef  ZP_POWER_RANGER_H
-#error  Do not load me twice
-#endif
+#ifndef ZP_POWER_RANGER_H
 #define ZP_POWER_RANGER_H
 
 #include "range_coder.hpp"
@@ -30,14 +28,14 @@ class PowerRanger {
     };
 
     UINT32 total;     // Total frequency
-    UINT32 counter;   // Periodic counter for bubble sort step
-    UINT32 iend ;     // keep it 4 bytes alignment (could be as Symbol)
+    UINT16 counter;   // Periodic counter for bubble sort step
+    UINT16 iend ;     // keep it 4 bytes alignment
 
     // Array of Symbols approximately sorted by Freq. 
     struct SymFreqs {
         UINT16 symbol;
         UINT16 freq;
-    } F[NSYM];
+    } PACKED F[NSYM];
 
     void normalize() {
         total=0;
@@ -86,7 +84,7 @@ public:
     //     // F[NSYM].Freq = 0; // terminates normalize() loop. See below.
     // }
 
-    inline void encodeSymbol(RangeCoder *rc, UINT16 sym) {
+    inline void put(RangeCoder *rc, UINT16 sym) {
         UINT32 sumfreq  = 0;
         UINT32 i = 0;
 
@@ -132,7 +130,7 @@ public:
         // }
     }
 
-    inline UINT16 decodeSymbol(RangeCoder *rc) {
+    inline UINT16 get(RangeCoder *rc) {
         // SymFreqs* s = F;
         
         UINT32 vtot = total + NSYM - iend;
@@ -197,4 +195,6 @@ public:
         // 
         // return s->symbol;
     }
-};
+} PACKED;
+
+#endif // ZP_POWER_RANGER_H

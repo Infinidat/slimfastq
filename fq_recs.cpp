@@ -10,11 +10,137 @@
 
 #define MAX_LLINE 400           // TODO: assert max is enough at constructor
 
+
+void RecBase::range_init() {
+    BZERO(ranger);
+}
+void RecBase::puter(int i, int j, UCHAR c) {
+    ranger[i][j].put(&rcoder, c);
+}
+
+UCHAR RecBase::geter(int i, int j) {
+    return ranger[i][j].get(&rcoder);
+}
+
+void RecBase::put_i(int i, long long num, long long * old) {
+    if (old) {
+        // assert(num >= *old); what's worse?
+        long long t = num - *old;
+        *old = num;
+        num = t;
+    }
+    likely_if( num >= -0x80+3 and
+               num <= 0x7f) {
+        puter(i, 0, num & 0xff);
+    }
+    else if (num >= -0x8000 and
+             num <=  0x7fff) {
+        puter(i, 0, 0x80);
+        puter(i, 1, 0xff & num);
+        puter(i, 1, 0xff & (num>>8));
+    }
+    else if (num >= -0x80000000LL and
+             num <=  0x7fffffffLL ) {
+        puter(i, 0, 0x81);
+        for (int shift = 0; shift < 32; shift+=8)
+            puter(i, 2, 0xff&(num>>shift));
+    }
+    else {
+        croak("oversized signed gap : 0x%llx", num);
+        puter(i, 0, 0x82);
+        for (int shift = 0; shift < 64; shift+=8)
+            puter(i, 3, 0xff&(num>>shift));
+    }
+}
+
+bool RecBase::put_u(int i, UINT64 num, UINT64* old) {
+    if (old) {
+        // assert(num >= *old); what's worse?
+        UINT64 t = num - *old;
+        *old = num;
+        num = t;
+    }
+    likely_if(num <= 0x7f) {
+        puter(i, 0, 0xff & num);
+        return false;
+    }
+    likely_if (num < 0x7ffe) {
+        puter(i, 0, 0xff & (0x80 | (num>>8)));
+        puter(i, 1, 0xff & num);
+        return false;
+    }
+    puter(i, 0, 0xff);
+    if (num < 1ULL<<32) {
+        puter(i, 1, 0xfe);
+        for (int shift=0; shift < 32; shift+=8)
+            puter(i, 2, 0xff & (num>>shift));
+    }
+    else {
+        puter(i, 1, 0xff);
+        for (int shift=0; shift < 64; shift+=8)
+            puter(i, 3, 0xff & (num>>shift));
+    }
+    return true;
+}
+
+long long RecBase::get_i(int i, long long* old) {
+    long long num = geter(i, 0);
+    rarely_if(num == 0x80 ) {
+        num  = geter(i, 1);
+        num |= geter(i, 1) << 8;
+        num  = (short) num;
+    }
+    else rarely_if(num == 0x81) {
+        num  = geter(i, 2);
+        num |= geter(i, 2) << 8;
+        num |= geter(i, 2) << 16;
+        num |= geter(i, 2) << 24;
+        num  = (int) num;
+    }
+    else rarely_if(num == 0x82) {
+        num = 0;
+        for (int shift = 0; shift < 64; shift+=8)
+            num |= geter(i, 3) << shift;
+    }
+    else if (0x80&num)
+        num = (char)num;
+
+    return
+        ( old) ?
+        (*old += num) :
+        num ;
+}
+
+UINT64    RecBase::get_u(int i, UINT64* old) {
+
+    UINT64 num = geter(i, 0);
+    rarely_if(num > 0x7f) {
+
+        num <<= 8;
+        num  |= geter(i, 1);
+        likely_if(num < 0xfffe)
+            num &= 0x7fff;
+        else {
+            bool _4 = num == 0xfffe;
+            num = 0;
+            for (int shift=0; shift < (_4 ? 32 : 64); shift+=8) {
+                UINT64 c = geter(i, _4 ? 2 : 3);
+                num  |= (c<<shift);
+            }
+        }
+    }
+    return
+        ( old) ?
+        (*old += num) :
+        num ;
+}
+
+
 RecSave::RecSave(const Config* conf) {
 
     m_valid = true;
-    pager  = NULL;
-    pager2 = NULL;
+    // pager  = NULL;
+    // pager2 = NULL;
 
     m_type = 0;
     m_conf = conf;
@@ -22,22 +148,28 @@ RecSave::RecSave(const Config* conf) {
     BZERO(m_last);
     BZERO(stats);
     BZERO(m_ids);
+    
+    filer = new FilerSave(conf->open_w("rec"));
+    assert(filer);
+    rcoder.init(filer);
+    range_init();
 }
 
 void RecSave::pager_init() {
-    DELETE( pager);
-    DELETE( pager2);
-    BZERO(m_last);
-    pager  = new PagerSave16(m_conf->open_w("rec"));
-    pager2 = new PagerSave02(m_conf->open_w("rec2"));
+    assert(0);                  // TODO
+    // DELETE( pager);
+    // DELETE( pager2);
+    // BZERO(m_last);
+    // pager  = new PagerSave16(m_conf->open_w("rec"));
+    // pager2 = new PagerSave02(m_conf->open_w("rec2"));
 }
 
 RecSave::~RecSave() {
     // flush();
-    delete pager;
-    delete pager2;
-
-    fprintf(stderr, "::: REC %u oversized line gaps\n", stats.big_gaps);
+    // delete pager;
+    // delete pager2;
+    DELETE(filer);
+    fprintf(stderr, "::: REC gaps 4bytes: %u, 8bytes: %u\n", stats.big_gaps, stats.big_gaps8);
 }
 
 void RecSave::putgap(UINT64 num, UINT64& old) {
@@ -509,8 +641,8 @@ bool RecSave::save(const UCHAR* buf, const UCHAR* end, bool gentype) {
 
 void RecLoad::determine_ids(int size) {
     for (int i = 0 ; i < size ; i++)
-        if (not (m_ids[i] and
-                 m_ids[i][0])) 
+        if (not m_ids[i] or
+            not m_ids[i][0]) 
             croak("missing information for format %d", m_type);
         else 
             m_len[i] = strlen(m_ids[i]);

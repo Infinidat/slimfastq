@@ -11,7 +11,48 @@
 #include "pager.hpp"
 #include <stdio.h>
 
-class RecSave {
+#include "filer.hpp"
+#include "power_ranger.hpp"
+
+class RecBase {
+
+    typedef PowerRanger<8> Ranger;
+
+public:                         // for utest
+    RecBase()  {}
+    ~RecBase() {rcoder.done();}
+    const char* m_ids[10];
+    int m_len[10];
+
+    struct {
+        UINT64 tile;
+        UINT64 index;
+        UINT64 x;
+        UINT64 y;
+        UINT64 n[4];
+        UCHAR alal;
+    } m_last;
+
+    int    m_type;
+    bool   m_valid;
+
+    const Config* m_conf;
+
+    RangeCoder rcoder;
+    Ranger ranger[10][4];
+    void range_init();
+
+    // Yeh yeh, I know it should be getter and putter but I'll keep it aligned
+    void puter(int i, int j, UCHAR c);
+    void put_i(int i, long long num, long long* old=NULL);
+    bool put_u(int i, UINT64    num, UINT64   * old=NULL);
+
+    UCHAR     geter(int i, int j);
+    long long get_i(int i, long long* old=NULL);
+    UINT64    get_u(int i, UINT64   * old=NULL);
+};
+
+class RecSave : public RecBase {
 public:
     RecSave(const Config* conf);
     ~RecSave();
@@ -32,29 +73,15 @@ private:
 
     PagerSave16* pager;
     PagerSave02* pager2;
-
-    int    m_type;
-    bool   m_valid;
-    const Config* m_conf;
-
-    const char* m_ids[10];
-    int m_len[10];
-    struct {
-        UINT64 index;
-        UINT64 tile;
-        UINT64 x;
-        UINT64 y;
-        UINT64 n[4];
-        UCHAR alal;
-    } m_last;
+    FilerSave* filer;
 
     struct {
         UINT32 big_gaps;
+        UINT32 big_gaps8;
     } stats;
 };
 
-
-class RecLoad {
+class RecLoad : public RecBase {
 public:
     RecLoad(const Config* conf);
     ~RecLoad();
@@ -76,19 +103,7 @@ private:
     PagerLoad16* pager;
     PagerLoad02* pager2;
 
-    int    m_type;
-    bool   m_valid;
-    struct {
-        UINT64 tile;
-        UINT64 index;
-        UINT64 x;
-        UINT64 y;
-        UINT64 n[4];
-        UCHAR alal;
-    } m_last;
-
-    const char* m_ids[10];
-    int m_len[10];
+    FilerLoad* filer;
 };
 
 

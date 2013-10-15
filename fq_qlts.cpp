@@ -448,11 +448,9 @@ void QltSave::range_init() {
 //     clear_bucket();
 // }
 
-#define KILLER_BEE 0
-
 void QltSave::save(const UCHAR* buf, size_t size) {
     UINT32 last = 0;
-#if KILLER_BEE
+#ifdef KILLER_BEE
     size_t len = size;
     while (len and buf[len] == '#')
         -- len;
@@ -469,13 +467,13 @@ void QltSave::save(const UCHAR* buf, size_t size) {
 
         PREFETCH(ranger + last);
 
-        ranger[last].encodeSymbol(&rcoder, b);
+        ranger[last].put(&rcoder, b);
         last = ((last <<6) + b) & RANGER_MASK;
     }
 
-#if KILLER_BEE
+#ifdef KILLER_BEE
     if (len != size)
-        ranger[last].encodeSymbol(&rcoder, 63);
+        ranger[last].put(&rcoder, 63);
 #endif
 
     // while (size) {
@@ -648,9 +646,9 @@ UINT32 QltLoad::load(UCHAR* buf, const size_t size) {
 
         PREFETCH(ranger + last);
 
-        UCHAR b = ranger[last].decodeSymbol(&rcoder);
+        UCHAR b = ranger[last].get(&rcoder);
 
-#if KILLER_BEE
+#ifdef KILLER_BEE
         likely_if(b < 63)
             buf[i] = UCHAR('!' + b);
         else 

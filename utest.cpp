@@ -4,17 +4,18 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 #include "common.hpp"
 #include "filer.hpp"
 #include "config.hpp"
 #include "fq_qlts.hpp"
-
+#include "fq_recs.hpp"
 
 #define TITLE(X)
 
 void test_filer() {
-    const char* fname = "/tmp/utest.file"; 
+    const char* fname = "/tmp/utest~filer"; 
     {
         FILE *fh = fopen(fname, "w");
         assert(fh);
@@ -84,10 +85,118 @@ void test_qlt() {
     }
 }
 
+void test_ranger() {
+    const char* fname = "/tmp/utest~filer";
+    {
+        FILE *fh = fopen(fname, "w");
+        assert(fh);
+        FilerSave filer(fh) ;
+        assert(filer.is_valid());
+        RangeCoder rcoder;
+        rcoder.init(&filer);
+        PowerRanger<8> ranger;
+        BZERO(ranger);
+        for (int i = 0; i < 300; i++)
+            ranger.put(&rcoder, i&0xff);
+        rcoder.done();
+    }
+    {
+        FILE *fh = fopen(fname, "r");
+        assert(fh);
+        bool valid;
+        FilerLoad filer(fh, &valid) ;
+        assert(filer.is_valid());
+        RangeCoder rcoder;
+        rcoder.init(&filer);
+        PowerRanger<8> ranger;
+        BZERO(ranger);
+        for (int i = 0; i < 300; i++) {
+            UCHAR c = ranger.get(&rcoder);
+            assert(c == (i&0xff));
+        }
+        rcoder.done();
+    }
+}
+
+void test_recbase() {
+    const char* fname = "/tmp/utest~filer";
+    UINT64 array[] =
+        { 0xfffffffffff, 0x123456789abcd, 0, 4,
+          0xfffffffffff, 0x123456789abcd, 0, 4,
+          0xa, 0xffff, 0xfffe, 100
+        };
+    long long arrai[] =
+        { -0x7ffffff, 0x7ffffff, -100000L, 9999L,
+        };
+    {
+        FILE *fh = fopen(fname, "w");
+        assert(fh);
+
+        FilerSave filer(fh) ;
+        assert(filer.is_valid());
+
+        RecBase base ;
+        BZERO(base);
+        base.range_init();
+        base.rcoder.init(&filer);
+        for (int i = 0; i < 300; i++)
+            base.put_u(0, (i&0x7f));
+        for (UINT64 i=0; i < 1000; i++)
+            base.put_u(0, i);
+        for (UINT64 i=0xfff0; i < 0x10234; i++) 
+            base.put_u(0, i);
+        for (int i = 0; i < 12; i++)
+            base.put_u(0, array[i]);
+        for (int i = -300; i < 300; i++)
+            base.put_i(1, i);
+        for (int i = 0; i < 4; i++)
+            base.put_i(1, 0|arrai[i]);
+    }
+    {
+        FILE *fh = fopen(fname, "r");
+        assert(fh);
+        bool valid;
+
+        FilerLoad filer(fh, &valid) ;
+        assert(filer.is_valid());
+
+        RecBase base ;
+        BZERO(base);
+        base.range_init();
+        base.rcoder.init(&filer);
+        for (int i = 0; i < 300; i++) {
+            UCHAR c = base.get_u(0);
+            assert(c == (i&0x7f));
+        }
+        for (UINT64 i=0; i < 1000; i++) {
+            UINT64 u = base.get_u(0);
+            assert(u == i);
+        }
+        for (UINT64 i=0xfff0; i < 0x10234; i++) {
+            UINT64 u = base.get_u(0);
+            assert(u == i);
+        }
+        for (int i = 0; i < 12; i++) {
+            UINT64 u = base.get_u(0);
+            assert(u == array[i]);
+        }
+        for (int i = -300; i < 300; i++) {
+            long l = base.get_i(1);
+            assert(l == i);
+        }
+        for (int i = 0; i < 4; i++) {
+            long u = base.get_i(1);
+            assert(u == arrai[i]);            
+        }
+    }
+}
+
 int main(int argc, char *argv[]) {
 
     test_filer();
+    test_ranger();
     test_qlt();
+    test_recbase();
 
     return 0;
 }

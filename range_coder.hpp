@@ -13,7 +13,7 @@ class RangeCoder {
     typedef unsigned int uint;
 
 private:
-    static const uint TOP =(1<<24);
+    enum { TOP =(1<<24) };    // static const uint TOP =(1<<24);
     UINT64 low;
     uint  range, code;
 
