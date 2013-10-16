@@ -1,12 +1,14 @@
 
 
 
-// Based on James Bonfield's excellent fqz_comp
+// Based on James Bonfield's fqz_comp
 
 #ifndef ZP_POWER_RANGER_H
 #define ZP_POWER_RANGER_H
 
+#ifndef ZP_RANGECODER_H
 #include "range_coder.hpp"
+#endif
 
 #ifdef __SSE__
 // This prefetch saves 8 seconds (one 5.4G fastq), but seems to little use slightly

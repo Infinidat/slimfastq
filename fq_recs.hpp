@@ -15,10 +15,10 @@
 #include "power_ranger.hpp"
 
 class RecBase {
+protected: 
 
     typedef PowerRanger<8> Ranger;
 
-public:                         // for utest
     RecBase()  {}
     ~RecBase() {rcoder.done();}
 
@@ -64,7 +64,7 @@ public:                         // for utest
     UINT64    get_u(int i, UINT64* old=NULL);
 };
 
-class RecSave : public RecBase {
+class RecSave : private RecBase {
 public:
     RecSave(const Config* conf);
     ~RecSave();
@@ -93,7 +93,7 @@ private:
     FilerSave* filer;
 };
 
-class RecLoad : public RecBase {
+class RecLoad : private RecBase {
 public:
     RecLoad(const Config* conf);
     ~RecLoad();

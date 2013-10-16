@@ -12,8 +12,8 @@
 #include <string.h>
 
 
-GenSave::GenSave(const Config* conf) :
-    m_conf(conf) {
+GenSave::GenSave(const Config* conf) {
+    m_conf = conf;
     pager = NULL;
     m_lossless = true;
     conf->set_info("gen.lossless", m_lossless);

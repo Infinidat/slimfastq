@@ -104,14 +104,12 @@ void RecBase::put_u(int i, UINT64 num, UINT64* old) {
         for (int shift=0; shift < 32; shift+=8)
             puter(i, 2, 0xff & (num>>shift));
         stats.big_u ++;
-        return;
     }
     else {
         puter(i, 1, 0xff);
         for (int shift=0; shift < 64; shift+=8)
             puter(i, 3, 0xff & (num>>shift));
         stats.big_ull ++;
-        return;
     }
 }
 

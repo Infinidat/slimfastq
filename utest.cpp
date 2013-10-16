@@ -9,8 +9,14 @@
 #include "common.hpp"
 #include "filer.hpp"
 #include "config.hpp"
+
+#define protected public
+
 #include "fq_qlts.hpp"
 #include "fq_recs.hpp"
+#include "fq_gens.hpp"
+
+#undef  protected
 
 #define TITLE(X)
 

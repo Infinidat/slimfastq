@@ -11,7 +11,30 @@
 #include "pager.hpp"
 #include <stdio.h>
 
-class GenSave {
+#include "filer.hpp"
+#include "bases_ranger.hpp"
+
+class GenBase {
+protected:
+
+    struct {
+        UINT64 count;
+        UINT64 Ns_index;
+        UINT64 Nn_index;
+    } m_last;
+        
+    const Config* m_conf;
+
+    struct {
+        UINT32 big_gaps;
+    } m_stats ;
+
+    bool   m_lossless, m_valid;
+    UCHAR  m_N_byte;
+
+};
+
+class GenSave : private GenBase {
 public:
     GenSave(const Config* conf);
     ~GenSave();
@@ -23,30 +46,13 @@ private:
     void putgapNs(UINT64 gap);
     void putgapNn(UINT64 gap);
 
-    const Config* m_conf;
-
     PagerSave02* pager;
     PagerSave16* pagerNs;
     PagerSave16* pagerNn;
 
-    bool   m_lossless, m_valid;
-    UCHAR  m_N_byte;
-
-    struct {
-        UINT64 count;
-        UINT64 Ns_index;
-        UINT64 Nn_index;
-    } m_last;
-        
-    struct {
-        UINT64 references;
-        UINT32 big_gaps;
-    } m_stats ;
 };
 
-
-
-class GenLoad {
+class GenLoad : private GenBase {
 public:
     GenLoad(const Config* conf);
     ~GenLoad();
@@ -59,15 +65,8 @@ private:
     UINT64 getgapNn();
 
     bool   m_validNs, m_validNn;
-    UCHAR  m_N_byte;
-    struct {
-        UINT64 count;
-        UINT64 Ns_index;
-        UINT64 Nn_index;
-    } m_last;
-
-    bool m_lossless, m_valid;
     const char* m_gencode;
+
     PagerLoad02* pager;
     PagerLoad16* pagerNs;
     PagerLoad16* pagerNn;
