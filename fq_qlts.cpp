@@ -11,6 +11,10 @@
 #include <string.h>
 #include <algorithm>
 
+void QltBase::range_init() {
+    bzero(ranger, sizeof(ranger[0])*RANGER_SIZE);
+}
+
 // // local definitions
 // #define MASK_STAMP 0xffffff00
 // #define MASK_32    0xffffffff
@@ -182,12 +186,12 @@ bool QltSave::is_valid() {
         filer->is_valid();
 }
 
-void QltSave::filer_init() {
-    assert(0); // TODO:
-    // save_bucket();
-    // DELETE(filer);
-    // filer = new FilerSave(m_conf->open_w("qlt"));
-}
+// void QltSave::filer_init() {
+//     assert(0); // TODO:
+//     // save_bucket();
+//     // DELETE(filer);
+//     // filer = new FilerSave(m_conf->open_w("qlt"));
+// }
 
 // bool QltSave::pager_put(UINT64 word) {
 // 
@@ -278,15 +282,6 @@ void QltSave::filer_init() {
 //                      prev,
 //                      bucket.hist_range);
 // }
-
-void QltSave::range_init() {
-
-    bzero(ranger, sizeof(ranger[0])*RANGER_SIZE);
-    // for (int i = 0; i < RCARR_SIZE; i++)
-    //     // TODO: faster init (bzero?)
-    //     rcarr[i].init();
-    // rcarr_last = 0;
-}
 
 // void QltSave::clear_bucket() {
 //     bucket.index = 0;
@@ -504,11 +499,14 @@ QltLoad::~QltLoad() {
     DELETE(filer);
 }
 
-// #define CHECK_VALID if (not m_valid) return
 bool QltLoad::is_valid() {
-    return m_valid and filer and filer->is_valid();
+    return
+        m_valid and
+        filer and
+        filer->is_valid();
 }
 
+// #define CHECK_VALID if (not m_valid) return
 // void QltLoad::load_tree() {
 //     UINT32 hist[MAX_CHARS] ;
 //     bzero(hist, sizeof(hist));
@@ -584,14 +582,14 @@ bool QltLoad::is_valid() {
 //     return !! (m_wrd & (1ULL << (64 - (m_bit--))));
 // }
 
-void QltLoad::range_init() {
-
-    bzero(ranger, sizeof(ranger[0])*RANGER_SIZE);
-    // for (int i = 0; i < RCARR_SIZE; i++)
-    //     // TODO: faster init (bzero?)
-    //     rcarr[i].init();
-    // rcarr_last = 0;
-}
+// void QltLoad::range_init() {
+// 
+//     bzero(ranger, sizeof(ranger[0])*RANGER_SIZE);
+//     // for (int i = 0; i < RCARR_SIZE; i++)
+//     //     // TODO: faster init (bzero?)
+//     //     rcarr[i].init();
+//     // rcarr_last = 0;
+// }
 
 // UCHAR QltLoad::get_char() {
 //     UCHAR b = rcarr[rcarr_last].decodeSymbol(&rcoder);
