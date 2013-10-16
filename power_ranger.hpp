@@ -10,16 +10,6 @@
 #include "range_coder.hpp"
 #endif
 
-#ifdef __SSE__
-// This prefetch saves 8 seconds (one 5.4G fastq), but seems to little use slightly
-// more cpu (or is it just doing the same work quota at lesser time?)
-#   include <xmmintrin.h>
-#   define PREFETCH(X) _mm_prefetch((const char *)(X), _MM_HINT_T0)
-#else
-#   define PREFETCH(X)
-#endif
-
-
 #define MAX_FREQ (1<<16)-32
 
 template <int NBITS>

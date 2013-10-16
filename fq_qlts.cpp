@@ -154,13 +154,12 @@ enum FQQ_STMP {
 QltSave::QltSave(const Config* conf )  { // : FQQBase() {
     // filer = NULL ;
     m_conf = conf;
-    filer = new FilerSave(m_conf->open_w("qlt"));
+    filer  = new FilerSave(m_conf->open_w("qlt"));
     ranger = new PowerRanger<6>[RANGER_SIZE];
+    assert(filer);
     assert(ranger);
-
     rcoder.init(filer);
     range_init();
-
 
     // clear_bucket();
     // BZERO(stats);
@@ -459,7 +458,7 @@ void QltSave::save(const UCHAR* buf, size_t size) {
 #else
     for (size_t i = 0; i < size ; i++)
 #endif
-{
+    {
         UCHAR b = UCHAR(buf[i] - '!');
 
         rarely_if(b >= 63)
@@ -645,7 +644,6 @@ UINT32 QltLoad::load(UCHAR* buf, const size_t size) {
     for (size_t i = 0; i < size ; i++) {
 
         PREFETCH(ranger + last);
-
         UCHAR b = ranger[last].get(&rcoder);
 
 #ifdef KILLER_BEE

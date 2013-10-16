@@ -16,6 +16,13 @@
 
 class GenBase {
 protected:
+    GenBase(){}
+    ~GenBase(){}
+#define BRANGER_SIZE (1<<20)
+#define BRANGER_MASK (BRANGER_SIZE-1)
+
+    BasesRanger* ranger; //[BRANGER_SIZE];
+    RangeCoder rcoder;
 
     struct {
         UINT64 count;
@@ -32,6 +39,7 @@ protected:
     bool   m_lossless, m_valid;
     UCHAR  m_N_byte;
 
+    void range_init();
 };
 
 class GenSave : private GenBase {
@@ -40,13 +48,14 @@ public:
     ~GenSave();
 
     void save(const UCHAR* gen, UCHAR* qlt, size_t size);
-    void pager_init();
+    // void pager_init();
 
 private:
     void putgapNs(UINT64 gap);
     void putgapNn(UINT64 gap);
 
-    PagerSave02* pager;
+    FilerSave* filer;
+    // PagerSave02* pager;
     PagerSave16* pagerNs;
     PagerSave16* pagerNn;
 
@@ -67,7 +76,8 @@ private:
     bool   m_validNs, m_validNn;
     const char* m_gencode;
 
-    PagerLoad02* pager;
+    FilerLoad* filer;
+    // PagerLoad02* pager;
     PagerLoad16* pagerNs;
     PagerLoad16* pagerNn;
 };

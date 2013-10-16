@@ -11,16 +11,11 @@
 
 class BasesRanger {
 
-    UCHAR stats[4];
+    UCHAR stats[4] ;
 
     enum { STEP = 1 ,
-           WSIZ = 64 };
+           WSIZ = 256 };
     
-    BasesRanger() {
-        for (int i = 0; i < 4; i++)
-            stats[i] = 3*STEP;
-    }
-
     void normalize() {
         for (int i = 0; i < 4; i++)
             stats[i] -= stats[i] >>1 ;
@@ -34,23 +29,28 @@ class BasesRanger {
     }
 
 public:
+    void init() { // BZERO made it even slower
+        for (int i = 0; i < 4; i++)
+            stats[i] = STEP;
+    }
+
     inline void put(RangeCoder *rc, UCHAR sym) {
 
         int vtot = getsum();
 
         switch(sym) {
         case 0:
-            rc->Encode(0,
-                       stats[0], vtot); break;
+            rc->Encode( 0,
+                        stats[0], vtot); break;
         case 1:
-            rc->Encode(stats[0],
-                       stats[1], vtot); break;
+            rc->Encode( stats[0],
+                        stats[1], vtot); break;
         case 2:
-            rc->Encode(stats[0] + stats[1],
-                       stats[2], vtot); break;
+            rc->Encode( stats[0] + stats[1] , 
+                        stats[2], vtot); break;
         case 3:
-            rc->Encode(stats[0] + stats[1] + stats[2],
-                       stats[3], vtot); break;
+            rc->Encode((stats[0] + stats[1]) + (stats[2]),
+                        stats[3], vtot); break;
 
         }
         stats[sym] += STEP;
@@ -73,6 +73,6 @@ public:
         stats[i] += STEP;
         return i;
     }
-};
+} PACKED ;
 
 #endif  // ZP_BASES_RANGER_H

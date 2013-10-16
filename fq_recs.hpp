@@ -23,8 +23,9 @@ protected:
     ~RecBase() {rcoder.done();}
 
 
-    RangeCoder rcoder;
     Ranger ranger[10][4];
+    RangeCoder rcoder;
+
     const char* m_ids[10];
     int m_len[10];
 

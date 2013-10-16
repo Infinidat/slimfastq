@@ -128,7 +128,6 @@ private:
     void range_init();
 
     PowerRanger<6>* ranger;
-    // UINT32 rcarr_last;
     RangeCoder rcoder;
 
     FilerLoad* filer;

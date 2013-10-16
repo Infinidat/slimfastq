@@ -12,9 +12,16 @@
 #include <string.h>
 
 
+void GenBase::range_init() {
+    for (int i = 0 ; i < BRANGER_SIZE; i++)
+        ranger[i].init();
+    // bzero(ranger, sizeof(ranger[0])*BRANGER_SIZE);
+    // memset(ranger, 1, sizeof(ranger[0])*BRANGER_SIZE);
+}
+
 GenSave::GenSave(const Config* conf) {
     m_conf = conf;
-    pager = NULL;
+    // pager = NULL;
     m_lossless = true;
     conf->set_info("gen.lossless", m_lossless);
 
@@ -22,24 +29,32 @@ GenSave::GenSave(const Config* conf) {
     BZERO(m_stats);
     BZERO(m_last);
     m_N_byte = 0;
+
+    filer = new FilerSave(conf->open_w("gen"));
+    assert(filer);
+    rcoder.init(filer);
+    ranger = new BasesRanger[BRANGER_SIZE];
+    range_init();
 }
 
 GenSave::~GenSave() {
-    delete pager;
+    rcoder.done();
+    DELETE(filer);
+
+    // delete pager;
     delete pagerNs;
     delete pagerNn;
-
     // fprintf stats
 }
 
-void GenSave::pager_init() {
-    DELETE( pager   );
-    DELETE( pagerNs );
-    DELETE( pagerNn );
-    pager = new PagerSave02(m_conf->open_w("gen"));
-
-    BZERO(m_last);
-}
+// void GenSave::pager_init() {
+//     DELETE( pager   );
+//     DELETE( pagerNs );
+//     DELETE( pagerNn );
+//     pager = new PagerSave02(m_conf->open_w("gen"));
+// 
+//     BZERO(m_last);
+// }
 
 void GenSave::putgapNs(UINT64 gap) {
     // pagerNs ||= new ... if only life could have been like perl .. 
@@ -60,10 +75,12 @@ void GenSave::putgapNn(UINT64 gap) {
 
 void GenSave::save(const UCHAR* gen, UCHAR* qlt, size_t size) {
 
-    rarely_if(not pager)
-        pager_init();
+    // rarely_if(not pager)
+    //     pager_init();
 
     // *is_raw = 1; // TODO: allow indexing
+
+    UINT32 last = 0x007616c7 & BRANGER_MASK;
 
     for (size_t i = 0; i < size; i ++) {
         UCHAR n=0;
@@ -81,12 +98,11 @@ void GenSave::save(const UCHAR* gen, UCHAR* qlt, size_t size) {
         case '.': case 'N': n = 0;
             bad_n = true;
             break;
-
         default: croak("unexpected genome char: %c", gen[i]);
         }
         
         if (m_lossless) {
-            if (bad_n) {
+            rarely_if(bad_n) {
                 rarely_if(not m_N_byte) {
                     m_N_byte = gen[i];
                     if ('.' == gen[i]) {
@@ -109,11 +125,14 @@ void GenSave::save(const UCHAR* gen, UCHAR* qlt, size_t size) {
             }
         }
         else {
-            if (bad_n)
-            qlt[i] = '!';
+            rarely_if (bad_n)
+                qlt[i] = '!';
         }
         
-        pager->put02(n);
+        PREFETCH(ranger + last);
+        ranger[last].put(&rcoder, n);
+        last = ((last<<2) + n) & BRANGER_MASK;
+        // pager->put02(n);
     }
 }
 
@@ -135,8 +154,9 @@ UINT64 GenLoad::getgapNn() {
 
 GenLoad::GenLoad(const Config* conf) {
     BZERO(m_last);
+    m_conf = conf;
     m_valid = true;
-    pager = new PagerLoad02(conf->open_r("gen"), &m_valid);
+    // pager = new PagerLoad02(conf->open_r("gen"), &m_valid);
     pagerNs = pagerNn = NULL;
 
     m_lossless = *conf->get_info("gen.lossless") == '1' ? true : false ;
@@ -163,19 +183,35 @@ GenLoad::GenLoad(const Config* conf) {
         is_lowercase ?
         "acgt" :
         "ACGT" ;
+
+    filer = new FilerLoad(conf->open_r("gen"), &m_valid);
+    assert(filer);
+    rcoder.init(filer);
+    ranger = new BasesRanger[BRANGER_SIZE];
+    range_init();
 }
 
 GenLoad::~GenLoad() {
-    delete pager;
+    rcoder.done();
+    DELETE(filer);
+
+    // delete pager;
     delete pagerNs;
     delete pagerNn;
 }
 
 UINT32 GenLoad::load(UCHAR* gen, const UCHAR* qlt, size_t size) {
     // TODO: if lowercase
+    UINT32 last = 0x007616c7 & BRANGER_MASK;
+
     for (size_t i = 0; i < size; i ++ ) {
         m_last.count ++ ;
-        gen[i] = m_gencode [ pager->get02() ];
+
+        // gen[i] = m_gencode [ pager->get02() ];
+        PREFETCH(ranger + last);
+        UCHAR b = ranger[last].get(&rcoder);
+        gen[i] = m_gencode [ b ];
+        last = ((last<<2) + b) & BRANGER_MASK;
 
         if (m_last.Nn_index and
             m_last.Nn_index == m_last.count) {
