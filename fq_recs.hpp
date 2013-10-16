@@ -50,7 +50,7 @@ public:                         // for utest
     void put_i(int i, long long num, UINT64* old=NULL);
     bool put_u(int i, UINT64    num, UINT64* old=NULL);
 
-    UCHAR     geter(int i, int j);
+    UINT64    geter(int i, int j);
     long long get_i(int i, UINT64* old=NULL);
     UINT64    get_u(int i, UINT64* old=NULL);
 };

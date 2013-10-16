@@ -18,7 +18,7 @@ void RecBase::puter(int i, int j, UCHAR c) {
     ranger[i][j].put(&rcoder, c);
 }
 
-UCHAR RecBase::geter(int i, int j) {
+UINT64 RecBase::geter(int i, int j) {
     return ranger[i][j].get(&rcoder);
 }
 
@@ -46,11 +46,38 @@ void RecBase::put_i(int i, long long num, UINT64 * old) {
             puter(i, 2, 0xff&(num>>shift));
     }
     else {
-        croak("oversized signed gap : 0x%llx", num);
         puter(i, 0, 0x82);
         for (int shift = 0; shift < 64; shift+=8)
             puter(i, 3, 0xff&(num>>shift));
     }
+}
+
+long long RecBase::get_i(int i, UINT64* old) {
+    long long num = geter(i, 0);
+    rarely_if(num == 0x80 ) {
+        num  = geter(i, 1);
+        num |= geter(i, 1) << 8;
+        num  = (short) num;
+    }
+    else rarely_if(num == 0x81) {
+        num  = geter(i, 2);
+        num |= geter(i, 2) << 8;
+        num |= geter(i, 2) << 16;
+        num |= geter(i, 2) << 24;
+        num  = (int) num;
+    }
+    else rarely_if(num == 0x82) {
+        num = 0;
+        for (int shift = 0; shift < 64; shift+=8)
+            num |= geter(i, 3) << shift;
+    }
+    else if (0x80&num)
+        num = (char)num;
+
+    return
+        ( old) ?
+        (*old += num) :
+        num ;
 }
 
 bool RecBase::put_u(int i, UINT64 num, UINT64* old) {
@@ -81,34 +108,6 @@ bool RecBase::put_u(int i, UINT64 num, UINT64* old) {
             puter(i, 3, 0xff & (num>>shift));
     }
     return true;
-}
-
-long long RecBase::get_i(int i, UINT64* old) {
-    long long num = geter(i, 0);
-    rarely_if(num == 0x80 ) {
-        num  = geter(i, 1);
-        num |= geter(i, 1) << 8;
-        num  = (short) num;
-    }
-    else rarely_if(num == 0x81) {
-        num  = geter(i, 2);
-        num |= geter(i, 2) << 8;
-        num |= geter(i, 2) << 16;
-        num |= geter(i, 2) << 24;
-        num  = (int) num;
-    }
-    else rarely_if(num == 0x82) {
-        num = 0;
-        for (int shift = 0; shift < 64; shift+=8)
-            num |= geter(i, 3) << shift;
-    }
-    else if (0x80&num)
-        num = (char)num;
-
-    return
-        ( old) ?
-        (*old += num) :
-        num ;
 }
 
 UINT64 RecBase::get_u(int i, UINT64* old) {
@@ -558,7 +557,7 @@ bool RecSave::save_1(const UCHAR* buf, const UCHAR* end) {
     if (m_last.tile != t) {
         m_last.tile  = t;
         put_i(0, -3);
-        put_i(1,  t);
+        put_u(1,  t);
         // pager->put16(0xfffe);
         // putgap(t, m_last.tile);
     }
