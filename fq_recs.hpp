@@ -21,6 +21,10 @@ class RecBase {
 public:                         // for utest
     RecBase()  {}
     ~RecBase() {rcoder.done();}
+
+
+    RangeCoder rcoder;
+    Ranger ranger[10][4];
     const char* m_ids[10];
     int m_len[10];
 
@@ -35,20 +39,25 @@ public:                         // for utest
         UCHAR alal;
     } m_last;
 
+    struct {
+        UINT32 big_u;
+        UINT32 big_ull;
+        UINT32 big_i;
+        UINT32 big_ill;
+        UINT32 exceptions;
+    } stats;
+
     int    m_type;
     bool   m_valid;
-    
 
     const Config* m_conf;
 
-    RangeCoder rcoder;
-    Ranger ranger[10][4];
     void range_init();
 
     // Yeh yeh, I know it should be getter and putter but I'll keep it aligned
     void puter(int i, int j, UCHAR c);
     void put_i(int i, long long num, UINT64* old=NULL);
-    bool put_u(int i, UINT64    num, UINT64* old=NULL);
+    void put_u(int i, UINT64    num, UINT64* old=NULL);
 
     UINT64    geter(int i, int j);
     long long get_i(int i, UINT64* old=NULL);
@@ -82,10 +91,6 @@ private:
     // PagerSave16* pager;
     // PagerSave02* pager2;
     FilerSave* filer;
-
-    struct {
-        UINT32 big_gaps;
-    } stats;
 };
 
 class RecLoad : public RecBase {

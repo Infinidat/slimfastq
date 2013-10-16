@@ -44,11 +44,13 @@ void RecBase::put_i(int i, long long num, UINT64 * old) {
         puter(i, 0, 0x81);
         for (int shift = 0; shift < 32; shift+=8)
             puter(i, 2, 0xff&(num>>shift));
+        stats.big_i++;
     }
     else {
         puter(i, 0, 0x82);
         for (int shift = 0; shift < 64; shift+=8)
             puter(i, 3, 0xff&(num>>shift));
+        stats.big_ill ++;
     }
 }
 
@@ -80,7 +82,7 @@ long long RecBase::get_i(int i, UINT64* old) {
         num ;
 }
 
-bool RecBase::put_u(int i, UINT64 num, UINT64* old) {
+void RecBase::put_u(int i, UINT64 num, UINT64* old) {
     if (old) {
         // assert(num >= *old); what's worse?
         UINT64 t = num - *old;
@@ -89,25 +91,28 @@ bool RecBase::put_u(int i, UINT64 num, UINT64* old) {
     }
     likely_if(num <= 0x7f) {
         puter(i, 0, 0xff & num);
-        return false;
+        return;
     }
     likely_if (num < 0x7ffe) {
         puter(i, 0, 0xff & (0x80 | (num>>8)));
         puter(i, 1, 0xff & num);
-        return false;
+        return;
     }
     puter(i, 0, 0xff);
     if (num < 1ULL<<32) {
         puter(i, 1, 0xfe);
         for (int shift=0; shift < 32; shift+=8)
             puter(i, 2, 0xff & (num>>shift));
+        stats.big_u ++;
+        return;
     }
     else {
         puter(i, 1, 0xff);
         for (int shift=0; shift < 64; shift+=8)
             puter(i, 3, 0xff & (num>>shift));
+        stats.big_ull ++;
+        return;
     }
-    return true;
 }
 
 UINT64 RecBase::get_u(int i, UINT64* old) {
@@ -170,7 +175,8 @@ RecSave::~RecSave() {
     // udpate(UT_END, -1ULL);
     rcoder.done();
     DELETE(filer);
-    fprintf(stderr, "::: REC oversized gaps: %u\n", stats.big_gaps);
+    fprintf(stderr, "::: REC big u/ull/i/ill: %u/%u/%u/%u exceptions:%u\n",
+            stats.big_u, stats.big_ull, stats.big_i, stats.big_ill, stats.exceptions);
 }
 
 // void RecSave::putgap(UINT64 num, UINT64& old) {
@@ -518,6 +524,7 @@ void RecSave::save_allele(char a) {
     m_last.alal  = a;
     put_i(0, -1);
     put_u(1,  a);
+    stats.exceptions++;
 }
 
 bool RecSave::save_1(const UCHAR* buf, const UCHAR* end) {
@@ -540,6 +547,7 @@ bool RecSave::save_1(const UCHAR* buf, const UCHAR* end) {
             num_to_is(iseq_num, (char*)m_ids[2], m_len[2]); 
             put_i(0, -2);
             put_u(1, iseq_num);
+            stats.exceptions++;
             // pager->put16(0xfffc);
             // pager->putgap(iseq_num );
         }
@@ -558,6 +566,7 @@ bool RecSave::save_1(const UCHAR* buf, const UCHAR* end) {
         m_last.tile  = t;
         put_i(0, -3);
         put_u(1,  t);
+        stats.exceptions++;
         // pager->put16(0xfffe);
         // putgap(t, m_last.tile);
     }
@@ -604,6 +613,7 @@ bool RecSave::save_3(const UCHAR* buf, const UCHAR* end) {
         rarely_if (n[i] != m_last.n[i]) {
             put_i(0, -2-i);
             put_i(1, n[i], &(m_last.n[i]));
+            stats.exceptions++;
             // pager->put16(0xffff-i);
             // pager->putgap(n[i]);
             // m_last.n[i] = n[i];
