@@ -36,7 +36,7 @@ protected:
         UINT32 big_gaps;
     } m_stats ;
 
-    bool   m_lossless, m_valid;
+    bool   m_lossless, m_valid, m_faster;
     UCHAR  m_N_byte;
 
     void range_init();
@@ -55,7 +55,7 @@ private:
     void putgapNn(UINT64 gap);
 
     FilerSave* filer;
-    // PagerSave02* pager;
+    PagerSave02* pager;
     PagerSave16* pagerNs;
     PagerSave16* pagerNn;
 
@@ -77,7 +77,7 @@ private:
     const char* m_gencode;
 
     FilerLoad* filer;
-    // PagerLoad02* pager;
+    PagerLoad02* pager;
     PagerLoad16* pagerNs;
     PagerLoad16* pagerNn;
 };

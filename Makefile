@@ -4,7 +4,7 @@ WALL      = -Wall -Werror
 FLAGS     = $(WALL) -g -DDO_DEBUG  -std=c++0x
 # PROF_DIR  = PROF <=  GCC Bug 47793: relative path turns into absolute
 PROF_DIR  =
-FLAGS_FAST= -O3 -fomit-frame-pointer -fstrict-aliasing -ffast-math
+FLAGS_FAST= -O3 -fomit-frame-pointer -fstrict-aliasing -ffast-math -msse2
 FLAGS_OPT = $(WALL) $(PROF_DIR) $(FLAGS_FAST) -fprofile-use
 FLAGS_PROF= $(WALL) $(PROF_DIR) $(FLAGS_FAST) -fprofile-generate
 
@@ -84,6 +84,9 @@ test: all
 		./jfastq -u $$f -f /tmp/mytst -O ; \
 		./jfastq -u /tmp/mytst.fastq -f /tmp/mytst -O -d ; \
 		tools/mydiff.pl $$f /tmp/mytst.fastq ; \
+		./jfastq -u $$f -f /tmp/mytst -O -F ; \
+		./jfastq -u /tmp/mytst.fastq -f /tmp/mytst -O -d -F ; \
+		tools/mydiff.pl $$f /tmp/mytst.fastq ; \
 	done
 
 playground:
@@ -94,7 +97,7 @@ ONESRC=one.cpp
 one: $(ONESRC)
 	g++ $(FLAGS) -o $@ $<
 
-COFLAGS  = -O2 -g -fomit-frame-pointer -fstrict-aliasing -ffast-math -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -Wall -msse2
+COFLAGS  = -O3 -g -fomit-frame-pointer -fstrict-aliasing -ffast-math -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -Wall -msse2
 one.opt:
 	g++ $(COFLAGS) -o $@ $(ONESRC)
 # 	mv PROF/*.gcda . || true

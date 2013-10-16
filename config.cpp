@@ -107,9 +107,10 @@ void Config::usage() const {
     printf("\
 Usage: \n\
 -u usr-filename  : (default: stdin)\n\
--f comp-basename : reuired \n\
+-f comp-basename : reuired - basename for files (TODO: onefile)\n\
 -d               : decode (instead of encoding) \n\
 -O               : overwrite existing files\n\
+-F               : full compression - costs cpu/mem\n\
 \n\
 -s size          : set partition to <size> (megabyte units) \n\
 -p partition     : only open this partition (-d implied) \n\
@@ -171,6 +172,7 @@ Config::Config(int argc, char **argv, int ver) {
     version = ver;
     encode = true;
     profiling = false;
+    faster_gen = true;
     m_saved = false;
     bzero(&partition, sizeof(partition));
 
@@ -178,7 +180,7 @@ Config::Config(int argc, char **argv, int ver) {
     bool overwrite = false;
 
     // TODO? long options 
-    const char* short_opt = "POvhd u:f: s:p:"; 
+    const char* short_opt = "POFvhd u:f: s:p:"; 
     for ( int opt = getopt(argc, argv, short_opt);
           opt != -1;
           opt     = getopt(argc, argv, short_opt))
@@ -195,9 +197,10 @@ Config::Config(int argc, char **argv, int ver) {
             partition.param = strtoll(optarg, 0, (strlen(optarg) == 10 and optarg[0] == '0') ? 16 : 0 );
             break;
             
-        case 'O': overwrite = true; break;
-        case 'd': encode = false  ; break;
-        case 'P': profiling = true; break;
+        case 'd': encode     = false; break;
+        case 'O': overwrite  = true ; break;
+        case 'F': faster_gen = false; break;
+        case 'P': profiling  = true ; break;
         case 'v':
             printf("Version %u\n", version);
             exit(0);
@@ -211,7 +214,7 @@ Config::Config(int argc, char **argv, int ver) {
     check_op(fil.length(), 'f');
     m_file = strdup(fil.c_str());
 
-    m_info_filename = strdup(withsuffix(m_file, ".info"));
+    m_info_filename = withsuffix(m_file, ".info");
 
     m_wr_flags = overwrite ? "wb" : "wbx" ;
 

@@ -21,7 +21,6 @@ void GenBase::range_init() {
 
 GenSave::GenSave(const Config* conf) {
     m_conf = conf;
-    // pager = NULL;
     m_lossless = true;
     conf->set_info("gen.lossless", m_lossless);
 
@@ -30,18 +29,29 @@ GenSave::GenSave(const Config* conf) {
     BZERO(m_last);
     m_N_byte = 0;
 
-    filer = new FilerSave(conf->open_w("gen"));
-    assert(filer);
-    rcoder.init(filer);
-    ranger = new BasesRanger[BRANGER_SIZE];
-    range_init();
+    m_faster = conf->faster_gen;
+    conf->set_info("gen.faster", m_faster);
+
+    if (m_faster) {
+        filer = NULL;
+        pager = new PagerSave02(m_conf->open_w("gen"));
+    }
+    else {
+        pager = NULL;
+        filer = new FilerSave(conf->open_w("gen"));
+        assert(filer);
+        rcoder.init(filer);
+        ranger = new BasesRanger[BRANGER_SIZE];
+        range_init();
+    }
 }
 
 GenSave::~GenSave() {
-    rcoder.done();
+    if (not m_faster)
+        rcoder.done();
     DELETE(filer);
 
-    // delete pager;
+    delete pager;
     delete pagerNs;
     delete pagerNn;
     // fprintf stats
@@ -129,10 +139,13 @@ void GenSave::save(const UCHAR* gen, UCHAR* qlt, size_t size) {
                 qlt[i] = '!';
         }
         
-        PREFETCH(ranger + last);
-        ranger[last].put(&rcoder, n);
-        last = ((last<<2) + n) & BRANGER_MASK;
-        // pager->put02(n);
+        if (m_faster)
+            pager->put02(n);
+        else {
+            PREFETCH(ranger + last);
+            ranger[last].put(&rcoder, n);
+            last = ((last<<2) + n) & BRANGER_MASK;
+        }
     }
 }
 
@@ -156,10 +169,8 @@ GenLoad::GenLoad(const Config* conf) {
     BZERO(m_last);
     m_conf = conf;
     m_valid = true;
-    // pager = new PagerLoad02(conf->open_r("gen"), &m_valid);
     pagerNs = pagerNn = NULL;
-
-    m_lossless = *conf->get_info("gen.lossless") == '1' ? true : false ;
+    m_lossless = *conf->get_info("gen.lossless") == '0' ? false : true ;
     if (m_lossless) {
         FILE* fNs = conf->open_r("gen.Ns", false);
         if (  fNs  ) {
@@ -184,18 +195,28 @@ GenLoad::GenLoad(const Config* conf) {
         "acgt" :
         "ACGT" ;
 
-    filer = new FilerLoad(conf->open_r("gen"), &m_valid);
-    assert(filer);
-    rcoder.init(filer);
-    ranger = new BasesRanger[BRANGER_SIZE];
-    range_init();
+
+    m_faster = *conf->get_info("gen.faster") == '1' ? true : false ;
+    if (m_faster) {
+        pager = new PagerLoad02(conf->open_r("gen"), &m_valid);
+        filer = NULL;
+    }
+    else {
+        pager = NULL;
+        filer = new FilerLoad(conf->open_r("gen"), &m_valid);
+        assert(filer);
+        rcoder.init(filer);
+        ranger = new BasesRanger[BRANGER_SIZE];
+        range_init();
+    }
 }
 
 GenLoad::~GenLoad() {
-    rcoder.done();
+    if (not m_faster)
+        rcoder.done();
     DELETE(filer);
 
-    // delete pager;
+    delete pager;
     delete pagerNs;
     delete pagerNn;
 }
@@ -207,11 +228,14 @@ UINT32 GenLoad::load(UCHAR* gen, const UCHAR* qlt, size_t size) {
     for (size_t i = 0; i < size; i ++ ) {
         m_last.count ++ ;
 
-        // gen[i] = m_gencode [ pager->get02() ];
-        PREFETCH(ranger + last);
-        UCHAR b = ranger[last].get(&rcoder);
-        gen[i] = m_gencode [ b ];
-        last = ((last<<2) + b) & BRANGER_MASK;
+        if (m_faster)
+            gen[i] = m_gencode [ pager->get02() ];
+        else {
+            PREFETCH(ranger + last);
+            UCHAR b = ranger[last].get(&rcoder);
+            gen[i] = m_gencode [ b ];
+            last = ((last<<2) + b) & BRANGER_MASK;
+        }
 
         if (m_last.Nn_index and
             m_last.Nn_index == m_last.count) {
