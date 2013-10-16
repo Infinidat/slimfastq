@@ -127,6 +127,7 @@ void test_recbase() {
         };
     long long arrai[] =
         { -0x7ffffff, 0x7ffffff, -100000L, 9999L,
+          -1, 2994389, -2, -3
         };
     {
         FILE *fh = fopen(fname, "w");
@@ -139,6 +140,11 @@ void test_recbase() {
         BZERO(base);
         base.range_init();
         base.rcoder.init(&filer);
+        // bug hunt
+        base.put_i(0, -1);
+        base.put_u(1, '3');
+        base.put_i(0, 2994389);
+        base.put_u(2, 2308);
         for (int i = 0; i < 300; i++)
             base.put_u(0, (i&0x7f));
         for (UINT64 i=0; i < 1000; i++)
@@ -149,7 +155,7 @@ void test_recbase() {
             base.put_u(0, array[i]);
         for (int i = -300; i < 300; i++)
             base.put_i(1, i);
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 8; i++)
             base.put_i(1, 0|arrai[i]);
     }
     {
@@ -164,6 +170,10 @@ void test_recbase() {
         BZERO(base);
         base.range_init();
         base.rcoder.init(&filer);
+        assert(base.get_i(0) == -1);
+        assert(base.get_u(1) == '3');
+        assert(base.get_i(0) == 2994389);
+        assert(base.get_u(2) == 2308);
         for (int i = 0; i < 300; i++) {
             UCHAR c = base.get_u(0);
             assert(c == (i&0x7f));
@@ -184,7 +194,7 @@ void test_recbase() {
             long l = base.get_i(1);
             assert(l == i);
         }
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 8; i++) {
             long u = base.get_i(1);
             assert(u == arrai[i]);            
         }

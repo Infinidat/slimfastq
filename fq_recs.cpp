@@ -737,6 +737,7 @@ RecLoad::RecLoad(const Config* conf) {
 }
 
 RecLoad::~RecLoad() {
+    rcoder.done();
     // delete pager;
     // delete pager2;
 }
