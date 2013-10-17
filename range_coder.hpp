@@ -10,59 +10,45 @@
 #include "common.hpp"
 
 class RangeCoder {
-    typedef unsigned int uint;
 
 private:
-    enum { TOP =(1<<24) };    // static const uint TOP =(1<<24);
+    enum { TOP =(1<<24) };
     UINT64 low;
-    uint  range, code;
+    UINT32  range, code;
 
     FilerLoad* m_in;
     FilerSave* m_out;
 
-    // UCHAR *in_buf;
-    // UCHAR *out_buf;
-
 public:
-
-    // void input (char *in)  { out_buf = in_buf = (UCHAR *)in;  }
-    // void output(char *out) { in_buf = out_buf = (UCHAR *)out; }
-    // int size_out(void) {return out_buf - in_buf;}
-
-    // void StartEncode () {
     void init(FilerSave* f_out) { 
         m_out = f_out;
         m_in  = NULL;
         low=0;  
-        range=(uint)-1; 
+        range=(UINT32)-1; 
     }
 
     void init(FilerLoad* f_in) {
         m_in  = f_in;
         m_out = NULL;
         low=0;
-        range=(uint)-1;
+        range=(UINT32)-1;
         code = 0;               // happy compiler
         for (int i=0; i<8; i++)
             code = (code<<8) | m_in->get();
     }
-
-    RangeCoder(){}
-    // void FinishEncode( void ) {
-    ~RangeCoder(){}
 
     void done() {
         if (m_out)
             for (int i=0; i<8; i++) {
                 m_out->put(low >> 56);
                 low <<= 8;
-                // (*out_buf++ = low>>56), low<<=8; 
             }
     }
 
-    // void FinishDecode( void ) {}
-
-    void Encode (uint cumFreq, uint freq, uint totFreq) {
+    ///////////////
+    // FASTER !  //
+    ///////////////
+    void Encode (UINT32 cumFreq, UINT32 freq, UINT32 totFreq) {
         low  += cumFreq * (range/= totFreq);
         range*= freq;
 
@@ -70,29 +56,26 @@ public:
 
         while( range<TOP ) {
             if ( UCHAR((low^(low+range))>>56) ) 
-                range = ((uint(low)|(TOP-1))-uint(low));
-            // *out_buf++ = low>>56, range<<=8, low<<=8;
+                range = ((UINT32(low)|(TOP-1))-UINT32(low));
             m_out->put(low >> 56);
             range <<= 8;
             low   <<= 8;
         }
     }
 
-    uint GetFreq (uint totFreq) {
-        // shouldn't it be const?
+    UINT32 GetFreq (UINT32 totFreq) {
         return code/(range/=totFreq);
     }
 
-    void Decode (uint cumFreq, uint freq, uint totFreq) {
-        uint temp = cumFreq*range;
+    void Decode (UINT32 cumFreq, UINT32 freq, UINT32 totFreq) {
+        UINT32 temp = cumFreq*range;
         low  += temp;
         code -= temp;
         range*= freq;
  
         while( range<TOP ) {
             if ( UCHAR((low^(low+range))>>56) ) 
-                range = ((uint(low)|(TOP-1))-uint(low));
-            // code = (code<<8) | *in_buf++, range<<=8, low<<=8;
+                range = ((UINT32(low)|(TOP-1))-UINT32(low));
             code = (code<<8) | m_in->get();
             range<<=8;
             low  <<=8;

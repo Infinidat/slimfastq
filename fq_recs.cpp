@@ -173,7 +173,7 @@ RecSave::~RecSave() {
     // udpate(UT_END, -1ULL);
     rcoder.done();
     DELETE(filer);
-    fprintf(stderr, "::: REC big u/ull/i/ill: %u/%u/%u/%u exceptions:%u\n",
+    fprintf(stderr, "::: REC big u/ull/i/ill: %u/%u/%u/%u ex:%u\n",
             stats.big_u, stats.big_ull, stats.big_i, stats.big_ill, stats.exceptions);
 }
 

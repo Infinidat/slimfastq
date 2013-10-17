@@ -51,8 +51,9 @@ public:
     // void pager_init();
 
 private:
-    void putgapNs(UINT64 gap);
-    void putgapNn(UINT64 gap);
+    inline void putgapNs(UINT64 gap);
+    inline void putgapNn(UINT64 gap);
+    inline UCHAR normalize_gen(UCHAR gen, UCHAR &qlt);
 
     FilerSave* filer;
     PagerSave02* pager;

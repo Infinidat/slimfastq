@@ -14,6 +14,8 @@
 
 #define RANGER_SIZE (1<<16)
 #define RANGER_MASK (RANGER_SIZE-1)
+#define MAX(a,b) ((a)>(b)?(a):(b))
+#define MIN(a,b) ((a)<(b)?(a):(b))
 
 class QltBase {
 protected:
@@ -23,6 +25,18 @@ protected:
     const Config* m_conf;
 
     void range_init();
+    inline void calc_last(UINT32 &last, UCHAR q, UCHAR &q1, UCHAR &q2, size_t i) {
+        last += (((MAX(q1, q2)<<6) + q) +
+                 (MIN(i+15,127)&(15<<3))
+                 );
+        
+        last &= RANGER_MASK;
+        q2 = q1;
+        q1 = q;
+    }
+    inline void calc_last (UINT32& last, UCHAR q) {
+        last = ((last <<6) + q) & RANGER_MASK;
+    }
 };
 
 class QltSave : private QltBase {

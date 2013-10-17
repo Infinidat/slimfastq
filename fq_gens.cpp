@@ -83,6 +83,56 @@ void GenSave::putgapNn(UINT64 gap) {
         m_stats.big_gaps ++;
 }
 
+inline UCHAR GenSave::normalize_gen(UCHAR gen, UCHAR &qlt) {
+        
+    bool bad_n = false;
+    bool bad_q = qlt == '!';
+
+    // switch(gen[i] | 0x20) { - support lowercase, only if we ever see it in fastq
+    UCHAR n;
+    switch(gen) {
+    case '0': case 'A': n = 0; break;
+    case '1': case 'C': n = 1; break;
+    case '2': case 'G': n = 2; break;
+    case '3': case 'T': n = 3; break;
+    case '.': case 'N': n = 0;
+        bad_n = true;
+        break;
+    default: croak("unexpected genome char: %c", gen);
+    }
+        
+    if (// m_lossless - always is
+        true ) {
+        rarely_if(bad_n) {
+            rarely_if(not m_N_byte) {
+                // TODO: make a single m_last - exceptions file
+                m_N_byte = gen;
+                if ('.' == gen) {
+                    m_conf->set_info("gen.N_byte", gen);
+                    m_conf->save_info();
+                }
+            }
+            // TODO: eliminate this temp sanity
+            rarely_if (gen != m_N_byte)
+                croak("switched N_byte: %c", gen);
+
+            if (not bad_q) {
+                putgapNs(m_last.count - m_last.Ns_index);
+                m_last.Ns_index = m_last.count ;
+            }
+        }
+        else rarely_if (bad_q) {
+                putgapNn(m_last.count - m_last.Nn_index);
+                m_last.Nn_index = m_last.count;
+            }
+    }
+    else {
+        rarely_if (bad_n)
+            qlt = '!';
+    }
+    return n;
+}
+
 void GenSave::save(const UCHAR* gen, UCHAR* qlt, size_t size) {
 
     // rarely_if(not pager)
@@ -92,61 +142,23 @@ void GenSave::save(const UCHAR* gen, UCHAR* qlt, size_t size) {
 
     UINT32 last = 0x007616c7 & BRANGER_MASK;
 
-    for (size_t i = 0; i < size; i ++) {
-        UCHAR n=0;
-        bool bad_n = false;
-        bool bad_q = qlt[i] == '!';
-        m_last.count ++;
 
-        // switch(gen[i] | 0x20) { - support lowercase, only if we ever see it in fastq
+    if (m_faster)
+        for (size_t i = 0; i < size; i ++) {
+            m_last.count ++;
+            UCHAR n = normalize_gen(gen[i], qlt[i]);
 
-        switch(gen[i]) {
-        case '0': case 'A': n = 0; break;
-        case '1': case 'C': n = 1; break;
-        case '2': case 'G': n = 2; break;
-        case '3': case 'T': n = 3; break;
-        case '.': case 'N': n = 0;
-            bad_n = true;
-            break;
-        default: croak("unexpected genome char: %c", gen[i]);
-        }
-        
-        if (m_lossless) {
-            rarely_if(bad_n) {
-                rarely_if(not m_N_byte) {
-                    m_N_byte = gen[i];
-                    if ('.' == gen[i]) {
-                        m_conf->set_info("gen.N_byte", gen[i]);
-                        m_conf->save_info();
-                    }
-                }
-                // TODO: eliminate this temp sanity
-                rarely_if (gen[i] != m_N_byte)
-                    croak("switched N_byte: %c", gen[i]);
-
-                if (not bad_q) {
-                    putgapNs(m_last.count - m_last.Ns_index);
-                    m_last.Ns_index = m_last.count ;
-                }
-            }
-            else if (bad_q) {
-                putgapNn(m_last.count - m_last.Nn_index);
-                m_last.Nn_index = m_last.count;
-            }
-        }
-        else {
-            rarely_if (bad_n)
-                qlt[i] = '!';
-        }
-        
-        if (m_faster)
             pager->put02(n);
-        else {
+        }
+    else 
+        for (size_t i = 0; i < size; i ++) {
+            m_last.count ++;
+            UCHAR n = normalize_gen(gen[i], qlt[i]);
+
             PREFETCH(ranger + last);
             ranger[last].put(&rcoder, n);
             last = ((last<<2) + n) & BRANGER_MASK;
         }
-    }
 }
 
 // load
@@ -237,13 +249,13 @@ UINT32 GenLoad::load(UCHAR* gen, const UCHAR* qlt, size_t size) {
             last = ((last<<2) + b) & BRANGER_MASK;
         }
 
-        if (m_last.Nn_index and
-            m_last.Nn_index == m_last.count) {
+        rarely_if (m_last.Nn_index and
+                   m_last.Nn_index == m_last.count) {
             m_last.Nn_index += getgapNn();
         }
-        else if (qlt[i] == '!')
+        else rarely_if (qlt[i] == '!')
             gen[i] = m_N_byte;
-        else if (m_last.Ns_index and
+        else rarely_if (m_last.Ns_index and
                  m_last.Ns_index == m_last.count) {
             gen[i] = m_N_byte;
             m_last.Ns_index += getgapNs();

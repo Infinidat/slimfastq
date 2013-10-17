@@ -4,21 +4,27 @@ WALL      = -Wall -Werror
 FLAGS     = $(WALL) -g -DDO_DEBUG  -std=c++0x
 # PROF_DIR  = PROF <=  GCC Bug 47793: relative path turns into absolute
 PROF_DIR  =
-FLAGS_FAST= -O3 -fomit-frame-pointer -fstrict-aliasing -ffast-math -msse2
+FLAGS_FAST= -O3 -fomit-frame-pointer -fstrict-aliasing -ffast-math -msse3 -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE
 FLAGS_OPT = $(WALL) $(PROF_DIR) $(FLAGS_FAST) -fprofile-use
 FLAGS_PROF= $(WALL) $(PROF_DIR) $(FLAGS_FAST) -fprofile-generate
+FLAGS_OPT2 = $(WALL) $(PROF_DIR) $(FLAGS_FAST) 
 
 SAMPLE_DIR=samples
 TEST_FILES = $(wildcard $(SAMPLE_DIR)/*.fq)
 all:  jfastq 
-opt:  jfastq.opt 
-prof-opt: jfastq.prof
+opt:  jfastq.opt
+
+prof-opt.run:
 	for f in $(TEST_FILES) ; do \
 		echo $$f ... ; \
 		./jfastq.prof -f /tmp/mytst -u $$f -O -P ; \
 		./jfastq.prof -f /tmp/mytst -u /tmp/mytst.copy -O -d ; \
+		./jfastq.prof -f /tmp/mytst -u $$f -O -P -F ; \
+		./jfastq.prof -f /tmp/mytst -u /tmp/mytst.copy -O -d ; \
 		done
-	echo done
+
+prof-opt: jfastq.prof
+	make prof-opt.run
 	make opt
 	make profclean
 
@@ -42,7 +48,12 @@ HEADERS= $(shell echo *.hpp)
 jfastq: $(SOURCES) $(HEADERS)
 	g++ $(FLAGS) -o $@ $(SOURCES)
 
-.PHONY: jfastq.prof jfastq.opt
+.PHONY: jfastq.prof jfastq.opt jfastq.run
+run: jfastq.run
+
+jfastq.run:
+	g++ $(FLAGS_OPT2) -o $@ $(SOURCES)
+
 jfastq.opt:
 	mv PROF/*.gcda . || true
 	g++ $(FLAGS_OPT)  -o $@ $(SOURCES)
