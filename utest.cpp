@@ -100,7 +100,7 @@ void test_ranger() {
         assert(filer.is_valid());
         RangeCoder rcoder;
         rcoder.init(&filer);
-        PowerRanger<8> ranger;
+        PowerRanger ranger;
         BZERO(ranger);
         for (int i = 0; i < 300; i++)
             ranger.put(&rcoder, i&0xff);
@@ -114,7 +114,7 @@ void test_ranger() {
         assert(filer.is_valid());
         RangeCoder rcoder;
         rcoder.init(&filer);
-        PowerRanger<8> ranger;
+        PowerRanger ranger;
         BZERO(ranger);
         for (int i = 0; i < 300; i++) {
             UCHAR c = ranger.get(&rcoder);

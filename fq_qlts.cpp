@@ -23,7 +23,7 @@ enum FQQ_STMP {
 QltSave::QltSave(const Config* conf )  { // : FQQBase() {
     m_conf = conf;
     filer  = new FilerSave(m_conf->open_w("qlt"));
-    ranger = new PowerRanger<6>[RANGER_SIZE];
+    ranger = new Log64Ranger[RANGER_SIZE];
     assert(filer);
     assert(ranger);
     rcoder.init(filer);
@@ -91,7 +91,7 @@ void QltSave::save(const UCHAR* buf, size_t size) {
 
 QltLoad::QltLoad(const Config* conf) { // : FQQBase() {
     filer = new FilerLoad(conf->open_r("qlt"), &m_valid);
-    ranger = new PowerRanger<6>[RANGER_SIZE];
+    ranger = new Log64Ranger[RANGER_SIZE];
     // bzero(&bucket, sizeof(bucket));
 
     rcoder.init(filer);

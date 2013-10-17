@@ -2,141 +2,131 @@
 
 // Based on James Bonfield's fqz_comp
 
-#ifndef ZP_POWER_RANGER_H
-#define ZP_POWER_RANGER_H
+#ifndef ZP_LOG64_RANGER_H
+#define ZP_LOG64_RANGER_H
 
 #ifndef ZP_RANGECODER_H
 #include "range_coder.hpp"
 #endif
 
-// #define MAX_FREQ (1<<16)-32
-#define MAX_FREQ (1<<16)-32
-
-template <int NBITS>
-class PowerRanger {
+class Log64Ranger {
     enum {
         STEP=3,
-        NSYM=(1<<NBITS),
+        NSYM=64,
+        MAX_FREQ=(1<<16)-32,
     };
 
     UINT32 total;     // Total frequency
-    UINT16 counter;   // Periodic counter for bubble sort step
-    UINT16 iend ;     // keep it 4 bytes alignment
+    UINT16 freq[NSYM];
 
-    // Array of Symbols approximately sorted by Freq. 
-    struct SymFreqs {
-        UCHAR symbol;
-        UCHAR freq;
-        // UINT16 symbol;
-        // UINT16 freq;
-    } PACKED F[NSYM];
+    UCHAR counter;   // Periodic counter for bubble sort step
+    UCHAR iend ;     // 
+    UCHAR syms[NSYM];
 
     void normalize() {
-        total=0;
-        for (SymFreqs* s = F; s < F+iend; s++)
-            total +=
-                (s->freq -= (s->freq>>1));
-
-        // for (UINT32 i = 0; i <= iend; i++)
-        //     total += 
-        //         F[i].freq -= F[i].freq >> 1;
+        for (UINT32 i = total = 0; i < iend; i++)
+            total += (freq[i] -= (freq[i] >> 1));
 
         /* Faster than F[i].Freq for 0 <= i < NSYM */
-        // for (SymFreqs *s = F; s->Freq; s++) {
-        //     s->Freq -= s->Freq>>1;
-        //     total += s->Freq;
-        // }
+        // for (SymFreqs* s = F; s < F+iend; s++)
+        //     total +=
+        //         (s->freq -= (s->freq>>1));
     }
 
-    UINT32 expand_to(UINT16 sym) {
-        assert(sym >= iend);
-        assert(sym < NSYM);
-        while (iend <= sym) {
-            F[iend].freq = 1;
-            F[iend].symbol = iend;
-            iend ++;
-            total ++;
-        }
-        return total;
+    UCHAR bubbly(int a) {
+        UCHAR c = syms[a  ];
+        syms[a] = syms[a-1];
+                  syms[a-1] = c;
+
+        UINT16 f = freq[a];
+        freq[a]  = freq[a-1];
+                   freq[a-1] = f;
+
+       return c;
     }
 
 public:
 
     inline void put(RangeCoder *rc, UINT16 sym) {
-        UINT32 sumfreq  = 0;
+        UINT32 sumf  = 0;
         UINT32 i = 0;
 
         likely_if( sym < iend)
-            while (F[i].symbol != sym)
-                sumfreq += F[i++].freq ;
-        else
-            sumfreq = (expand_to((i=sym))-1);
+           for (; syms[i] != sym; sumf += freq[i++]);
+        else {
+            assert(sym < NSYM);
+            total += sym - iend + 1;
+            sumf = total -1;
+            i = sym;
+            for (; iend <= sym; iend ++) {
+                freq[iend] = 1;
+                syms[iend] = iend;
+            }
+        }
 
         UINT32 vtot = total + NSYM - iend;
-        rc->Encode(sumfreq, F[i].freq, vtot);
+        rc->Encode(sumf, freq[i], vtot);
 
-        rarely_if(F[i].freq > (255 - STEP))
+        rarely_if(freq[i] > (MAX_FREQ - STEP))
             normalize();
 
-        F[i].freq += STEP;
-        total += STEP;
+        freq[i] += STEP;
+        total   += STEP;
 
         // if (vtot + STEP > MAX_FREQ)
         //     normalize();
 
         rarely_if
-            (((++counter&15)==0) and
+            (
              i and
-             F[i].freq > F[i-1].freq) {
-            SymFreqs t = F[i];
-            F[i] = F[i-1];
-            F[i-1] = t;
-        }
+             ! ++counter and
+             freq[i] > freq[i-1])
+            bubbly(i); 
     }
 
     inline UINT16 get(RangeCoder *rc) {
 
         UINT32 vtot = total + NSYM - iend;
-        UINT32 freq = rc->GetFreq(vtot);
-        UINT32 sumfreq = 0;
+        UINT32 sumf = 0;
         UINT32 i;
 
+        UINT32 prob = rc->GetFreq(vtot);
         for ( i = 0;
               i < NSYM;
               i ++ ) {
-            rarely_if(i >= iend)
-                expand_to(i);
 
-            if (sumfreq +  F[i].freq <= freq)
-                sumfreq += F[i].freq;
+            rarely_if(i >= iend) {
+                freq[iend] = 1;
+                syms[iend] = i;
+                iend ++ ; total ++;
+            }
+
+            if (sumf +  freq[i] <= prob)
+                sumf += freq[i];
             else
                 break;
         }
 
-        rc->Decode(sumfreq, F[i].freq, vtot);
+        rc->Decode(sumf, freq[i], vtot);
 
-        rarely_if(F[i].freq > (255 - STEP))
+        rarely_if(freq[i] > (MAX_FREQ - STEP))
             normalize();
 
-        F[i].freq += STEP;
-        total += STEP;
+        freq[i] += STEP;
+        total   += STEP;
 
         // if (vtot + STEP > MAX_FREQ)
         //     normalize();
 
         /* Keep approx sorted */
-        if (((++counter&15)==0) and
-            i and
-            F[i].freq > F[i-1].freq) {
-            SymFreqs t = F[i];
-            F[i] = F[i-1];
-            F[--i] = t;
-        }
-        return F[i].symbol;
+        return
+            ( i and
+              ! ++counter and
+              freq[i] > freq[i-1]) ? 
+            bubbly(i) :
+            syms[i];
     }
 
 } PACKED;
 
-#undef MAX_FREQ 
-
-#endif // ZP_POWER_RANGER_H
+#endif // already loaded

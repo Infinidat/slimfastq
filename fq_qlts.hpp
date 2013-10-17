@@ -19,7 +19,7 @@
 
 class QltBase {
 protected:
-    PowerRanger<6>* ranger;
+    Log64Ranger* ranger;
     RangeCoder rcoder;
     bool    m_valid;
     const Config* m_conf;

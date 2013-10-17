@@ -12,18 +12,16 @@
 #include <stdio.h>
 
 #include "filer.hpp"
-#include "log64_ranger.hpp"
+#include "power_ranger.hpp"
 
 class RecBase {
 protected: 
-
-    typedef PowerRanger<8> Ranger;
 
     RecBase()  {}
     ~RecBase() {rcoder.done();}
 
 
-    Ranger ranger[10][4];
+    PowerRanger ranger[10][4];
     RangeCoder rcoder;
 
     const char* m_ids[10];
