@@ -12,7 +12,7 @@
 #include <stdio.h>
 
 #include "filer.hpp"
-#include "bases_ranger.hpp"
+#include "base2_ranger.hpp"
 
 class GenBase {
 protected:

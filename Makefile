@@ -92,12 +92,12 @@ test: all
 	for f in $(TEST_FILES) ; do \
 		echo $$f ...   ; \
 		rm /tmp/mytst.* || true; \
-		./jfastq -u $$f -f /tmp/mytst -O ; \
-		./jfastq -u /tmp/mytst.fastq -f /tmp/mytst -O -d ; \
-		tools/mydiff.pl $$f /tmp/mytst.fastq ; \
-		./jfastq -u $$f -f /tmp/mytst -O -F ; \
-		./jfastq -u /tmp/mytst.fastq -f /tmp/mytst -O -d -F ; \
-		tools/mydiff.pl $$f /tmp/mytst.fastq ; \
+		./jfastq -u $$f -f /tmp/mytst -O && \
+		./jfastq -u /tmp/mytst.fastq -f /tmp/mytst -O -d && \
+		tools/mydiff.pl $$f /tmp/mytst.fastq && \
+		./jfastq -u $$f -f /tmp/mytst -O -F && \
+		./jfastq -u /tmp/mytst.fastq -f /tmp/mytst -O -d -F && \
+		tools/mydiff.pl $$f /tmp/mytst.fastq || break ; \
 	done
 
 playground:

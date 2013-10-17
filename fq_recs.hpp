@@ -12,7 +12,7 @@
 #include <stdio.h>
 
 #include "filer.hpp"
-#include "power_ranger.hpp"
+#include "log64_ranger.hpp"
 
 class RecBase {
 protected: 

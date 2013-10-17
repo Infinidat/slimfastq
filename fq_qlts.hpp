@@ -10,7 +10,7 @@
 #include "common.hpp"
 #include "config.hpp"
 #include "filer.hpp"
-#include "power_ranger.hpp"
+#include "log64_ranger.hpp"
 
 #define RANGER_SIZE (1<<16)
 #define RANGER_MASK (RANGER_SIZE-1)
