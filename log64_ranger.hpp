@@ -16,11 +16,11 @@ class Log64Ranger {
         MAX_FREQ=(1<<16)-32,
     };
 
-    UINT32 total;     // Total frequency
+    UINT32 total;
     UINT16 freq[NSYM];
+    UINT16 iend ;
 
-    UCHAR counter;   // Periodic counter for bubble sort step
-    UCHAR iend ;     // 
+    UCHAR count;
     UCHAR syms[NSYM];
 
     void normalize() {
@@ -47,7 +47,7 @@ class Log64Ranger {
 
 public:
 
-    inline void put(RangeCoder *rc, UINT16 sym) {
+    inline void put(RangeCoder *rc, UCHAR sym) {
         UINT32 sumf  = 0;
         UINT32 i = 0;
 
@@ -79,7 +79,7 @@ public:
         rarely_if
             (
              i and
-             ! ++counter and
+             0 == (++count&15) and
              freq[i] > freq[i-1])
             bubbly(i); 
     }
@@ -121,7 +121,7 @@ public:
         /* Keep approx sorted */
         return
             ( i and
-              ! ++counter and
+              0 ==  (++count&15) and
               freq[i] > freq[i-1]) ? 
             bubbly(i) :
             syms[i];

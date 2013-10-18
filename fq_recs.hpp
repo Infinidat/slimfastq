@@ -20,7 +20,6 @@ protected:
     RecBase()  {}
     ~RecBase() {rcoder.done();}
 
-
     PowerRanger ranger[10][4];
     RangeCoder rcoder;
 

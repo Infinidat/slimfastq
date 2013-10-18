@@ -16,10 +16,11 @@ class PowerRanger {
         MAX_FREQ=(1<<16)-32,
     };
 
-    UINT32 total;     // Total frequency
+    UINT32 total;
     UINT16 freq[NSYM];
-    UINT16 iend ;     // 
-    UCHAR counter;    // Periodic counter for bubble sort step
+    UINT16 iend ;
+
+    UCHAR count;
     UCHAR syms[NSYM];
 
     void normalize() {
@@ -53,11 +54,11 @@ public:
         likely_if( sym < iend)
            for (; syms[i] != sym; sumf += freq[i++]);
         else {
+            assert(sym < NSYM);
             total += sym - iend + 1;
             sumf = total -1;
             i = sym;
             for (; iend <= sym; iend ++) {
-                assert(iend < NSYM);
                 freq[iend] = 1;
                 syms[iend] = iend;
             }
@@ -78,7 +79,7 @@ public:
         rarely_if
             (
              i and
-             ! ++counter and
+             0 == (++count&15) and
              freq[i] > freq[i-1])
             bubbly(i); 
     }
@@ -120,7 +121,7 @@ public:
         /* Keep approx sorted */
         return
             ( i and
-              ! ++counter and
+              0 ==  (++count&15) and
               freq[i] > freq[i-1]) ? 
             bubbly(i) :
             syms[i];

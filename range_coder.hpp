@@ -4,7 +4,14 @@
 #endif
 #define ZP_RANGECODER_H
 
-// Based on Eugene Shelwien's code from coders6c2.zip
+
+/////////////////////////////////////////////////////////////////////////////
+// This code was taken from fqz_comp. According to James Bonfield it is    //
+// based on Eugene Shelwien's coders6c2.zip                                //
+//                                                                         //
+// (James also admires the RangeCoder's efficiency, and so do I)           //
+/////////////////////////////////////////////////////////////////////////////
+
 
 #include "filer.hpp"
 #include "common.hpp"
@@ -55,7 +62,7 @@ public:
         assert (cumFreq + freq <= totFreq);
 
         while( range<TOP ) {
-            if ( UCHAR((low^(low+range))>>56) ) 
+            if ( UCHAR((low^(low+range))>>56)) 
                 range = ((UINT32(low)|(TOP-1))-UINT32(low));
             m_out->put(low >> 56);
             range <<= 8;
