@@ -24,11 +24,16 @@ public:
         return m_valid ? m_buff[m_cur++] : 0;
     }
 
-    UINT64    get4() { return getN(4);}
-    UINT64    get8() { return getN(8);}
+    inline UINT64 get4() { return getN(4);}
+    inline UINT64 get8() { return getN(8);}
 
 private:
-    UINT64    getN(int N);
+    inline UINT64 getN(int N) {
+        UINT64 val = 0;
+        for (int i = N-1; i>=0; i--)
+            val |= (UINT64(get()) << (8*i));
+        return val;
+    }
     void load_page();
 
     bool   m_valid;
@@ -50,11 +55,15 @@ public:
         m_buff[m_cur++] = c;
         return m_valid;
     }
-    bool put4(UINT64 val) { return putN(4, val);}
-    bool put8(UINT64 val) { return putN(8, val);}
+    inline bool put4(UINT64 val) { return putN(4, val);}
+    inline bool put8(UINT64 val) { return putN(8, val);}
 
 private:
-    bool putN(int N, UINT64 val);
+    inline bool putN(int N, UINT64 val) {
+        for (int i = N-1; i>=0 ; i--)
+            put( (val >> (8*i)) & 0xff );
+        return m_valid;
+    };
     void save_page();
 
     bool   m_valid;

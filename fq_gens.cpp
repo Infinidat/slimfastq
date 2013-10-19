@@ -41,7 +41,7 @@ GenSave::GenSave(const Config* conf) {
         filer = new FilerSave(conf->open_w("gen"));
         assert(filer);
         rcoder.init(filer);
-        ranger = new BasesRanger[BRANGER_SIZE];
+        ranger = new Base2Ranger[BRANGER_SIZE];
         range_init();
     }
 }
@@ -218,7 +218,7 @@ GenLoad::GenLoad(const Config* conf) {
         filer = new FilerLoad(conf->open_r("gen"), &m_valid);
         assert(filer);
         rcoder.init(filer);
-        ranger = new BasesRanger[BRANGER_SIZE];
+        ranger = new Base2Ranger[BRANGER_SIZE];
         range_init();
     }
 }

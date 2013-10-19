@@ -41,12 +41,12 @@ void FilerLoad::load_page() {
     m_page_count++;
 }
 
-UINT64 FilerLoad::getN(int N) {
-    UINT64 val = 0;
-    for (int i = N-1; i>=0; i--)
-        val |= (UINT64(get()) << (8*i));
-    return val;
-}
+// UINT64 FilerLoad::getN(int N) {
+//     UINT64 val = 0;
+//     for (int i = N-1; i>=0; i--)
+//         val |= (UINT64(get()) << (8*i));
+//     return val;
+// }
 
 FilerSave::FilerSave(FILE* fh) {
     m_out = fh;
@@ -79,11 +79,11 @@ void FilerSave::save_page() {
 }
 
 
-bool FilerSave::putN(int N, UINT64 val) {
-    for (int i = N-1; i>=0 ; i--)
-        put( (val >> (8*i)) & 0xff );
-    return m_valid;
-}
+// bool FilerSave::putN(int N, UINT64 val) {
+//     for (int i = N-1; i>=0 ; i--)
+//         put( (val >> (8*i)) & 0xff );
+//     return m_valid;
+// }
 
 // use it later
 // UINT64 FilerLoad::getUL() {

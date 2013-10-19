@@ -42,7 +42,7 @@ bool QltSave::is_valid() {
         filer->is_valid();
 }
 
-// #define KILLER_BEE
+// #define KILLER_BEE 1
 void QltSave::save(const UCHAR* buf, size_t size) {
     UINT32 last = 0;
     // UCHAR q1 = 0, q2 = 0;

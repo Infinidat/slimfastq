@@ -18,10 +18,10 @@ class GenBase {
 protected:
     GenBase(){}
     ~GenBase(){}
-#define BRANGER_SIZE (1<<20)
+#define BRANGER_SIZE (1<<21)
 #define BRANGER_MASK (BRANGER_SIZE-1)
 
-    BasesRanger* ranger; //[BRANGER_SIZE];
+    Base2Ranger* ranger; //[BRANGER_SIZE];
     RangeCoder rcoder;
 
     struct {
