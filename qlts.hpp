@@ -18,9 +18,9 @@
 class QltBase {
 protected:
     Log64Ranger* ranger;
-    RangeCoder rcoder;
-    bool    m_valid;
-    const Config* m_conf;
+    RCoder rcoder;
+    bool m_valid;
+    // const Config* m_conf;
 
     void range_init();
     // inline UINT32 calc_last(UINT32 last, const UCHAR* q, size_t i) {
@@ -72,7 +72,7 @@ protected:
 
 class QltSave : private QltBase {
 public:
-    QltSave(const Config* conf);
+    QltSave();
     ~QltSave();
 
     void save(const UCHAR* buf, size_t size);
@@ -84,7 +84,7 @@ private:
 
 class QltLoad : private QltBase {
 public:
-    QltLoad(const Config* conf);
+    QltLoad();
     ~QltLoad();
 
     UINT32 load (UCHAR* buffer, const size_t size);

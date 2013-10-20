@@ -6,7 +6,7 @@
 #define ZP_LOG64_RANGER_H
 
 #ifndef ZP_RANGECODER_H
-#include "range_coder.hpp"
+#include "coder.hpp"
 #endif
 
 class Log64Ranger {
@@ -47,7 +47,7 @@ class Log64Ranger {
 
 public:
 
-    inline void put(RangeCoder *rc, UCHAR sym) {
+    inline void put(RCoder *rc, UCHAR sym) {
         UINT32 sumf  = 0;
         UINT32 i = 0;
 
@@ -84,7 +84,7 @@ public:
             bubbly(i); 
     }
 
-    inline UINT16 get(RangeCoder *rc) {
+    inline UINT16 get(RCoder *rc) {
 
         UINT32 vtot = total + NSYM - iend;
         UINT32 sumf = 0;

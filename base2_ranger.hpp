@@ -5,7 +5,7 @@
 #define ZP_BASES_RANGER_H
 
 #ifndef ZP_RANGECODER_H
-#include "range_coder.hpp"
+#include "coder.hpp"
 #endif
 #include "common.hpp"
 
@@ -43,7 +43,7 @@ public:
         return (freq[0] + freq[1]) + (freq[2] + freq[3]);
     }
 
-    inline void put(RangeCoder *rc, UCHAR sym) {
+    inline void put(RCoder *rc, UCHAR sym) {
         UINT16 total = getsum();
         switch(sym) {
         case 0: rc->Encode( 0,
@@ -63,7 +63,7 @@ public:
         // total     += STEP;
     }
 
-    inline UCHAR get(RangeCoder *rc) {
+    inline UCHAR get(RCoder *rc) {
 
         UINT16 total = getsum();
         UINT32 prob = rc->GetFreq(total);

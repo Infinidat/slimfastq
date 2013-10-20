@@ -29,7 +29,7 @@ class UsrSave {
 #define PLL_LAST (PLL_SIZE + PLL_STRT)
 
 public:
-    UsrSave(const Config* conf);
+    UsrSave();
     ~UsrSave();
 
     int encode();
@@ -61,12 +61,12 @@ private:
     int   m_llen;
     bool  m_solid;
     PagerSave16* pager_x;
-    const Config* m_conf;
+    // const Config* m_conf;
 };
 
 class UsrLoad {
 public:
-    UsrLoad(const Config* conf);
+    UsrLoad();
     ~UsrLoad();
     int decode();
 
@@ -97,7 +97,7 @@ private:
 
     PagerLoad16* pager_x;
     bool  m_x_valid;
-    const Config* m_conf;
+    // const Config* m_conf;
 };
 
 #endif

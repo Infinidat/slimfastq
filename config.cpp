@@ -162,11 +162,15 @@ const char* withsuffix(const char* name, const char* suffix) {
 //     croak("couldn't find matching partition of -p %lld", num);
 // }
 
-static bool already_exists = false;
-Config::Config(int argc, char **argv, int ver) {
-    if (already_exists)
-        croak("Internal error: 2nd Config");
-    already_exists = true;
+Config::Config(){
+    version = 0;
+}
+
+static bool initialized = false;
+void Config::init(int argc, char **argv, int ver) {
+    if (initialized)
+        croak("Internal error: 2nd Config init");
+    initialized = true;
 
     m_part[0] = 0;
     version = ver;

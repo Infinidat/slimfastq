@@ -8,13 +8,13 @@
 #include <string.h>
 #include <errno.h>
 
-#include "fq_usrs.hpp"
+#include "usrs.hpp"
 
-#include "fq_gens.hpp"
-#include "fq_recs.hpp"
-#include "fq_qlts.hpp"
+#include "gens.hpp"
+#include "recs.hpp"
+#include "qlts.hpp"
 
-UsrSave::UsrSave(const Config* conf) : m_conf(conf) {
+UsrSave::UsrSave() {
     BZERO(m_last);
 
     m_valid  = true ;
@@ -23,7 +23,7 @@ UsrSave::UsrSave(const Config* conf) : m_conf(conf) {
     m_solid = false;
     pager_x = NULL;
 
-    m_in   = conf->file_usr();
+    m_in   = conf.file_usr();
     load_page();
 }
 
@@ -57,7 +57,7 @@ void UsrSave::pager_init() {
 
 void UsrSave::update(exception_t type, UCHAR dat) {
     rarely_if(pager_x == NULL)
-        pager_x = new PagerSave16(m_conf->open_w("usr.update"));
+        pager_x = new PagerSave16(conf.open_w("usr.update"));
     assert(pager_x);
     pager_x->putgap(m_last.rec_count);
     pager_x->put16( (type << 8) | dat );
@@ -134,12 +134,11 @@ void UsrSave::determine_record() {
         }
 
     if (m_solid) {
-        m_conf->set_info("usr.solid", m_solid);
+        conf.set_info("usr.solid", m_solid);
         m_llen --;
     }
-
-    m_conf->set_info("llen", m_llen);
-    m_conf->set_info("usr.2id", has_2nd_id); // TODO
+    conf.set_info("llen", m_llen);
+    conf.set_info("usr.2id", has_2nd_id); // TODO
 }
 
 bool UsrSave::get_record(UCHAR** rec, UCHAR** rec_end, UCHAR** gen, UCHAR** qlt) {
@@ -218,7 +217,7 @@ UINT64 UsrSave::estimate_rec_limit() {
     if (cnt < 4)
         croak("This usr file is too small");
 
-    UINT64 limit = m_conf->partition.size / (i-m_cur);
+    UINT64 limit = conf.partition.size / (i-m_cur);
     // if (limit < 500000)
     if (limit < 5000) // for debuging
         croak("This partition partition is too small (records limit=%lld)", limit);
@@ -228,15 +227,15 @@ UINT64 UsrSave::estimate_rec_limit() {
 
 int UsrSave::encode() {
 
-    UINT32  sanity = m_conf->profiling ? 100000 : 1000000000;
+    UINT32  sanity = conf.profiling ? 100000 : 1000000000;
     UCHAR *p_rec, *p_rec_end, *p_gen, *p_qlt;
     // bool gentype = 0;
 
-    RecSave rec(m_conf);
-    GenSave gen(m_conf);
-    QltSave qlt(m_conf);
+    RecSave rec;
+    GenSave gen;
+    QltSave qlt;
 
-    if (m_conf->partition.size) {
+    if (conf.partition.size) {
         assert(0);              // TODO
         // // TODO: unite cases
         // size_t recs_l = estimate_rec_limit();
@@ -275,27 +274,26 @@ int UsrSave::encode() {
             qlt.save(p_qlt, m_llen);
         }
     }
-    m_conf->set_info("num_records", m_rec_total);
+    conf.set_info("num_records", m_rec_total);
     return 0;
 }
 
 // load
 
-UsrLoad::UsrLoad(const Config* conf) :
-    m_conf(conf) {
+UsrLoad::UsrLoad() {
     BZERO(m_last);
-    m_out = conf->file_usr();
+    m_out = conf.file_usr();
     m_rec[0] = '@' ;
-    m_llen    = conf->get_long("llen");
-    m_2nd_rec = conf->get_long("usr.2id");
-    m_solid   = conf->get_bool("usr.solid");
+    m_llen    = conf.get_long("llen");
+    m_2nd_rec = conf.get_long("usr.2id");
+    m_solid   = conf.get_bool("usr.solid");
 
     if (not m_2nd_rec) {
         m_gen[m_llen+1] = '\n';
         m_gen[m_llen+2] = '+' ;
     }
 
-    FILE* fh = conf->open_r("usr.update", false);
+    FILE* fh = conf.open_r("usr.update", false);
     if (  fh  ) {
         pager_x = new PagerLoad16(fh, &m_x_valid);
         m_last.index = pager_x->getgap();
@@ -381,12 +379,12 @@ void UsrLoad::putline(UCHAR* buf, UINT32 size) {
 }
 
 UINT64 UsrLoad::set_partition() {
-    if (m_conf->partition.param < 0) // TODO: also check orig file size
-        croak("illegal partition param %lld", m_conf->partition.param);
+    if (conf.partition.param < 0) // TODO: also check orig file size
+        croak("illegal partition param %lld", conf.partition.param);
 
-    const UINT64 num = m_conf->partition.param; // alias
+    const UINT64 num = conf.partition.param; // alias
     bool valid;
-    PagerLoad ppart(m_conf->open_r("part"), &valid);
+    PagerLoad ppart(conf.open_r("part"), &valid);
     /* UINT64 version = */ ppart.get(); 
     for (unsigned i = 0 ; valid ; i++) {
 
@@ -395,7 +393,7 @@ UINT64 UsrLoad::set_partition() {
         if (valid and
             (num == i or
              num == offs)) {
-            m_conf->set_part_offs(offs);
+            conf.set_part_offs(offs);
             return nrec;
         }
     }
@@ -405,16 +403,16 @@ UINT64 UsrLoad::set_partition() {
 int UsrLoad::decode() {
 
     size_t n_recs =
-        m_conf->partition.size ?
+        conf.partition.size ?
         set_partition() :
-        m_conf->get_long("num_records");
+        conf.get_long("num_records");
 
     if ( ! n_recs)
         croak("Zero records, what's going on?");
 
-    RecLoad rec(m_conf);
-    GenLoad gen(m_conf);
-    QltLoad qlt(m_conf);
+    RecLoad rec;
+    GenLoad gen;
+    QltLoad qlt;
 
     UCHAR* b_qlt = m_qlt+1 ;
     UCHAR* b_gen = m_gen+1 ;

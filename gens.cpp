@@ -3,7 +3,7 @@
 // Please do not use without author's explicit permission.
 // 
 
-#include "fq_gens.hpp"
+#include "gens.hpp"
 
 #include <assert.h>
 // ?:
@@ -19,26 +19,26 @@ void GenBase::range_init() {
     // memset(ranger, 1, sizeof(ranger[0])*BRANGER_SIZE);
 }
 
-GenSave::GenSave(const Config* conf) {
-    m_conf = conf;
+GenSave::GenSave() {
+    // m_conf = conf;
     m_lossless = true;
-    conf->set_info("gen.lossless", m_lossless);
+    conf.set_info("gen.lossless", m_lossless);
 
     pagerNs = pagerNn = NULL;
     BZERO(m_stats);
     BZERO(m_last);
     m_N_byte = 0;
 
-    m_faster = conf->faster_gen;
-    conf->set_info("gen.faster", m_faster);
+    m_faster = conf.faster_gen;
+    conf.set_info("gen.faster", m_faster);
 
     if (m_faster) {
         filer = NULL;
-        pager = new PagerSave02(m_conf->open_w("gen"));
+        pager = new PagerSave02(conf.open_w("gen"));
     }
     else {
         pager = NULL;
-        filer = new FilerSave(conf->open_w("gen"));
+        filer = new FilerSave(conf.open_w("gen"));
         assert(filer);
         rcoder.init(filer);
         ranger = new Base2Ranger[BRANGER_SIZE];
@@ -69,7 +69,7 @@ GenSave::~GenSave() {
 void GenSave::putgapNs(UINT64 gap) {
     // pagerNs ||= new ... if only life could have been like perl .. 
     rarely_if(not pagerNs)
-        pagerNs = new PagerSave16(m_conf->open_w("gen.Ns"));
+        pagerNs = new PagerSave16(conf.open_w("gen.Ns"));
 
     if (pagerNs->putgap(gap))
         m_stats.big_gaps ++;
@@ -77,7 +77,7 @@ void GenSave::putgapNs(UINT64 gap) {
 
 void GenSave::putgapNn(UINT64 gap) {
     rarely_if(not pagerNn) 
-        pagerNn = new PagerSave16(m_conf->open_w("gen.Nn")) ;
+        pagerNn = new PagerSave16(conf.open_w("gen.Nn")) ;
 
     if (pagerNn->putgap(gap))
         m_stats.big_gaps ++;
@@ -108,8 +108,8 @@ inline UCHAR GenSave::normalize_gen(UCHAR gen, UCHAR &qlt) {
                 // TODO: make a single m_last - exceptions file
                 m_N_byte = gen;
                 if ('.' == gen) {
-                    m_conf->set_info("gen.N_byte", gen);
-                    m_conf->save_info();
+                    conf.set_info("gen.N_byte", gen);
+                    conf.save_info();
                 }
             }
             // TODO: eliminate this temp sanity
@@ -179,27 +179,27 @@ UINT64 GenLoad::getgapNn() {
         0;
 }
 
-GenLoad::GenLoad(const Config* conf) {
+GenLoad::GenLoad() {
     BZERO(m_last);
-    m_conf = conf;
+    // m_conf = conf;
     m_valid = true;
     pagerNs = pagerNn = NULL;
-    m_lossless = *conf->get_info("gen.lossless") == '0' ? false : true ;
+    m_lossless = *conf.get_info("gen.lossless") == '0' ? false : true ;
     if (m_lossless) {
-        FILE* fNs = conf->open_r("gen.Ns", false);
+        FILE* fNs = conf.open_r("gen.Ns", false);
         if (  fNs  ) {
             pagerNs = new PagerLoad16( fNs, &m_validNs);
             m_last.Ns_index = getgapNs();
         }
-        FILE* fNn = conf->open_r("gen.Nn", false);
+        FILE* fNn = conf.open_r("gen.Nn", false);
         if (  fNn ) {
             pagerNn = new PagerLoad16( fNn , &m_validNn);
             m_last.Nn_index = getgapNn();
         }
     }
 
-    m_N_byte          = conf->get_long("gen.N_byte", 'N') ;
-    bool is_solid     = conf->get_bool("usr.solid");
+    m_N_byte          = conf.get_long("gen.N_byte", 'N') ;
+    bool is_solid     = conf.get_bool("usr.solid");
     bool is_lowercase = false;
 
     m_gencode =
@@ -210,14 +210,14 @@ GenLoad::GenLoad(const Config* conf) {
         "ACGT" ;
 
 
-    m_faster = *conf->get_info("gen.faster") == '1' ? true : false ;
+    m_faster = *conf.get_info("gen.faster") == '1' ? true : false ;
     if (m_faster) {
-        pager = new PagerLoad02(conf->open_r("gen"), &m_valid);
+        pager = new PagerLoad02(conf.open_r("gen"), &m_valid);
         filer = NULL;
     }
     else {
         pager = NULL;
-        filer = new FilerLoad(conf->open_r("gen"), &m_valid);
+        filer = new FilerLoad(conf.open_r("gen"), &m_valid);
         assert(filer);
         rcoder.init(filer);
         ranger = new Base2Ranger[BRANGER_SIZE];

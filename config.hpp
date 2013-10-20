@@ -20,11 +20,12 @@ class Config;
 void croak(const char* msg               ) __attribute__ ((noreturn, cold));
 void croak(const char* fmt, long long num) __attribute__ ((noreturn, cold));
 
-class Config {                  
+class Config {
     // Singleton - croaks if already exists
 public:
-    Config(int argc, char **argv, int ver);
+    Config();
     ~Config();
+    void init (int argc, char **argv, int ver);
     FILE * file_usr() const { return reinterpret_cast<FILE*>(f_usr);}
     FILE* open_w(const char* suffix) const;
     FILE* open_r(const char* suffix, bool must=true) const;
@@ -60,5 +61,6 @@ private:
     mutable char m_part[100];
 };
 
+extern Config conf;
 
 #endif  // FQ_CONFIG_H

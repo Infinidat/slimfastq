@@ -22,7 +22,7 @@ protected:
 #define BRANGER_MASK (BRANGER_SIZE-1)
 
     Base2Ranger* ranger; //[BRANGER_SIZE];
-    RangeCoder rcoder;
+    RCoder rcoder;
 
     struct {
         UINT64 count;
@@ -30,7 +30,7 @@ protected:
         UINT64 Nn_index;
     } m_last;
         
-    const Config* m_conf;
+    // const Config* m_conf;
 
     struct {
         UINT32 big_gaps;
@@ -44,7 +44,7 @@ protected:
 
 class GenSave : private GenBase {
 public:
-    GenSave(const Config* conf);
+    GenSave();
     ~GenSave();
 
     void save(const UCHAR* gen, UCHAR* qlt, size_t size);
@@ -64,7 +64,7 @@ private:
 
 class GenLoad : private GenBase {
 public:
-    GenLoad(const Config* conf);
+    GenLoad();
     ~GenLoad();
 
     UINT32 load(UCHAR* gen, const UCHAR* qlt, size_t size);

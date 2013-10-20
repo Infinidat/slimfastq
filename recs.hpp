@@ -21,7 +21,7 @@ protected:
     ~RecBase() {rcoder.done();}
 
     PowerRanger ranger[10][4];
-    RangeCoder rcoder;
+    RCoder rcoder;
 
     const char* m_ids[10];
     int m_len[10];
@@ -48,7 +48,7 @@ protected:
     int    m_type;
     bool   m_valid;
 
-    const Config* m_conf;
+    // const Config* m_conf;
 
     void range_init();
 
@@ -64,7 +64,7 @@ protected:
 
 class RecSave : private RecBase {
 public:
-    RecSave(const Config* conf);
+     RecSave();
     ~RecSave();
 
     bool save(const UCHAR* buf, const UCHAR* end);
@@ -93,7 +93,7 @@ private:
 
 class RecLoad : private RecBase {
 public:
-    RecLoad(const Config* conf);
+     RecLoad();
     ~RecLoad();
 
     inline bool is_valid() {return m_valid;}

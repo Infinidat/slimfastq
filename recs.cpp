@@ -6,7 +6,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include "fq_recs.hpp"
+#include "recs.hpp"
 
 #define MAX_LLINE 400           // TODO: assert max is enough at constructor
 
@@ -138,20 +138,20 @@ UINT64 RecBase::get_u(int i, UINT64* old) {
 }
 
 
-RecSave::RecSave(const Config* conf) {
+RecSave::RecSave() {
 
     m_valid = true;
     // pager  = NULL;
     // pager2 = NULL;
 
     m_type = 0;
-    m_conf = conf;
+    // m_conf = conf;
 
     BZERO(m_last);
     BZERO(stats);
     BZERO(m_ids);
     
-    filer = new FilerSave(conf->open_w("rec"));
+    filer = new FilerSave(conf.open_w("rec"));
     assert(filer);
     rcoder.init(filer);
     range_init();
@@ -280,8 +280,8 @@ int RecSave::get_rec_type(const char* start) {
         // congratulations
         m_ids[0] = strndup(start, p_l-start);
         m_ids[1] = strndup(p_s  , p_t-p_s-1);
-        m_conf->set_info("rec.1.in", m_ids[0]);
-        m_conf->set_info("rec.1.id", m_ids[1]);
+        conf.set_info("rec.1.in", m_ids[0]);
+        conf.set_info("rec.1.id", m_ids[1]);
         return 1;
     } while (0);
 
@@ -314,9 +314,9 @@ int RecSave::get_rec_type(const char* start) {
         m_ids[0] = strndup(start, p_l-start);
         m_ids[1] = strndup(p_s  , p_t-p_s-1);
         m_ids[2] = strndup(p_m  , p_a-p_m-1);
-        m_conf->set_info("rec.2.in", m_ids[0]);
-        m_conf->set_info("rec.2.id", m_ids[1]);
-        m_conf->set_info("rec.2.is", m_ids[2]);
+        conf.set_info("rec.2.in", m_ids[0]);
+        conf.set_info("rec.2.id", m_ids[1]);
+        conf.set_info("rec.2.is", m_ids[2]);
         return 2;
     } while (0);
 
@@ -350,8 +350,8 @@ int RecSave::get_rec_type(const char* start) {
         // m_ids[3] = strndup(p_3  , p_2-p_3-1);
         // m_ids[4] = strndup(p_4  , p_3-p_4-1);
 
-        m_conf->set_info("rec.3.in" , m_ids[0]);
-        m_conf->set_info("rec.3.id" , m_ids[1]);
+        conf.set_info("rec.3.in" , m_ids[0]);
+        conf.set_info("rec.3.id" , m_ids[1]);
         // m_conf->set_info("rec.3.f.2", m_ids[2]);
         // m_conf->set_info("rec.3.f.3", m_ids[3]);
         // m_conf->set_info("rec.3.f.4", m_ids[4]);
@@ -384,8 +384,8 @@ int RecSave::get_rec_type(const char* start) {
         m_ids[2] = strndup(p_2  , p_1-p_2-1);
         m_ids[3] = strndup(p_3  , p_2-p_3-1);
 
-        m_conf->set_info("rec.3.in" , m_ids[0]);
-        m_conf->set_info("rec.3.id" , m_ids[1]);
+        conf.set_info("rec.3.in" , m_ids[0]);
+        conf.set_info("rec.3.id" , m_ids[1]);
         // m_conf->set_info("rec.3.f.2", m_ids[2]);
         // m_conf->set_info("rec.3.f.3", m_ids[3]);
 
@@ -411,7 +411,7 @@ int RecSave::get_rec_type(const char* start) {
         MUST(   end == (p_a+2));
 
         m_ids[0] = strndup(start, p_l-start);
-        m_conf->set_info("rec.5.in", m_ids[0]);
+        conf.set_info("rec.5.in", m_ids[0]);
 
         return 5;
     } while (0);
@@ -423,14 +423,14 @@ int RecSave::get_rec_type(const char* start) {
 void RecSave::determine_rec_type(const UCHAR* buf, const UCHAR* end) {
 
     const char* first = strndup((const char*)buf, end-buf);
-    m_conf->set_info("rec.first", first);
+    conf.set_info("rec.first", first);
 
     m_type = get_rec_type(first) ;
     if (not m_type)
         croak("Illegal record type: %u\n", m_type);
 
-    m_conf->set_info("rec.type", m_type);
-    m_conf->save_info();
+    conf.set_info("rec.type", m_type);
+    conf.save_info();
 
     // update m_len
     for (int i = 0 ; m_ids[i] and i < 10; i++)
@@ -699,42 +699,42 @@ void RecLoad::determine_ids(int size) {
             m_len[i] = strlen(m_ids[i]);
 }
 
-RecLoad::RecLoad(const Config* conf) {
+RecLoad::RecLoad() {
     m_valid = true;
     // pager  = new PagerLoad16(conf->open_r("rec") , &m_valid);
     // pager2 = new PagerLoad02(conf->open_r("rec2"), &m_valid);
-    filer = new FilerLoad(conf->open_r("rec"), &m_valid);
+    filer = new FilerLoad(conf.open_r("rec"), &m_valid);
     assert(filer);
     rcoder.init(filer);
     range_init();
 
     BZERO(m_ids);
     BZERO(m_last);
-    m_type = atoi(conf->get_info("rec.type"));
+    m_type = atoi(conf.get_info("rec.type"));
 
     switch(m_type) {
     case 1:
-        m_ids[0] = conf->get_info("rec.1.in");
-        m_ids[1] = conf->get_info("rec.1.id");
+        m_ids[0] = conf.get_info("rec.1.in");
+        m_ids[1] = conf.get_info("rec.1.id");
         determine_ids(2);
         break;
 
     case 2:
-        m_ids[0] = conf->get_info("rec.2.in");
-        m_ids[1] = conf->get_info("rec.2.id");
-        m_ids[2] = conf->get_info("rec.2.is"); 
+        m_ids[0] = conf.get_info("rec.2.in");
+        m_ids[1] = conf.get_info("rec.2.id");
+        m_ids[2] = conf.get_info("rec.2.is"); 
         determine_ids(3);
         break;
         
     case 3:
     case 4:
-        m_ids[0] = conf->get_info("rec.3.in");
-        m_ids[1] = conf->get_info("rec.3.id");
+        m_ids[0] = conf.get_info("rec.3.in");
+        m_ids[1] = conf.get_info("rec.3.id");
         determine_ids(2);
         break;
 
     case 5:
-        m_ids[0] = conf->get_info("rec.5.in");
+        m_ids[0] = conf.get_info("rec.5.in");
         determine_ids(1);
         break;
 

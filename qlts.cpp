@@ -3,7 +3,7 @@
 // Please do not use without author's explicit permission.
 // 
 
-#include "fq_qlts.hpp"
+#include "qlts.hpp"
 #include <assert.h>
 // ?:
 #include <stdlib.h>
@@ -20,9 +20,8 @@ enum FQQ_STMP {
     FQQ_STMP_DATA = 0x7adada00, // last byte used to store algorithm
 };
 
-QltSave::QltSave(const Config* conf )  { // : FQQBase() {
-    m_conf = conf;
-    filer  = new FilerSave(m_conf->open_w("qlt"));
+QltSave::QltSave()  {
+    filer  = new FilerSave(conf.open_w("qlt"));
     ranger = new Log64Ranger[RANGER_SIZE];
     assert(filer);
     assert(ranger);
@@ -109,8 +108,8 @@ void QltSave::save(const UCHAR* buf, size_t size) {
     // }
 }
 
-QltLoad::QltLoad(const Config* conf) { // : FQQBase() {
-    filer = new FilerLoad(conf->open_r("qlt"), &m_valid);
+QltLoad::QltLoad() {
+    filer = new FilerLoad(conf.open_r("qlt"), &m_valid);
     ranger = new Log64Ranger[RANGER_SIZE];
     // bzero(&bucket, sizeof(bucket));
 

@@ -16,7 +16,7 @@
 #include "filer.hpp"
 #include "common.hpp"
 
-class RangeCoder {
+class RCoder {
 
 private:
     enum { TOP =(1<<24) };
