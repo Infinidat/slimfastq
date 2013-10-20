@@ -14,8 +14,6 @@
 
 #define RANGER_SIZE (1<<16)
 #define RANGER_MASK (RANGER_SIZE-1)
-#define MAX(a,b) ((a)>(b)?(a):(b))
-#define MIN(a,b) ((a)<(b)?(a):(b))
 
 class QltBase {
 protected:
@@ -51,20 +49,25 @@ protected:
         //          (((q2>q1? 64 : 0)+q1-q2)/4) << 12
         //         ) & RANGER_MASK;
     }
-    // inline UINT32 calc_last(UINT32 &delta, const UCHAR* q, size_t i) {
-    // 
-    //     return 
-    //         ( RARELY(i < 2) ?
-    //           0 : 
-    //           (q[i]-'!')
-    //           | 
-    //           ((MAX(q[i-1], q[i-2])-'!')<<6 )
-    //           |
-    //           ((q[i-1] == q[i-2]) << 12)
-    //           |
-    //           (( MIN(7*8, (delta += (q[i-1]>q[0])*(q[i-1]-q[i])))&0xf8)<<13)
-    //           ) & RANGER_MASK;
-    // }
+    inline UINT32 min_val(UINT32 a, UINT32 b) { return a>b?b:a; }
+    inline UCHAR  max_val(UCHAR  a, UCHAR  b) { return a>b?a:b; }
+    inline UINT32 calc_last(UINT32 &delta, const UCHAR* q, size_t i) {
+    
+        return 
+            ( RARELY(i < 2) ?
+              0 : 
+              (q[i]-'!')
+              | 
+              ((max_val(q[i-1], q[i-2])-'!')<<6 )
+              |
+              ((q[i-1] == q[i-2]) << 12)
+              |
+              ((q[i-1]>q[0]) ? 
+               (min_val(7, (delta += q[i-1]-q[i])/8)<<13)
+              :
+              0 )
+              ) & RANGER_MASK;
+    }
 };
 
 class QltSave : private QltBase {

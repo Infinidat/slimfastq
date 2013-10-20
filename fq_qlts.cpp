@@ -48,7 +48,7 @@ void QltSave::save(const UCHAR* buf, size_t size) {
     // UCHAR q1 = 0, q2 = 0;
 #ifdef KILLER_BEE
     size_t len = size;
-    while (len and buf[len] == '#')
+    while (len and buf[len-1] == '#')
         -- len;
 
 #define SIZE len
@@ -56,6 +56,7 @@ void QltSave::save(const UCHAR* buf, size_t size) {
 #define SIZE size
 #endif
 
+    // UINT32 delta = 5;
     size_t i = 0;
     // for (; i < SIZE and i < 8; i++)
     // {
@@ -261,7 +262,7 @@ bool QltLoad::is_valid() {
 
 UINT32 QltLoad::load(UCHAR* buf, const size_t size) {
 
-    UINT32 last = 0; // , delta=5;
+    UINT32 last = 0 ;// , delta=5;
     // UCHAR q1 = 0, q2 = 0;
     for (size_t i = 0; i < size ; i++) {
 
