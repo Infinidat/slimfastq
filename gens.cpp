@@ -29,7 +29,7 @@ GenSave::GenSave() {
     BZERO(m_last);
     m_N_byte = 0;
 
-    m_faster = conf.faster_gen;
+    m_faster = conf.level < 3;
     conf.set_info("gen.faster", m_faster);
 
     if (m_faster) {

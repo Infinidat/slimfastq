@@ -15,13 +15,13 @@ all:  jfastq
 opt:  jfastq.opt
 
 prof-opt.run:
-	for f in $(TEST_FILES) ; do \
-		echo $$f ... ; \
-		./jfastq.prof -f /tmp/mytst -u $$f -O -P ; \
-		./jfastq.prof -f /tmp/mytst -u /tmp/mytst.copy -O -d ; \
-		./jfastq.prof -f /tmp/mytst -u $$f -O -P -F ; \
-		./jfastq.prof -f /tmp/mytst -u /tmp/mytst.copy -O -d ; \
-		done
+	for l in 1 2 3; do\
+		for f in $(TEST_FILES) ; do \
+			echo $$f ... ; \
+			./jfastq.prof -f /tmp/mytst -u $$f -O -P -l $$l ; \
+			./jfastq.prof -f /tmp/mytst -u /tmp/mytst.copy -O -d ; \
+		done ; \
+	done
 
 prof-opt: jfastq.prof
 	make prof-opt.run
@@ -91,13 +91,12 @@ utest: jfastq.utest
 test: all
 	for f in $(TEST_FILES) ; do \
 		echo $$f ...   ; \
-		rm /tmp/mytst.* || true; \
-		./jfastq -u $$f -f /tmp/mytst -O && \
-		./jfastq -u /tmp/mytst.fastq -f /tmp/mytst -O -d && \
-		tools/mydiff.pl $$f /tmp/mytst.fastq && \
-		./jfastq -u $$f -f /tmp/mytst -O -F && \
-		./jfastq -u /tmp/mytst.fastq -f /tmp/mytst -O -d -F && \
-		tools/mydiff.pl $$f /tmp/mytst.fastq || break ; \
+		for l in 1 2 3 ; do \
+			rm /tmp/mytst.* || true; \
+			./jfastq -u $$f -f /tmp/mytst -O -l $$l && \
+			./jfastq -u /tmp/mytst.fastq -f /tmp/mytst -O -d && \
+			tools/mydiff.pl $$f /tmp/mytst.fastq || break ; \
+		done ; \
 	done
 
 playground:

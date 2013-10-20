@@ -29,8 +29,8 @@ public:
     FILE * file_usr() const { return reinterpret_cast<FILE*>(f_usr);}
     FILE* open_w(const char* suffix) const;
     FILE* open_r(const char* suffix, bool must=true) const;
-    int   version;
-    bool  encode, profiling, faster_gen;
+    int   version, level;
+    bool  encode, profiling;
     struct {
         long long size; // NOTE: this means different things during decode, encode
         long long param;

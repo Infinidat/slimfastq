@@ -110,7 +110,8 @@ Usage: \n\
 -f comp-basename : reuired - basename for files (TODO: onefile)\n\
 -d               : decode (instead of encoding) \n\
 -O               : overwrite existing files\n\
--F               : full compression - costs cpu/mem\n\
+-l level         : compression level 1, 2, or 3 (default is 2 ) \n\
+                 : { 1 = less resources, 3 = best compression } \n\
 \n\
 -s size          : set partition to <size> (megabyte units) \n\
 -p partition     : only open this partition (-d implied) \n\
@@ -163,28 +164,37 @@ const char* withsuffix(const char* name, const char* suffix) {
 // }
 
 Config::Config(){
+
     version = 0;
+
+    m_part[0] = 0;
+    encode = true;
+    profiling = false;
+    level = 2;
+    m_saved = false;
+    bzero(&partition, sizeof(partition));
+}
+
+static int range_level(int level) {
+    return
+        level > 3 ? 3 :
+        level < 1 ? 1 :
+        level ;
 }
 
 static bool initialized = false;
 void Config::init(int argc, char **argv, int ver) {
     if (initialized)
         croak("Internal error: 2nd Config init");
-    initialized = true;
 
-    m_part[0] = 0;
+    initialized = true;
     version = ver;
-    encode = true;
-    profiling = false;
-    faster_gen = true;
-    m_saved = false;
-    bzero(&partition, sizeof(partition));
 
     std::string usr, fil;
     bool overwrite = false;
 
     // TODO? long options 
-    const char* short_opt = "POFvhd u:f: s:p:"; 
+    const char* short_opt = "POvhd u:f:s:p:l:"; 
     for ( int opt = getopt(argc, argv, short_opt);
           opt != -1;
           opt     = getopt(argc, argv, short_opt))
@@ -201,9 +211,10 @@ void Config::init(int argc, char **argv, int ver) {
             partition.param = strtoll(optarg, 0, (strlen(optarg) == 10 and optarg[0] == '0') ? 16 : 0 );
             break;
             
+        case 'l': level = strtoll(optarg, 0, 0);  break;
+
         case 'd': encode     = false; break;
         case 'O': overwrite  = true ; break;
-        case 'F': faster_gen = false; break;
         case 'P': profiling  = true ; break;
         case 'v':
             printf("Version %u\n", version);
@@ -223,11 +234,14 @@ void Config::init(int argc, char **argv, int ver) {
     m_wr_flags = overwrite ? "wb" : "wbx" ;
 
     if (encode) {
+        set_info("config.level", range_level(level));
+
         f_usr = usr.length() ? fopen(usr.c_str(), "rb") : stdin ;
         check_fh(f_usr, usr, true);
         filename_stream.open(withsuffix(m_file, ".files"));
     }
     else {
+        level = range_level(get_long("config.level", 2));
         load_info();
 
         f_usr = usr.length() ? fopen(usr.c_str(), m_wr_flags) : stdout;
