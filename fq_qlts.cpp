@@ -51,22 +51,41 @@ void QltSave::save(const UCHAR* buf, size_t size) {
     while (len and buf[len] == '#')
         -- len;
 
-    for (size_t i = 0; i < len ; i++)
+#define SIZE len
 #else
-    for (size_t i = 0; i < size ; i++)
+#define SIZE size
 #endif
-    {
+
+    size_t i = 0;
+    // for (; i < SIZE and i < 8; i++)
+    // {
+    //     UCHAR b = UCHAR(buf[i] - '!');
+    // 
+    //     rarely_if(b >= 63)
+    //         croak("Illegal quality value 0x%x. Aborting\n", buf[i]);
+    // 
+    //     PREFETCH(ranger + last);
+    //     ranger[last].put(&rcoder, b);
+    //     //        last = ((last <<6) + b) & RANGER_MASK;
+    //     // calc_last(last, b, q1, q2, i);
+    //     last = calc_last(last, b); 
+    //     // PREFETCH(ranger + last);
+    // }
+
+    for (; i < SIZE; i++) {
         UCHAR b = UCHAR(buf[i] - '!');
 
         rarely_if(b >= 63)
             croak("Illegal quality value 0x%x. Aborting\n", buf[i]);
 
         PREFETCH(ranger + last);
-
         ranger[last].put(&rcoder, b);
         //        last = ((last <<6) + b) & RANGER_MASK;
         // calc_last(last, b, q1, q2, i);
-        calc_last(last, b); 
+        // last = calc_last(last, buf, i);
+        last = calc_last(last, b); 
+        // last = calc_last(delta, buf, i);
+        // PREFETCH(ranger + last);
     }
 
 #ifdef KILLER_BEE
@@ -242,7 +261,7 @@ bool QltLoad::is_valid() {
 
 UINT32 QltLoad::load(UCHAR* buf, const size_t size) {
 
-    UINT32 last = 0;
+    UINT32 last = 0; // , delta=5;
     // UCHAR q1 = 0, q2 = 0;
     for (size_t i = 0; i < size ; i++) {
 
@@ -260,7 +279,11 @@ UINT32 QltLoad::load(UCHAR* buf, const size_t size) {
 #endif
         // last = ((last <<6) + b) & RANGER_MASK;
         // calc_last(last, b, q1, q2, i);
-        calc_last(last, b);
+        // last = calc_last(last, b); 
+        // last = calc_last(last, buf, i); 
+        last = calc_last(last, b);
+        // last = calc_last(delta, buf, i);
+        // PREFETCH(ranger + last);
     }
     return m_valid ? size : 0;
 

@@ -155,9 +155,11 @@ void GenSave::save(const UCHAR* gen, UCHAR* qlt, size_t size) {
             m_last.count ++;
             UCHAR n = normalize_gen(gen[i], qlt[i]);
 
-            PREFETCH(ranger + last);
+            PREFETCH(ranger + last); // I have no idea why it's faster when located here
             ranger[last].put(&rcoder, n);
             last = ((last<<2) + n) & BRANGER_MASK;
+
+            // PREFETCH(ranger + last);
         }
 }
 
@@ -247,6 +249,7 @@ UINT32 GenLoad::load(UCHAR* gen, const UCHAR* qlt, size_t size) {
             UCHAR b = ranger[last].get(&rcoder);
             gen[i] = m_gencode [ b ];
             last = ((last<<2) + b) & BRANGER_MASK;
+            // PREFETCH(ranger + last);
         }
 
         rarely_if (m_last.Nn_index and

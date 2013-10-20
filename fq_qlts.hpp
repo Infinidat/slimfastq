@@ -25,18 +25,46 @@ protected:
     const Config* m_conf;
 
     void range_init();
-    inline void calc_last(UINT32 &last, UCHAR q, UCHAR &q1, UCHAR &q2, size_t i) {
-        last += (((MAX(q1, q2)<<6) + q) +
-                 (MIN(i+15,127)&(15<<3))
-                 );
-        
-        last &= RANGER_MASK;
-        q2 = q1;
-        q1 = q;
+    // inline UINT32 calc_last(UINT32 last, const UCHAR* q, size_t i) {
+    //     return
+    //         ( RARELY(i < 2) ?
+    //           (last << 6) + q[i] - '!' :
+    //           (( q[i] )-'!') |
+    //           (((q[i-2] == q[i-3] ? q[i-2] : q[i-1])-'!') << 6) |
+    //           (((i>>4) << 12) & 0x8f00) |
+    //           ((q[i] == q[i-1]) <<15 )
+    //           ) & RANGER_MASK;
+    //         
+    // }
+    inline UINT32 calc_last (UINT32 last, UCHAR b) {
+        return
+            ( b | 
+              (last << 6)
+              ) & RANGER_MASK;
+        // UCHAR q  = b & 0x3f;
+        // UCHAR q1 = last & 0x3f;
+        // UCHAR q2 = (last >> 6) & 0x3f;
+        // return ( q
+        //          |
+        //          q1 << 6
+        //          |
+        //          (((q2>q1? 64 : 0)+q1-q2)/4) << 12
+        //         ) & RANGER_MASK;
     }
-    inline void calc_last (UINT32& last, UCHAR q) {
-        last = ((last <<6) + q) & RANGER_MASK;
-    }
+    // inline UINT32 calc_last(UINT32 &delta, const UCHAR* q, size_t i) {
+    // 
+    //     return 
+    //         ( RARELY(i < 2) ?
+    //           0 : 
+    //           (q[i]-'!')
+    //           | 
+    //           ((MAX(q[i-1], q[i-2])-'!')<<6 )
+    //           |
+    //           ((q[i-1] == q[i-2]) << 12)
+    //           |
+    //           (( MIN(7*8, (delta += (q[i-1]>q[0])*(q[i-1]-q[i])))&0xf8)<<13)
+    //           ) & RANGER_MASK;
+    // }
 };
 
 class QltSave : private QltBase {
