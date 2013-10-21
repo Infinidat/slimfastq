@@ -112,6 +112,7 @@ Usage: \n\
 -O               : overwrite existing files\n\
 -l level         : compression level 1, 2, or 3 (default is 2 ) \n\
                  : { 1 = less resources, 3 = best compression } \n\
+-1, -2, -3       : alias for -l 1, -l 2, -l 3 \n\
 \n\
 -s size          : set partition to <size> (megabyte units) \n\
 -p partition     : only open this partition (-d implied) \n\
@@ -194,7 +195,7 @@ void Config::init(int argc, char **argv, int ver) {
     bool overwrite = false;
 
     // TODO? long options 
-    const char* short_opt = "POvhd u:f:s:p:l:"; 
+    const char* short_opt = "POvhd 123 u:f:s:p:l:"; 
     for ( int opt = getopt(argc, argv, short_opt);
           opt != -1;
           opt     = getopt(argc, argv, short_opt))
@@ -212,6 +213,8 @@ void Config::init(int argc, char **argv, int ver) {
             break;
             
         case 'l': level = strtoll(optarg, 0, 0);  break;
+        case '1': case '2' : case '3':
+            level = opt - '0'; break;
 
         case 'd': encode     = false; break;
         case 'O': overwrite  = true ; break;
@@ -241,8 +244,9 @@ void Config::init(int argc, char **argv, int ver) {
         filename_stream.open(withsuffix(m_file, ".files"));
     }
     else {
-        level = range_level(get_long("config.level", 2));
         load_info();
+
+        level = range_level(get_long("config.level", 2));
 
         f_usr = usr.length() ? fopen(usr.c_str(), m_wr_flags) : stdout;
         check_fh(f_usr, usr);

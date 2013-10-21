@@ -525,7 +525,7 @@ void RecSave::save_allele(char a) {
     stats.exceptions++;
 }
 
-bool RecSave::save_1(const UCHAR* buf, const UCHAR* end) {
+bool RecSave::save_t_1(const UCHAR* buf, const UCHAR* end) {
     // @SRR043409.575 61ED1AAXX100429:3:1:1039:1223/1
     // @SRR043409.578 61ED1AAXX100429:3:1:1040:4755/1
     const UCHAR* p = n_front('.', buf);
@@ -590,7 +590,7 @@ bool RecSave::save_1(const UCHAR* buf, const UCHAR* end) {
     return m_valid;
 }
 
-bool RecSave::save_3(const UCHAR* buf, const UCHAR* end) {
+bool RecSave::save_t_3(const UCHAR* buf, const UCHAR* end) {
 
     const UCHAR* p = n_front('.', buf);
     UINT64 line_n = ATOI(p);
@@ -633,7 +633,7 @@ bool RecSave::save_3(const UCHAR* buf, const UCHAR* end) {
     return m_valid;
 }
 
-bool RecSave::save_5(const UCHAR* buf, const UCHAR* end) {
+bool RecSave::save_t_5(const UCHAR* buf, const UCHAR* end) {
     const UCHAR* p = n_front('.', buf);
     UINT64 line_n = ATOI(p);
 
@@ -668,7 +668,7 @@ bool RecSave::save_5(const UCHAR* buf, const UCHAR* end) {
 
 #undef ATOI
 
-bool RecSave::save(const UCHAR* buf, const UCHAR* end) {
+bool RecSave::save_2(const UCHAR* buf, const UCHAR* end) {
 
     rarely_if(not m_type )
         determine_rec_type(buf, end);
@@ -677,11 +677,11 @@ bool RecSave::save(const UCHAR* buf, const UCHAR* end) {
 
     m_last.rec_count ++;
     switch(m_type) {
-    case 5:  return save_5(buf, end);
+    case 5:  return save_t_5(buf, end);
     case 4 :
-    case 3 : return save_3(buf, end);
+    case 3 : return save_t_3(buf, end);
     case 2 :                    // TODO: verify multiplexed sample index number
-    case 1 : return save_1(buf, end);
+    case 1 : return save_t_1(buf, end);
     default: ;
     }
     croak("unexpected record type");
@@ -784,7 +784,7 @@ RecLoad::~RecLoad() {
 //     return old;
 // }
 
-size_t RecLoad::load_1(UCHAR* buf) {
+size_t RecLoad::load_t_1(UCHAR* buf) {
     // @SRR043409.575 61ED1AAXX100429:3:1:1039:1223/1        
 
     long long gap = get_i(0);
@@ -877,7 +877,7 @@ size_t RecLoad::load_1(UCHAR* buf) {
     // return m_valid ? p-buf : 0;
 }
 
-size_t RecLoad::load_3(UCHAR* buf) {
+size_t RecLoad::load_t_3(UCHAR* buf) {
 
     // UINT16 predict = pager->predict();
     // rarely_if( predict == 0)
@@ -946,7 +946,7 @@ size_t RecLoad::load_3(UCHAR* buf) {
     return m_valid ? count : 0;
 }
 
-size_t RecLoad::load_5(UCHAR* buf) {
+size_t RecLoad::load_t_5(UCHAR* buf) {
 
     // UINT16 predict = pager->predict();
     // rarely_if( predict == 0)
@@ -1006,7 +1006,7 @@ size_t RecLoad::load_5(UCHAR* buf) {
     return m_valid ? count : 0;
 }
 
-size_t RecLoad::load(UCHAR* buf) {
+size_t RecLoad::load_2(UCHAR* buf) {
     // get one record to buf
     // size_t count = 0;
     if (not m_valid)
@@ -1014,11 +1014,11 @@ size_t RecLoad::load(UCHAR* buf) {
 
     m_last.rec_count ++;
     switch (m_type) {
-    case 5 : return load_5(buf);
+    case 5 : return load_t_5(buf);
     case 4 :
-    case 3 : return load_3(buf);
+    case 3 : return load_t_3(buf);
     case 2 : 
-    case 1 : return load_1(buf);
+    case 1 : return load_t_1(buf);
     default:;
     }
     croak("Illegal type: %d", m_type);

@@ -133,34 +133,30 @@ inline UCHAR GenSave::normalize_gen(UCHAR gen, UCHAR &qlt) {
     return n;
 }
 
-void GenSave::save(const UCHAR* gen, UCHAR* qlt, size_t size) {
+void GenSave::save_2(const UCHAR* gen, UCHAR* qlt, size_t size) {
 
     // rarely_if(not pager)
     //     pager_init();
 
-    // *is_raw = 1; // TODO: allow indexing
+    for (size_t i = 0; i < size; i ++) {
+        m_last.count ++;
+        UCHAR n = normalize_gen(gen[i], qlt[i]);
 
+        pager->put02(n);
+    }
+}
+
+void GenSave::save_3(const UCHAR* gen, UCHAR* qlt, size_t size) {
     UINT32 last = 0x007616c7 & BRANGER_MASK;
+    for (size_t i = 0; i < size; i ++) {
+        m_last.count ++;
+        UCHAR n = normalize_gen(gen[i], qlt[i]);
 
-
-    if (m_faster)
-        for (size_t i = 0; i < size; i ++) {
-            m_last.count ++;
-            UCHAR n = normalize_gen(gen[i], qlt[i]);
-
-            pager->put02(n);
-        }
-    else 
-        for (size_t i = 0; i < size; i ++) {
-            m_last.count ++;
-            UCHAR n = normalize_gen(gen[i], qlt[i]);
-
-            PREFETCH(ranger + last); // I have no idea why it's faster when located here
-            ranger[last].put(&rcoder, n);
-            last = ((last<<2) + n) & BRANGER_MASK;
-
-            // PREFETCH(ranger + last);
-        }
+        PREFETCH(ranger + last); // I have no idea why it's faster when located here
+        ranger[last].put(&rcoder, n);
+        last = ((last<<2) + n) & BRANGER_MASK;
+        // PREFETCH(ranger + last);
+    }
 }
 
 // load
@@ -235,39 +231,51 @@ GenLoad::~GenLoad() {
     delete pagerNn;
 }
 
-UINT32 GenLoad::load(UCHAR* gen, const UCHAR* qlt, size_t size) {
+void GenLoad::normalize_gen(UCHAR & gen, UCHAR qlt) {
+    rarely_if (m_last.Nn_index and
+               m_last.Nn_index == m_last.count) {
+        m_last.Nn_index += getgapNn();
+    }
+
+    else rarely_if (qlt == '!')
+        gen = m_N_byte;
+    else rarely_if (m_last.Ns_index and
+                    m_last.Ns_index == m_last.count) {
+        gen = m_N_byte;
+        m_last.Ns_index += getgapNs();
+   }
+}
+
+UINT32 GenLoad::load_2(UCHAR* gen, const UCHAR* qlt, size_t size) {
     // TODO: if lowercase
+    for (size_t i = 0; i < size; i ++ ) {
+        m_last.count ++ ;
+        gen[i] = m_gencode [ pager->get02() ];
+        // if lossless
+        normalize_gen(gen[i], qlt[i]); 
+   }
+
+    return m_valid ? size : 0;
+}
+
+UINT32 GenLoad::load_3(UCHAR* gen, const UCHAR* qlt, size_t size) {
+
     UINT32 last = 0x007616c7 & BRANGER_MASK;
 
     for (size_t i = 0; i < size; i ++ ) {
         m_last.count ++ ;
 
-        if (m_faster)
-            gen[i] = m_gencode [ pager->get02() ];
-        else {
-            PREFETCH(ranger + last);
-            UCHAR b = ranger[last].get(&rcoder);
-            gen[i] = m_gencode [ b ];
-            last = ((last<<2) + b) & BRANGER_MASK;
-            // PREFETCH(ranger + last);
-        }
-
-        rarely_if (m_last.Nn_index and
-                   m_last.Nn_index == m_last.count) {
-            m_last.Nn_index += getgapNn();
-        }
-        else rarely_if (qlt[i] == '!')
-            gen[i] = m_N_byte;
-        else rarely_if (m_last.Ns_index and
-                 m_last.Ns_index == m_last.count) {
-            gen[i] = m_N_byte;
-            m_last.Ns_index += getgapNs();
-        }
+        PREFETCH(ranger + last);
+        UCHAR b = ranger[last].get(&rcoder);
+        gen[i] = m_gencode [ b ];
+        last = ((last<<2) + b) & BRANGER_MASK;
+        // PREFETCH(ranger + last);
+        
+        normalize_gen(gen[i], qlt[i]);
     }
 
     return m_valid ? size : 0;
 }
-
 
 /* Solid map: 
   0 : ACGT => ACGT

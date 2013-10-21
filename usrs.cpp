@@ -266,12 +266,31 @@ int UsrSave::encode() {
     }
     else {
 
-        while(get_record(&p_rec, &p_rec_end, &p_gen, &p_qlt) and
-              ++ m_rec_total < sanity ) {
+        switch (conf.level) {
 
-            gen.save(p_gen, p_qlt, m_llen);
-            rec.save(p_rec, p_rec_end);
-            qlt.save(p_qlt, m_llen);
+        case 1:
+            while(get_record(&p_rec, &p_rec_end, &p_gen, &p_qlt) and
+                  ++ m_rec_total < sanity ) {
+                gen.save_1(p_gen, p_qlt, m_llen);
+                rec.save_1(p_rec, p_rec_end);
+                qlt.save_1(p_qlt, m_llen);
+            } break;
+        case 2: default:
+            while(get_record(&p_rec, &p_rec_end, &p_gen, &p_qlt) and
+                  ++ m_rec_total < sanity ) {
+
+                gen.save_2(p_gen, p_qlt, m_llen);
+                rec.save_2(p_rec, p_rec_end);
+                qlt.save_2(p_qlt, m_llen);
+            } break;
+        case 3:
+            while(get_record(&p_rec, &p_rec_end, &p_gen, &p_qlt) and
+                  ++ m_rec_total < sanity ) {
+
+                gen.save_3(p_gen, p_qlt, m_llen);
+                rec.save_3(p_rec, p_rec_end);
+                qlt.save_3(p_qlt, m_llen);
+            } break;
         }
     }
     conf.set_info("num_records", m_rec_total);
@@ -420,21 +439,40 @@ int UsrLoad::decode() {
 
     // bool gentype = false;
 
-    while (n_recs --) {
+    switch (conf.level) {
+    case 1:
+        while (n_recs --) {
+            rarely_if (m_last.rec_count == m_last.index) update();
+            m_rec_size = rec.load_1(b_rec);
+            rarely_if (not m_rec_size)
+                croak("premature EOF - %llu records left", n_recs+1);
 
-        rarely_if (m_last.rec_count == m_last.index)
-            update();
+            qlt.load_1(b_qlt, m_llen);
+            gen.load_1(b_gen, b_qlt, m_llen);
+            save();
+        } break;
+    case 2: default:
+        while (n_recs --) {
+            rarely_if (m_last.rec_count == m_last.index) update();
+            m_rec_size = rec.load_2(b_rec);
+            rarely_if (not m_rec_size)
+                croak("premature EOF - %llu records left", n_recs+1);
 
-        m_rec_size = rec.load(b_rec);
-        rarely_if (not m_rec_size) {
-            // if (m_conf->is_part())
-            //     return 0;       // TODO: track num records for partition
-            croak("premature EOF - %llu records left", n_recs+1);
-        }
+            qlt.load_2(b_qlt, m_llen);
+            gen.load_2(b_gen, b_qlt, m_llen);
+            save();
+        } break;
+    case 3:
+        while (n_recs --) {
+            rarely_if (m_last.rec_count == m_last.index) update();
+            m_rec_size = rec.load_3(b_rec);
+            rarely_if (not m_rec_size)
+                croak("premature EOF - %llu records left", n_recs+1);
 
-        qlt.load(b_qlt, m_llen);
-        gen.load(b_gen, b_qlt, m_llen);
-        save();
+            qlt.load_3(b_qlt, m_llen);
+            gen.load_3(b_gen, b_qlt, m_llen);
+            save();
+        } break;
     }
     // sanity: verify all objects are done (by croak?)
     return 0;

@@ -47,7 +47,9 @@ public:
     GenSave();
     ~GenSave();
 
-    void save(const UCHAR* gen, UCHAR* qlt, size_t size);
+    void save_1(const UCHAR* gen, UCHAR* qlt, size_t size){ return save_2(gen, qlt, size); } ;
+    void save_2(const UCHAR* gen, UCHAR* qlt, size_t size);
+    void save_3(const UCHAR* gen, UCHAR* qlt, size_t size);
     // void pager_init();
 
 private:
@@ -67,12 +69,15 @@ public:
     GenLoad();
     ~GenLoad();
 
-    UINT32 load(UCHAR* gen, const UCHAR* qlt, size_t size);
+    UINT32 load_1(UCHAR* gen, const UCHAR* qlt, size_t size) { return load_2(gen, qlt, size); };
+    UINT32 load_2(UCHAR* gen, const UCHAR* qlt, size_t size);
+    UINT32 load_3(UCHAR* gen, const UCHAR* qlt, size_t size);
 
 private:
     UCHAR get_2();
     UINT64 getgapNs();
     UINT64 getgapNn();
+    inline void normalize_gen(UCHAR &gen, UCHAR qlt);
 
     bool   m_validNs, m_validNn;
     const char* m_gencode;

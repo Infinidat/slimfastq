@@ -67,7 +67,9 @@ public:
      RecSave();
     ~RecSave();
 
-    bool save(const UCHAR* buf, const UCHAR* end);
+    bool save_1(const UCHAR* buf, const UCHAR* end) { return save_2(buf, end); }
+    bool save_2(const UCHAR* buf, const UCHAR* end);
+    bool save_3(const UCHAR* buf, const UCHAR* end) { return save_2(buf, end); }
     // void pager_init();
 private:
     // enum { UT_ALLELE,
@@ -76,9 +78,9 @@ private:
     // void update(UpdateType type, UINT64 val);
     // bool is_allele(char a);
     void save_allele(char a);
-    bool save_1(const UCHAR* buf, const UCHAR* end);
-    bool save_3(const UCHAR* buf, const UCHAR* end);
-    bool save_5(const UCHAR* buf, const UCHAR* end);
+    bool save_t_1(const UCHAR* buf, const UCHAR* end);
+    bool save_t_3(const UCHAR* buf, const UCHAR* end);
+    bool save_t_5(const UCHAR* buf, const UCHAR* end);
 
     void determine_rec_type(const UCHAR* buf, const UCHAR* end);
     int  get_rec_type(const char* start);
@@ -97,13 +99,15 @@ public:
     ~RecLoad();
 
     inline bool is_valid() {return m_valid;}
-    size_t load(UCHAR* buf);
+    size_t load_1(UCHAR* buf) { return load_2(buf) ;}
+    size_t load_2(UCHAR* buf);
+    size_t load_3(UCHAR* buf) { return load_2(buf) ;}
 
 private:
     // update();
-    size_t load_1(UCHAR* buf);
-    size_t load_3(UCHAR* buf);
-    size_t load_5(UCHAR* buf);
+    size_t load_t_1(UCHAR* buf);
+    size_t load_t_3(UCHAR* buf);
+    size_t load_t_5(UCHAR* buf);
 
     // UINT16 get16();
     // UINT64 getgap();

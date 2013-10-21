@@ -12,9 +12,9 @@
 
 #define protected public
 
-#include "fq_qlts.hpp"
-#include "fq_recs.hpp"
-#include "fq_gens.hpp"
+#include "qlts.hpp"
+#include "recs.hpp"
+#include "gens.hpp"
 
 #undef  protected
 
@@ -65,26 +65,27 @@ void fill_buf(UCHAR* buf, int start, int size) {
         buf[i] = '!' + ((i*7+start) % 63);
 }
 
+Config conf;
 void test_qlt() {
     const char* argv[] = {"utest", "-f", "/tmp/utest", "-O"};
-    Config conf(4, (char**)argv, 777);
+    conf.init(4, (char**)argv, 777);
     {
-        QltSave qlt(&conf);
+        QltSave qlt;
         UCHAR buf[100];
         for(int i = 0; i < 101; i++) {
             fill_buf(buf, i, 91);
-            qlt.save(buf, 91);
+            qlt.save_2(buf, 91);
         }
     }
     {
         // const char* argv[] = {"utest", "-f", "/tmp/utest", "-O", "-d"};
         // Config conf(5, (char**)argv, 777);
-        QltLoad qlt(&conf);
+        QltLoad qlt;
         UCHAR buf[100];
         UCHAR tst[100];
         for(int i = 0; i < 101; i++) {
             fill_buf(tst, i, 91);
-            qlt.load(buf, 91);
+            qlt.load_2(buf, 91);
             for (int j=0; j<91; j++)
                 assert(tst[j] == buf[j]);
         }
@@ -98,7 +99,7 @@ void test_ranger() {
         assert(fh);
         FilerSave filer(fh) ;
         assert(filer.is_valid());
-        RangeCoder rcoder;
+        RCoder rcoder;
         rcoder.init(&filer);
         PowerRanger ranger;
         BZERO(ranger);
@@ -112,7 +113,7 @@ void test_ranger() {
         bool valid;
         FilerLoad filer(fh, &valid) ;
         assert(filer.is_valid());
-        RangeCoder rcoder;
+        RCoder rcoder;
         rcoder.init(&filer);
         PowerRanger ranger;
         BZERO(ranger);
