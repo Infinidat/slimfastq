@@ -18,9 +18,10 @@
 
 #undef  protected
 
-#define TITLE(X)
+#define TITLE(X) fprintf(stderr, "UTEST: %s\n", X)
 
 void test_filer() {
+    TITLE("filer");
     const char* fname = "/tmp/utest~filer"; 
     {
         FILE *fh = fopen(fname, "w");
@@ -67,6 +68,7 @@ void fill_buf(UCHAR* buf, int start, int size) {
 
 Config conf;
 void test_qlt() {
+    TITLE("qlt stream");
     const char* argv[] = {"utest", "-f", "/tmp/utest", "-O"};
     conf.init(4, (char**)argv, 777);
     {
@@ -92,36 +94,126 @@ void test_qlt() {
     }
 }
 
-void test_ranger() {
+bool _valid ;
+RCoder * rc = NULL;
+FilerLoad* filer_l = NULL;
+FilerSave* filer_s = NULL;
+
+void rc_init(bool load=0) {
     const char* fname = "/tmp/utest~filer";
-    {
-        FILE *fh = fopen(fname, "w");
+    _valid = true;
+    rc = new RCoder;
+    assert(rc);
+    if (load) {
+        FILE* fh = fopen(fname, "r");
         assert(fh);
-        FilerSave filer(fh) ;
-        assert(filer.is_valid());
-        RCoder rcoder;
-        rcoder.init(&filer);
+        rc->init(filer_l = new FilerLoad(fh, &_valid));
+    } 
+    else  {
+        FILE* fh = fopen(fname, "w");
+        assert(fh);
+        rc->init(filer_s = new FilerSave(fh));
+    }
+}
+
+void rc_finit() {
+    rc -> done();
+    DELETE (rc);
+    DELETE (filer_l);
+    DELETE (filer_s);
+}
+
+void test_log64_ranger() {
+    TITLE("log64 put/get");
+    {
+        rc_init(0);
+        Log64Ranger ranger;
+        BZERO(ranger);
+        for (int i = 0; i < 300; i++)
+            ranger.put(rc, i&0x3f);
+        for (int i = 0; i < 1000; i+=17)
+            ranger.put(rc, i&0x3f);
+        rc_finit();
+    }
+    {
+        rc_init(1);
+        Log64Ranger ranger;
+        BZERO(ranger);
+        for (int i = 0; i < 300; i++) {
+            UCHAR c = ranger.get(rc);
+            assert(c == (i&0x3f));
+        }
+        for (int i = 0; i < 1000; i+=17) {
+            UCHAR c = ranger.get(rc);
+            assert(c == (i&0x3f));
+        }
+        rc_finit();
+    }
+}
+
+void test_power_ranger() {
+    TITLE("power ranger put/get");
+    {
+        rc_init(0);
         PowerRanger ranger;
         BZERO(ranger);
         for (int i = 0; i < 300; i++)
-            ranger.put(&rcoder, i&0xff);
-        rcoder.done();
+            ranger.put(rc, 0, i&0xff);
+        for (int i = 0; i < 1000; i+=17)
+            ranger.put(rc, 0, i&0xff);
+        rc_finit();
     }
     {
-        FILE *fh = fopen(fname, "r");
-        assert(fh);
-        bool valid;
-        FilerLoad filer(fh, &valid) ;
-        assert(filer.is_valid());
-        RCoder rcoder;
-        rcoder.init(&filer);
+        rc_init(1);
         PowerRanger ranger;
         BZERO(ranger);
         for (int i = 0; i < 300; i++) {
-            UCHAR c = ranger.get(&rcoder);
+            UCHAR c = ranger.get(rc, 0);
             assert(c == (i&0xff));
         }
-        rcoder.done();
+        for (int i = 0; i < 1000; i+=17) {
+            UCHAR c = ranger.get(rc, 0);
+            assert(c == (i&0xff));
+        }
+        rc_finit();
+    }
+    TITLE("ranger put_i / get_i");
+    {
+        rc_init();
+        PowerRanger ranger;
+        BZERO(ranger);
+        for (int i = 0; i < 300; i++)
+            ranger.put_i(rc, i);
+        rc_finit();
+    }
+    {
+        rc_init(1);
+        PowerRanger ranger;
+        BZERO(ranger);
+        for (int i = 0; i < 300; i++) {
+            int c = ranger.get_i(rc);
+            assert(c == i);
+        }
+        rc_finit();
+    }
+    TITLE("ranger put_u / get_u");
+    {
+        rc_init();
+        PowerRanger ranger;
+        BZERO(ranger);
+        for (int i = 0; i < 300; i++)
+            ranger.put(rc, 0, i&0xff);
+        rc_finit();
+    }
+    {
+        rc_init(1);
+        PowerRanger ranger;
+        BZERO(ranger);
+        for (int i = 0; i < 300; i++) {
+            int c = ranger.get(rc, 0);
+            assert(c == (i&0xff));
+        }
+        rc_finit();
     }
 }
 
@@ -211,7 +303,8 @@ void test_recbase() {
 int main(int argc, char *argv[]) {
 
     test_filer();
-    test_ranger();
+    test_log64_ranger();
+    test_power_ranger();
     test_qlt();
     test_recbase();
 

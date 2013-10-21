@@ -11,6 +11,7 @@ FilerLoad::FilerLoad(FILE* fh, bool* valid_ptr) {
     m_valid_ptr = valid_ptr;
     * valid_ptr = m_valid = true ;
     m_page_count = 0;
+    m_cur = m_count = 0;                // happy valgrind 
     load_page();
 }
 
