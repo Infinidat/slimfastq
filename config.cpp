@@ -277,7 +277,7 @@ FILE* Config::open_r(const char* suffix, bool must) const {
     FILE* fh = fopen(name, "rb");
     if (must) check_fh(fh, name, true);
 
-    delete [] name ;
+    delete[] name ;
     return fh;
 }
 

@@ -11,7 +11,7 @@
 
 class Log64Ranger {
     enum {
-        STEP=3,
+        STEP=8,
         NSYM=64,
         MAX_FREQ=(1<<16)-32,
     };
@@ -67,6 +67,7 @@ public:
         UINT32 vtot = total + NSYM - iend;
         rc->Encode(sumf, freq[i], vtot);
 
+        // rarely_if(vtot > MAX_FREQ - STEP)
         rarely_if(freq[i] > (MAX_FREQ - STEP))
             normalize();
 

@@ -47,15 +47,6 @@ protected:
             ( b | 
               (last << 6)
               ) & RANGER_MASK_2;
-        // UCHAR q  = b & 0x3f;
-        // UCHAR q1 = last & 0x3f;
-        // UCHAR q2 = (last >> 6) & 0x3f;
-        // return ( q
-        //          |
-        //          q1 << 6
-        //          |
-        //          (((q2>q1? 64 : 0)+q1-q2)/4) << 12
-        //         ) & RANGER_MASK;
     }
     inline UINT32 calc_last_1 (UINT32 last, UCHAR b) {
         return ( b | (last << 6) ) & RANGER_MASK_1;
@@ -65,8 +56,24 @@ protected:
         // TODO: use delta
     }
 
-    // inline UINT32 min_val(UINT32 a, UINT32 b) { return a>b?b:a; }
-    // inline UCHAR  max_val(UCHAR  a, UCHAR  b) { return a>b?a:b; }
+    inline UINT32 min_val(UINT32 a, UINT32 b) { return a>b?b:a; }
+    inline UCHAR  max_val(UCHAR  a, UCHAR  b) { return a>b?a:b; }
+    inline UINT32 calc_last_delta(int &delta, UCHAR q, UCHAR &q1, UCHAR &q2) {
+
+        delta += (q1 >  q ) * (q1 - q);
+        return ( q
+                 | ( max_val(q1, q2) << 6 )
+                 | (( min_val(7*8, delta)&0xf8) << 10)
+                 | ( (q1 == q2) << 12 ) ) & RANGER_MASK_2;
+
+            
+        // return ( q
+        //          |
+        //          q1 << 6
+        //          |
+        //          (((q2>q1? 64 : 0)+q1-q2)/4) << 12
+        //         ) & RANGER_MASK;
+    }
     // inline UINT32 calc_last(UINT32 &delta, const UCHAR* q, size_t i) {
     // 
     //     return 

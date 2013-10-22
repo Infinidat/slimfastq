@@ -39,6 +39,7 @@ QltSave::QltSave()  {
 QltSave::~QltSave() {
     rcoder.done();
     DELETE(filer);
+    DELETE(ranger);
 }
 
 bool QltSave::is_valid() {
@@ -62,6 +63,8 @@ void QltSave::save_1(const UCHAR* buf, size_t size) {
 
 void QltSave::save_2(const UCHAR* buf, size_t size) {
     UINT32 last = 0;
+    // int delta = 5;
+    // UCHAR q1 = 0, q2 = 0;
 
     for (size_t i = 0; i < size; i++) {
         UCHAR b = UCHAR(buf[i] - '!');
@@ -71,7 +74,8 @@ void QltSave::save_2(const UCHAR* buf, size_t size) {
 
         PREFETCH(ranger + last);
         ranger[last].put(&rcoder, b);
-        last = calc_last_2(last, b); 
+        last = calc_last_2(last, b);
+        // last = calc_last_delta(delta, b, q1, q2);
     }
 }
 
@@ -158,6 +162,7 @@ QltLoad::QltLoad() {
 QltLoad::~QltLoad() {
     rcoder.done();
     DELETE(filer);
+    DELETE(ranger);
 }
 
 bool QltLoad::is_valid() {
