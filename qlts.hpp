@@ -12,7 +12,7 @@
 #include "filer.hpp"
 #include "log64_ranger.hpp"
 
-#define RANGER_SIZE_3 (1<<18)
+#define RANGER_SIZE_3 (1<<17)
 #define RANGER_MASK_3 (RANGER_SIZE_3-1)
 
 #define RANGER_SIZE_2 (1<<16)
@@ -42,30 +42,31 @@ protected:
     //           ) & RANGER_MASK;
     //         
     // }
-    inline UINT32 calc_last_2 (UINT32 last, UCHAR b) {
+    inline static UINT32 calc_last_2 (UINT32 last, UCHAR b) {
         return
             ( b | 
               (last << 6)
               ) & RANGER_MASK_2;
     }
-    inline UINT32 calc_last_1 (UINT32 last, UCHAR b) {
+    inline static UINT32 calc_last_1 (UINT32 last, UCHAR b) {
         return ( b | (last << 6) ) & RANGER_MASK_1;
     }
-    inline UINT32 calc_last_3 (UINT32 last, UCHAR b) {
+    inline static UINT32 calc_last_3 (UINT32 last, UCHAR b) {
         return ( b | (last << 6) ) & RANGER_MASK_3;
         // TODO: use delta
     }
 
-    inline UINT32 min_val(UINT32 a, UINT32 b) { return a>b?b:a; }
-    inline UCHAR  max_val(UCHAR  a, UCHAR  b) { return a>b?a:b; }
-    inline UINT32 calc_last_delta(int &delta, UCHAR q, UCHAR &q1, UCHAR &q2) {
+    inline static UINT32 min_val(UINT32 a, UINT32 b) { return a>b?b:a; }
+    inline static UCHAR  max_val(UCHAR  a, UCHAR  b) { return a>b?a:b; }
+    inline static UINT32 calc_last_delta(size_t i, UCHAR q, UCHAR q1, UCHAR q2) {
 
-        delta += (q1 >  q ) * (q1 - q);
-        return ( q
-                 | ( max_val(q1, q2) << 6 )
-                 | (( min_val(7*8, delta)&0xf8) << 10)
-                 | ( (q1 == q2) << 12 ) ) & RANGER_MASK_2;
-
+        return ( (UINT32) q        // 0 .. 5
+                 | (q1 << 6)       // 6 .. 11
+                 | ((q2&0xfe)<<11) // 12 .. 15
+                 // | (((((q  >= q1)+(q  > q1)) *
+                 //      ((q1 <= q2)+(q1 < q2))) & 7) << 11) // 12, 13
+                 // | (( i > 30) << 13)                      // 14
+                 ) & RANGER_MASK_2 ;
             
         // return ( q
         //          |

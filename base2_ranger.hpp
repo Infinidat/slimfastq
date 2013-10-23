@@ -26,10 +26,10 @@ class Base2Ranger {
         //       (freq[1] -= (freq[1]>>1)) ) +
         //     ( (freq[2] -= (freq[2]>>1)) +
         //       (freq[3] -= (freq[3]>>1)) ) ;
-        freq[0] -= (freq[0]>>1);
-        freq[1] -= (freq[1]>>1);
-        freq[2] -= (freq[2]>>1);
-        freq[3] -= (freq[3]>>1);
+        (freq[0] -= (freq[0]>>1),
+         freq[1] -= (freq[1]>>1)),
+        (freq[2] -= (freq[2]>>1),
+         freq[3] -= (freq[3]>>1));
     }
 
 public:
@@ -39,7 +39,7 @@ public:
         // total = 4;
     }
 
-    UINT16 getsum() {
+    inline UINT16 getsum() {
         return (freq[0] + freq[1]) + (freq[2] + freq[3]);
     }
 

@@ -63,7 +63,7 @@ void QltSave::save_1(const UCHAR* buf, size_t size) {
 
 void QltSave::save_2(const UCHAR* buf, size_t size) {
     UINT32 last = 0;
-    // int delta = 5;
+    // UINT32 delta = 5;
     // UCHAR q1 = 0, q2 = 0;
 
     for (size_t i = 0; i < size; i++) {
@@ -75,14 +75,18 @@ void QltSave::save_2(const UCHAR* buf, size_t size) {
         PREFETCH(ranger + last);
         ranger[last].put(&rcoder, b);
         last = calc_last_2(last, b);
-        // last = calc_last_delta(delta, b, q1, q2);
+        // last = calc_last_delta(i, b, q1, q2);
+        // q1 = b;
+        // q2 = q1;
     }
 }
 
 void QltSave::save_3(const UCHAR* buf, size_t size) {
+
 // #define KILLER_BEE
+
     UINT32 last = 0;
-    // UCHAR q1 = 0, q2 = 0;
+
 #ifdef KILLER_BEE
     size_t len = size;
     while (len and buf[len-1] == '#')
@@ -93,23 +97,7 @@ void QltSave::save_3(const UCHAR* buf, size_t size) {
 #define SIZE size
 #endif
 
-    // UINT32 delta = 5;
     size_t i = 0;
-    // for (; i < SIZE and i < 8; i++)
-    // {
-    //     UCHAR b = UCHAR(buf[i] - '!');
-    // 
-    //     rarely_if(b >= 63)
-    //         croak("Illegal quality value 0x%x. Aborting\n", buf[i]);
-    // 
-    //     PREFETCH(ranger + last);
-    //     ranger[last].put(&rcoder, b);
-    //     //        last = ((last <<6) + b) & RANGER_MASK;
-    //     // calc_last(last, b, q1, q2, i);
-    //     last = calc_last(last, b); 
-    //     // PREFETCH(ranger + last);
-    // }
-
     for (; i < SIZE; i++) {
         UCHAR b = UCHAR(buf[i] - '!');
 
@@ -118,11 +106,8 @@ void QltSave::save_3(const UCHAR* buf, size_t size) {
 
         PREFETCH(ranger + last);
         ranger[last].put(&rcoder, b);
-        //        last = ((last <<6) + b) & RANGER_MASK;
-        // calc_last(last, b, q1, q2, i);
-        // last = calc_last(last, buf, i);
         last = calc_last_3(last, b); 
-        // last = calc_last(delta, buf, i);
+
         // PREFETCH(ranger + last);
     }
 
@@ -130,20 +115,6 @@ void QltSave::save_3(const UCHAR* buf, size_t size) {
     if (len != size)
         ranger[last].put(&rcoder, 63);
 #endif
-
-    // while (size) {
-    //     rarely_if (bucket.index >= BUCKET_SIZE)
-    //         save_bucket();
-    // 
-    //     size_t  num = std::min(size, (BUCKET_SIZE - bucket.index));
-    //     size -= num;
-    //     for (size_t i = 0 ; i < num; i++) {
-    //         UCHAR c = buf[i];
-    //         bucket.buf [bucket.index++] = c ;
-    //         bucket.hist[FQQ_ALGO_SELF ] [ c ] ++;
-    //     }
-    //     buf += num;
-    // }
 #undef KILLER_BEE
 }
 
@@ -188,6 +159,7 @@ UINT32 QltLoad::load_1(UCHAR* buf, const size_t size) {
 UINT32 QltLoad::load_2(UCHAR* buf, const size_t size) {
 
     UINT32 last = 0 ; 
+    // UCHAR q1 = 0, q2 = 0;
     for (size_t i = 0; i < size ; i++) {
 
         PREFETCH(ranger + last);
@@ -195,6 +167,9 @@ UINT32 QltLoad::load_2(UCHAR* buf, const size_t size) {
         buf[i] = UCHAR('!' + b);
 
         last = calc_last_2(last, b);
+        // last = calc_last_delta(i, b, q1, q2);
+        // q1 = b;
+        // q2 = q1;
     }
     return m_valid ? size : 0;
 }
@@ -217,10 +192,7 @@ UINT32 QltLoad::load_3(UCHAR* buf, const size_t size) {
 #else
         buf[i] = UCHAR('!' + b);
 #endif
-        // last = calc_last(last, b); 
-        // last = calc_last(last, buf, i); 
         last = calc_last_3(last, b);
-        // last = calc_last(delta, buf, i);
     }
     return m_valid ? size : 0;
 }

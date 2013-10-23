@@ -19,10 +19,10 @@ protected:
     GenBase(){}
     ~GenBase(){}
 
-#define BRANGER_SIZE_2 (1<<18)
+#define BRANGER_SIZE_2 (1<<19)
 #define BRANGER_MASK_2 (BRANGER_SIZE_2-1)
 
-#define BRANGER_SIZE_3 (1<<21)
+#define BRANGER_SIZE_3 (1<<23)
 #define BRANGER_MASK_3 (BRANGER_SIZE_3-1)
 
     Base2Ranger* ranger; //[BRANGER_SIZE];
