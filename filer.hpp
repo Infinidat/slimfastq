@@ -49,7 +49,7 @@ public:
     FilerSave(FILE* fh);
     ~FilerSave();
     bool is_valid() const ;
-    bool put(UCHAR c) {
+    inline bool put(UCHAR c) {
         rarely_if(m_cur >= FILER_PAGE)
             save_page();
         m_buff[m_cur++] = c;

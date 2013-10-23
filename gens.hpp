@@ -18,8 +18,12 @@ class GenBase {
 protected:
     GenBase(){}
     ~GenBase(){}
-#define BRANGER_SIZE (1<<21)
-#define BRANGER_MASK (BRANGER_SIZE-1)
+
+#define BRANGER_SIZE_2 (1<<18)
+#define BRANGER_MASK_2 (BRANGER_SIZE_2-1)
+
+#define BRANGER_SIZE_3 (1<<21)
+#define BRANGER_MASK_3 (BRANGER_SIZE_3-1)
 
     Base2Ranger* ranger; //[BRANGER_SIZE];
     RCoder rcoder;
@@ -36,10 +40,11 @@ protected:
         UINT32 big_gaps;
     } m_stats ;
 
-    bool   m_lossless, m_valid, m_faster;
+    bool   m_lossless, m_valid;
     UCHAR  m_N_byte;
 
     void range_init();
+    size_t ranger_cnt();
 };
 
 class GenSave : private GenBase {
@@ -47,7 +52,7 @@ public:
     GenSave();
     ~GenSave();
 
-    void save_1(const UCHAR* gen, UCHAR* qlt, size_t size){ return save_2(gen, qlt, size); } ;
+    void save_1(const UCHAR* gen, UCHAR* qlt, size_t size);
     void save_2(const UCHAR* gen, UCHAR* qlt, size_t size);
     void save_3(const UCHAR* gen, UCHAR* qlt, size_t size);
     // void pager_init();
@@ -69,7 +74,7 @@ public:
     GenLoad();
     ~GenLoad();
 
-    UINT32 load_1(UCHAR* gen, const UCHAR* qlt, size_t size) { return load_2(gen, qlt, size); };
+    UINT32 load_1(UCHAR* gen, const UCHAR* qlt, size_t size);
     UINT32 load_2(UCHAR* gen, const UCHAR* qlt, size_t size);
     UINT32 load_3(UCHAR* gen, const UCHAR* qlt, size_t size);
 
