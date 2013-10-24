@@ -62,7 +62,7 @@ public:
         assert (cumFreq + freq <= totFreq);
 
         while( range<TOP ) {
-            if ( UCHAR((low^(low+range))>>56)) 
+            if ( UCHAR((low^(low+range))>>56) ) 
                 range = ((UINT32(low)|(TOP-1))-UINT32(low));
             m_out->put(low >> 56);
             range <<= 8;

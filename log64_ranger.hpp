@@ -51,12 +51,12 @@ public:
         UINT32 sumf  = 0;
         UINT32 i = 0;
 
-        assert(sym < 64);
+        assert(sym < NSYM);
         rarely_if(iend <= sym)
             for (;iend <= sym; iend++)
                 syms[iend] = iend;
 
-        for (; syms[i] != sym and LIKELY(i < iend); sumf += freq[i++]);
+        for (; syms[i] != sym; sumf += freq[i++]);
         sumf += i;
 
         UINT32 vtot = total + NSYM;

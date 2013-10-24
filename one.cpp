@@ -444,19 +444,23 @@ inline void BASE_MODEL<st_t>::encodeSymbol(RangeCoder *rc, uint sym) {
 #define Encode256 Encode
 
     case 0:
-	rc->Encode256(0,                              Stats[0], SummFreq);
+	rc->Encode256(0,
+                      Stats[0], SummFreq);
 	Stats[0] += STEP; 
 	break;
     case 1:
-	rc->Encode256(Stats[0],                       Stats[1], SummFreq);
+	rc->Encode256(Stats[0],
+                      Stats[1], SummFreq);
 	Stats[1] += STEP;
 	break;
     case 2:
-	rc->Encode256(Stats[0] + Stats[1],            Stats[2], SummFreq);
+	rc->Encode256(Stats[0] + Stats[1],
+                      Stats[2], SummFreq);
 	Stats[2] += STEP;
 	break;
     case 3:
-	rc->Encode256((Stats[0] + Stats[1]) + Stats[2], Stats[3], SummFreq);
+	rc->Encode256((Stats[0] + Stats[1]) + Stats[2],
+                      Stats[3], SummFreq);
 	Stats[3] += STEP;
 	break;
 
@@ -709,7 +713,7 @@ protected:
 // #define SMALL_MASK ((1<<(2*SMALL_NS))-1)
 //     BASE_MODEL<uint8_t> model_seq_small[1<<(2*SMALL_NS)];
 
-    void encode_seq8 (RangeCoder *rc, char *seq, int len, int i);
+        void encode_seq8 (RangeCoder *rc, char *seq, int len);// int i);
     // void encode_seq16(RangeCoder *rc, char *seq, int len);
 
     void decode_seq8 (RangeCoder *rc, char *seq, int len);
@@ -1304,7 +1308,7 @@ int fqz::decode_len(RangeCoder *rc) {
  * The 8-bit one is lower memory and somtimes slightly faster, but
  * marginally less optimal in compression ratios (within 1%).
  */
-void fqz::encode_seq8(RangeCoder *rc, char * seq, int len, int offset) {
+void fqz::encode_seq8(RangeCoder *rc, char * seq, int len) { // , int offset) {
     int last;//, last2;
     // int bc[4] = {(3-0) << (2*NS-2),
     //     	 (3-1) << (2*NS-2),
@@ -1780,7 +1784,7 @@ void fqz::compress_r2() {
 	// if (extreme_seq)
 	//     encode_seq16(&rc, seq_p, seq_len_a[i]);
 	// else
-        encode_seq8(&rc, seq_p, seq_len_a[i], i);
+            encode_seq8(&rc, seq_p, seq_len_a[i]);//, i);
 	seq_p  += seq_len_a[i];
     }
     rc.FinishEncode();

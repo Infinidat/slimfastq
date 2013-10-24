@@ -23,7 +23,7 @@ void GenBase::range_init() {
     const int cnt = ranger_cnt();
     for (int i = 0 ; i < cnt; i++)
         ranger[i].init();
-    // bzero(ranger, sizeof(ranger[0])*BRANGER_SIZE);
+    // bzero(ranger, sizeof(ranger[0])* cnt);
     // memset(ranger, 1, sizeof(ranger[0])*BRANGER_SIZE);
 }
 
