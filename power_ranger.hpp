@@ -140,6 +140,32 @@ public:
             *old = num;
             num = t;
         }
+        // likely_if( num >= -0x80 and
+        //            num <= 0x7f) {
+        //     put(rc, 0, 0  );
+        //     put(rc, 1, 0xff&num);
+        //     return false;
+        // }
+        // likely_if (num >= -0x8000 and
+        //            num <=  0x7fff) {
+        //     put(rc, 0, 1);
+        //     put(rc, 2, 0xff&(num   ));
+        //     put(rc, 3, 0xff&(num>>8));
+        //     return false;
+        // }
+        // if (num >= -0x80000000LL and
+        //     num <=  0x7fffffffLL ) {
+        //     put(rc, 0, 2);
+        //     for (int shift = 0, i=4; shift < 32; shift+=8, i++)
+        //         put(rc, i, 0xff&(num>>shift));
+        //     return true;
+        // }
+        // {
+        //     put(rc, 0, 3);
+        //     for (int shift = 0, i=8; shift < 64; shift+=8, i++)
+        //         put(rc, i, 0xff&(num>>shift));
+        //     return true;
+        // }
         likely_if( num >= -0x80+3 and
                    num <= 0x7f) {
             put(rc, 0, num & 0xff);
@@ -163,7 +189,7 @@ public:
             put(rc, 0, 0x82);
             for (int shift = 0, i=7; shift < 64; shift+=8, i++)
                 put(rc, i, 0xff&(num>>shift));
-
+        
             return true;
         }
     }
@@ -177,17 +203,45 @@ public:
         }
         else rarely_if(num == 0x81) {
                 num = 0;
-                for (int shift = 0, i=3; shift < 32; shift+=8, i++)
-                    num |= get(rc, i) << shift;
+                for (int shift = 0, i=3; shift < 32; shift+=8, i++) {
+                    int c = get(rc, i);
+                    num |= c << shift;
+                }
                 num  = (int) num;
             }
         else rarely_if(num == 0x82) {
                 num = 0;
-                for (int shift = 0, i=7; shift < 64; shift+=8, i++)
-                    num |= get(rc, i) << shift;
+                for (int shift = 0, i=7; shift < 64; shift+=8, i++) {
+                    UINT64 c = get(rc, i);
+                    num |=  c << shift;
+                }
             }
         else if (0x80&num)
             num = (char)num;
+        // UCHAR type = get(rc, 0);
+        // long long num = 0;
+        // switch (type) {
+        // default:
+        // case 0:
+        //     num = (char)(get(rc, 1));
+        //     break;
+        // case 1:
+        //     num  = get(rc, 2) ;
+        //     num |= get(rc, 3) << 8;
+        //     num = (short) num;
+        //     break;
+        // 
+        // case 2:
+        //     for (int shift = 0, i=4; shift < 32; shift+=8, i++)
+        //         num |= get(rc, i) << shift;
+        //     num  = (int) num;
+        //     break;
+        // 
+        // case 3:
+        //     for (int shift = 0, i=8; shift < 64; shift+=8, i++)
+        //         num |= get(rc, i) << shift;
+        //     break;
+        // }
 
         return
             ( old) ?
@@ -196,12 +250,35 @@ public:
     }
 
     bool put_u(RCoder *rc, UINT64 num, UINT64* old=NULL) {
-    if (old) {
-        // assert(num >= *old); what's worse?
-        UINT64 t = num - *old;
-        *old = num;
-        num = t;
-    }
+    // if (old) {
+    //     // assert(num >= *old); what's worse?
+    //     UINT64 t = num - *old;
+    //     *old = num;
+    //     num = t;
+    // }
+    // likely_if(not (num & (-1ULL<<8 ))) {
+    //     put(rc, 16, 0);
+    //     put(rc, 17, 0xff & (num));
+    //     return false;
+    // }
+    // likely_if( not (num & (-1ULL << 16))) {
+    //     put(rc, 16, 1);
+    //     put(rc, 18, 0xff & (num));
+    //     put(rc, 19, 0xff & (num >> 8));
+    //     return false;
+    // }
+    // likely_if( not (num & (-1ULL << 32))) {
+    //     put(rc, 16, 2);
+    //     for (int shift=0, i=20; shift < 32; shift+=8, i++)
+    //         put(rc, i, 0xff & (num>>shift));
+    //     return true;
+    // }
+    // {
+    //     put(rc, 16, 3);
+    //     for (int shift=0, i=24; shift < 64; shift+=8, i++)
+    //         put(rc, i, 0xff & (num>>shift));
+    //     return true;
+    // }
     likely_if(num <= 0x7f) {
         put(rc, 16, 0xff & num);
         return false;
@@ -230,7 +307,7 @@ UINT64 get_u(RCoder *rc, UINT64* old=NULL) {
 
     UINT64 num = get(rc, 16);
     rarely_if(num > 0x7f) {
-
+    
         num <<= 8;
         num  |= get(rc, 17);
         likely_if(num < 0xfffe)
@@ -250,6 +327,34 @@ UINT64 get_u(RCoder *rc, UINT64* old=NULL) {
             }
         }
     }
+    // UCHAR type = get(rc, 16);
+    // UINT64 num = 0;
+    // switch (type) {
+    // default:
+    // case 0:
+    //     num = get(rc, 17);
+    //     break;
+    // 
+    // case 1:
+    //     num  = get(rc, 18);
+    //     num |= get(rc, 19) << 8;
+    //     break;
+    // 
+    // case 2:
+    //     for (int shift=0, i = 20; shift < 32; shift+=8, i++) {
+    //         UINT64 c = get(rc, i);
+    //         num  |= c<<shift;
+    //     }
+    //     break;
+    // 
+    // case 3:
+    //     for (int shift=0, i = 24; shift < 64; shift+=8, i++) {
+    //         UINT64 c = get(rc, i);
+    //         num  |= c<<shift;
+    //     }
+    //     break;
+    // }
+
     return
         ( old) ?
         (*old += num) :

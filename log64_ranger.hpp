@@ -25,24 +25,24 @@ class Log64Ranger {
 
     void normalize() {
         for (UINT32 i = total = 0; i < iend; i++)
-            total += (freq[i] -= (freq[i] >> 1));
-
-        /* Faster than F[i].Freq for 0 <= i < NSYM */
-        // for (SymFreqs* s = F; s < F+iend; s++)
-        //     total +=
-        //         (s->freq -= (s->freq>>1));
+            total += (freq[i] /= 2);
     }
 
-    UCHAR bubbly(int a) {
-        UCHAR c = syms[a  ];
-        syms[a] = syms[a-1];
-                  syms[a-1] = c;
+    inline UCHAR sort_of_sort(int i) {
+        likely_if (i == 0 or
+                   (++ count & 0xf) or
+                   freq[i] <= freq[i-1] )
+            return syms[i];
 
-        UINT16 f = freq[a];
-        freq[a]  = freq[a-1];
-                   freq[a-1] = f;
+        UCHAR c = syms[i  ];
+        syms[i] = syms[i-1];
+        syms[i-1] = c;
 
-       return c;
+        UINT16 f = freq[i];
+        freq[i]  = freq[i-1];
+        freq[i-1] = f;
+
+        return c;
     }
 
 public:
@@ -51,64 +51,48 @@ public:
         UINT32 sumf  = 0;
         UINT32 i = 0;
 
-        likely_if( sym < iend)
-           for (; syms[i] != sym; sumf += freq[i++]);
-        else {
-            assert(sym < NSYM);
-            total += sym - iend + 1;
-            sumf = total -1;
-            i = sym;
-            for (; iend <= sym; iend ++) {
-                freq[iend] = 1;
+        assert(sym < 64);
+        rarely_if(iend <= sym)
+            for (;iend <= sym; iend++)
                 syms[iend] = iend;
-            }
-        }
 
-        UINT32 vtot = total + NSYM - iend;
-        rc->Encode(sumf, freq[i], vtot);
+        for (; syms[i] != sym and LIKELY(i < iend); sumf += freq[i++]);
+        sumf += i;
 
-        // rarely_if(vtot > MAX_FREQ - STEP)
+        UINT32 vtot = total + NSYM;
+        rc->Encode(sumf, freq[i]+1, vtot);
+
         rarely_if(freq[i] > (MAX_FREQ - STEP))
             normalize();
 
         freq[i] += STEP;
         total   += STEP;
 
-        // if (vtot + STEP > MAX_FREQ)
-        //     normalize();
-
-        rarely_if
-            (
-             i and
-             0 == (++count&15) and
-             freq[i] > freq[i-1])
-            bubbly(i); 
+        sort_of_sort(i);
     }
 
     inline UINT16 get(RCoder *rc) {
 
-        UINT32 vtot = total + NSYM - iend;
+        UINT32 vtot = total + NSYM;
         UINT32 sumf = 0;
-        UINT32 i;
+        UINT32 i = 0;
 
         UINT32 prob = rc->GetFreq(vtot);
+
         for ( i = 0;
               i < NSYM;
               i ++ ) {
 
-            rarely_if(i >= iend) {
-                freq[iend] = 1;
-                syms[iend] = i;
-                iend ++ ; total ++;
-            }
-
-            if (sumf +  freq[i] <= prob)
-                sumf += freq[i];
+            rarely_if(i >= iend) 
+                syms[ iend++ ] = i;
+        
+            if (sumf +  freq[i] + 1 <= prob)
+                sumf += freq[i] + 1;
             else
                 break;
         }
 
-        rc->Decode(sumf, freq[i], vtot);
+        rc->Decode(sumf, freq[i]+1, vtot);
 
         rarely_if(freq[i] > (MAX_FREQ - STEP))
             normalize();
@@ -116,16 +100,7 @@ public:
         freq[i] += STEP;
         total   += STEP;
 
-        // if (vtot + STEP > MAX_FREQ)
-        //     normalize();
-
-        /* Keep approx sorted */
-        return
-            ( i and
-              0 ==  (++count&15) and
-              freq[i] > freq[i-1]) ? 
-            bubbly(i) :
-            syms[i];
+        return sort_of_sort(i);
     }
 
 } PACKED;
