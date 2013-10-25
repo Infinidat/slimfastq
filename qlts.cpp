@@ -63,7 +63,7 @@ void QltSave::save_1(const UCHAR* buf, size_t size) {
 
 void QltSave::save_2(const UCHAR* buf, size_t size) {
     UINT32 last = 0;
-    // UINT32 delta = 5;
+    // int delta = 5;
     // UCHAR q1 = 0, q2 = 0;
 
     for (size_t i = 0; i < size; i++) {
@@ -75,7 +75,7 @@ void QltSave::save_2(const UCHAR* buf, size_t size) {
         PREFETCH(ranger + last);
         ranger[last].put(&rcoder, b);
         last = calc_last_2(last, b);
-        // last = calc_last_delta(i, b, q1, q2);
+        // last = calc_last_delta(delta, b, q1, q2);
         // q1 = b;
         // q2 = q1;
     }
@@ -106,7 +106,7 @@ void QltSave::save_3(const UCHAR* buf, size_t size) {
 
         PREFETCH(ranger + last);
         ranger[last].put(&rcoder, b);
-        last = calc_last_3(last, b); 
+        last = calc_last_3(last, b);
 
         // PREFETCH(ranger + last);
     }
@@ -159,7 +159,9 @@ UINT32 QltLoad::load_1(UCHAR* buf, const size_t size) {
 UINT32 QltLoad::load_2(UCHAR* buf, const size_t size) {
 
     UINT32 last = 0 ; 
-    // UCHAR q1 = 0, q2 = 0;
+    // UCHAR  q1 = 0, q2 = 0;
+    // int delta = 5;
+    
     for (size_t i = 0; i < size ; i++) {
 
         PREFETCH(ranger + last);
@@ -167,7 +169,7 @@ UINT32 QltLoad::load_2(UCHAR* buf, const size_t size) {
         buf[i] = UCHAR('!' + b);
 
         last = calc_last_2(last, b);
-        // last = calc_last_delta(i, b, q1, q2);
+        // last = calc_last_delta(delta, b, q1, q2);
         // q1 = b;
         // q2 = q1;
     }

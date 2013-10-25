@@ -58,15 +58,25 @@ protected:
 
     inline static UINT32 min_val(UINT32 a, UINT32 b) { return a>b?b:a; }
     inline static UCHAR  max_val(UCHAR  a, UCHAR  b) { return a>b?a:b; }
-    inline static UINT32 calc_last_delta(size_t i, UCHAR q, UCHAR q1, UCHAR q2) {
+    inline static UINT32 calc_last_delta(int &delta, UCHAR q, UCHAR q1, UCHAR q2) {
 
-        return ( (UINT32) q        // 0 .. 5
-                 | (q1 << 6)       // 6 .. 11
-                 | ((q2&0xfe)<<11) // 12 .. 15
-                 // | (((((q  >= q1)+(q  > q1)) *
-                 //      ((q1 <= q2)+(q1 < q2))) & 7) << 11) // 12, 13
-                 // | (( i > 30) << 13)                      // 14
-                 ) & RANGER_MASK_2 ;
+        if (q1>q)
+            delta += (q1-q);
+
+        return
+            ( q
+              | (max_val(q1, q2) << 6)
+              | ((q1 == q2)      << 12)
+              | (min_val(7, (delta>>3)) << 13)
+              ) & RANGER_MASK_2 ;
+
+        // return ( (UINT32) q        // 0 .. 5
+        //          | (q1 << 6)       // 6 .. 11
+        //          | ((q2&0xfe)<<11) // 12 .. 15
+        //          // | (((((q  >= q1)+(q  > q1)) *
+        //          //      ((q1 <= q2)+(q1 < q2))) & 7) << 11) // 12, 13
+        //          // | (( i > 30) << 13)                      // 14
+        //          ) & RANGER_MASK_2 ;
             
         // return ( q
         //          |
