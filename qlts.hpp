@@ -12,9 +12,6 @@
 #include "filer.hpp"
 #include "log64_ranger.hpp"
 
-#define RANGER_SIZE_3 (1<<17)
-#define RANGER_MASK_3 (RANGER_SIZE_3-1)
-
 #define RANGER_SIZE_2 (1<<16)
 #define RANGER_MASK_2 (RANGER_SIZE_2-1)
 
@@ -27,39 +24,28 @@ protected:
     Log64Ranger* ranger;
     RCoder rcoder;
     bool m_valid;
-    // const Config* m_conf;
 
     size_t ranger_cnt();
     void   range_init();
-    // inline UINT32 calc_last(UINT32 last, const UCHAR* q, size_t i) {
-    //     return
-    //         ( RARELY(i < 2) ?
-    //           (last << 6) + q[i] - '!' :
-    //           (( q[i] )-'!') |
-    //           (((q[i-2] == q[i-3] ? q[i-2] : q[i-1])-'!') << 6) |
-    //           (((i>>4) << 12) & 0x8f00) |
-    //           ((q[i] == q[i-1]) <<15 )
-    //           ) & RANGER_MASK;
-    //         
-    // }
+
+    inline static UINT32 calc_last_1 (UINT32 last, UCHAR b) {
+        return ( b | (last << 6) ) & RANGER_MASK_1;
+    }
     inline static UINT32 calc_last_2 (UINT32 last, UCHAR b) {
         return
             ( b | 
               (last << 6)
               ) & RANGER_MASK_2;
     }
-    inline static UINT32 calc_last_1 (UINT32 last, UCHAR b) {
-        return ( b | (last << 6) ) & RANGER_MASK_1;
-    }
-    inline static UINT32 calc_last_3 (UINT32 last, UCHAR b) {
-        return ( b | (last << 6) ) & RANGER_MASK_3;
-        // TODO: use delta
-    }
-
+    // inline static UINT32 calc_last_3 (UINT32 last, UCHAR b) {
+    //     return ( b | (last << 6) ) & RANGER_MASK_3;
+    //     // TODO: use delta
+    // }
     inline static UINT32 min_val(UINT32 a, UINT32 b) { return a>b?b:a; }
     inline static UCHAR  max_val(UCHAR  a, UCHAR  b) { return a>b?a:b; }
-    inline static UINT32 calc_last_delta(int &delta, UCHAR q, UCHAR q1, UCHAR q2) {
+    inline static UINT32 calc_last_delta(UINT32 &delta, UCHAR q, UCHAR q1, UCHAR q2) {
 
+        // This brilliant code could only be of James Bonfield
         if (q1>q)
             delta += (q1-q);
 
@@ -69,39 +55,7 @@ protected:
               | ((q1 == q2)      << 12)
               | (min_val(7, (delta>>3)) << 13)
               ) & RANGER_MASK_2 ;
-
-        // return ( (UINT32) q        // 0 .. 5
-        //          | (q1 << 6)       // 6 .. 11
-        //          | ((q2&0xfe)<<11) // 12 .. 15
-        //          // | (((((q  >= q1)+(q  > q1)) *
-        //          //      ((q1 <= q2)+(q1 < q2))) & 7) << 11) // 12, 13
-        //          // | (( i > 30) << 13)                      // 14
-        //          ) & RANGER_MASK_2 ;
-            
-        // return ( q
-        //          |
-        //          q1 << 6
-        //          |
-        //          (((q2>q1? 64 : 0)+q1-q2)/4) << 12
-        //         ) & RANGER_MASK;
     }
-    // inline UINT32 calc_last(UINT32 &delta, const UCHAR* q, size_t i) {
-    // 
-    //     return 
-    //         ( RARELY(i < 2) ?
-    //           0 : 
-    //           (q[i]-'!')
-    //           | 
-    //           ((max_val(q[i-1], q[i-2])-'!')<<6 )
-    //           |
-    //           ((q[i-1] == q[i-2]) << 12)
-    //           |
-    //           ((q[i-1]>q[0]) ? 
-    //            (min_val(7, (delta += q[i-1]-q[i])/8)<<13)
-    //           :
-    //           0 )
-    //           ) & RANGER_MASK_3;
-    // }
 };
 
 class QltSave : private QltBase {

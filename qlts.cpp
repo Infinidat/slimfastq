@@ -14,7 +14,7 @@
 size_t QltBase::ranger_cnt() {
     return
         conf.level == 1 ? RANGER_SIZE_1 :
-        conf.level == 3 ? RANGER_SIZE_3 :
+        // conf.level == 3 ? RANGER_SIZE_3 :
                           RANGER_SIZE_2 ;
 }
 
@@ -63,30 +63,24 @@ void QltSave::save_1(const UCHAR* buf, size_t size) {
 
 void QltSave::save_2(const UCHAR* buf, size_t size) {
     UINT32 last = 0;
-    // int delta = 5;
-    // UCHAR q1 = 0, q2 = 0;
-
     for (size_t i = 0; i < size; i++) {
         UCHAR b = UCHAR(buf[i] - '!');
-
         rarely_if(b >= 63)
             croak("Illegal quality value 0x%x. Aborting\n", buf[i]);
 
         PREFETCH(ranger + last);
         ranger[last].put(&rcoder, b);
-        last = calc_last_2(last, b);
-        // last = calc_last_delta(delta, b, q1, q2);
-        // q1 = b;
-        // q2 = q1;
+        last = calc_last_2(last, b); 
     }
 }
 
 void QltSave::save_3(const UCHAR* buf, size_t size) {
+    UINT32 last = 0;
+    UINT32 delta = 5;
+    UCHAR q1 = 0, q2 = 0;
+    UINT32 di = 0;
 
 // #define KILLER_BEE
-
-    UINT32 last = 0;
-
 #ifdef KILLER_BEE
     size_t len = size;
     while (len and buf[len-1] == '#')
@@ -97,25 +91,33 @@ void QltSave::save_3(const UCHAR* buf, size_t size) {
 #define SIZE size
 #endif
 
-    size_t i = 0;
-    for (; i < SIZE; i++) {
-        UCHAR b = UCHAR(buf[i] - '!');
+    for (size_t i = 0;;) {
+        UCHAR b = UCHAR(buf[i++] - '!');
 
         rarely_if(b >= 63)
-            croak("Illegal quality value 0x%x. Aborting\n", buf[i]);
+            croak("Illegal quality value 0x%x. Aborting\n", buf[i-1]);
 
         PREFETCH(ranger + last);
         ranger[last].put(&rcoder, b);
-        last = calc_last_3(last, b);
 
-        // PREFETCH(ranger + last);
+        rarely_if(i >= SIZE)
+            break;
+
+        if (++ di & 1) {
+            last = calc_last_delta(delta, b, q1, q2);
+            q2 = b;
+        }
+        else {
+            last = calc_last_delta(delta, b, q2, q1);
+            q1 = b;
+        }
     }
 
 #ifdef KILLER_BEE
     if (len != size)
         ranger[last].put(&rcoder, 63);
 #endif
-#undef KILLER_BEE
+
 }
 
 //////////
@@ -158,10 +160,7 @@ UINT32 QltLoad::load_1(UCHAR* buf, const size_t size) {
 
 UINT32 QltLoad::load_2(UCHAR* buf, const size_t size) {
 
-    UINT32 last = 0 ; 
-    // UCHAR  q1 = 0, q2 = 0;
-    // int delta = 5;
-    
+    UINT32 last = 0 ;
     for (size_t i = 0; i < size ; i++) {
 
         PREFETCH(ranger + last);
@@ -169,32 +168,42 @@ UINT32 QltLoad::load_2(UCHAR* buf, const size_t size) {
         buf[i] = UCHAR('!' + b);
 
         last = calc_last_2(last, b);
-        // last = calc_last_delta(delta, b, q1, q2);
-        // q1 = b;
-        // q2 = q1;
     }
     return m_valid ? size : 0;
 }
 
 UINT32 QltLoad::load_3(UCHAR* buf, const size_t size) {
-// #define KILLER_BEE
-    UINT32 last = 0 ;// , delta=5;
-    // UCHAR q1 = 0, q2 = 0;
-    for (size_t i = 0; i < size ; i++) {
+
+    UINT32 last = 0 ; 
+    UINT32 delta = 5;
+    UCHAR  q1 = 0, q2 = 0;
+    UINT32 di = 0;
+    
+    for (size_t i = 0;;) {
 
         PREFETCH(ranger + last);
         UCHAR b = ranger[last].get(&rcoder);
 
 #ifdef KILLER_BEE
-        likely_if(b < 63)
-            buf[i] = UCHAR('!' + b);
-        else 
+        rarely_if(b == 63) {
             for (; i < size; i++)
                 buf[i] = '#';
-#else
-        buf[i] = UCHAR('!' + b);
+        }
 #endif
-        last = calc_last_3(last, b);
+
+        buf[i++] = UCHAR('!' + b);
+
+        rarely_if(i >= size)
+            break;
+
+        if (++di & 1) {
+            last = calc_last_delta(delta, b, q1, q2);
+            q2 = b;
+        }
+        else {
+            last = calc_last_delta(delta, b, q2, q1);
+            q1 = b;
+        }
     }
     return m_valid ? size : 0;
 }

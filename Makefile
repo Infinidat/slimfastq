@@ -90,8 +90,8 @@ utest: jfastq.utest
 
 test: all
 	for f in $(TEST_FILES) ; do \
-		echo $$f ...   ; \
 		for l in 1 2 3 ; do \
+			echo $$f $$l...   ; \
 			rm /tmp/mytst.* || true; \
 			./jfastq -u $$f -f /tmp/mytst -O -l $$l && \
 			./jfastq -u /tmp/mytst.fastq -f /tmp/mytst -O -d && \
