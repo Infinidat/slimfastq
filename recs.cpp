@@ -317,7 +317,7 @@ void RecSave::determine_rec_type(const UCHAR* buf, const UCHAR* end) {
     conf.save_info();
 
     // update m_len
-    for (int i = 0 ; m_ids[i] and i < 10; i++)
+    for (int i = 0 ; i < 10 and m_ids[i]; i++)
         m_len[i] = strlen(m_ids[i]);
 }
 

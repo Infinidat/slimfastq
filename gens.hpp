@@ -19,7 +19,10 @@ protected:
     GenBase(){}
     ~GenBase(){}
 
-#define BRANGER_SIZE_2 (1<<20)
+#define BRANGER_SIZE_1 (1<<18)
+#define BRANGER_MASK_1 (BRANGER_SIZE_1-1)
+
+#define BRANGER_SIZE_2 (1<<22)
 #define BRANGER_MASK_2 (BRANGER_SIZE_2-1)
 
 #define BRANGER_SIZE_3 (1<<24)
@@ -67,7 +70,7 @@ private:
     inline UCHAR normalize_gen(UCHAR gen, UCHAR &qlt);
 
     FilerSave* filer;
-    PagerSave02* pager;
+    // PagerSave02* pager;
     PagerSave16* pagerNs;
     PagerSave16* pagerNn;
 

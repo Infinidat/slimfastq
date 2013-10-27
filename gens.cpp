@@ -13,11 +13,13 @@
 
 
 size_t GenBase::ranger_cnt() {
-    assert(conf.level > 1);
-    return
-        conf.level == 3 ? BRANGER_SIZE_3 :
-        conf.level == 4 ? BRANGER_SIZE_4 :
-                          BRANGER_SIZE_2 ;
+    switch(conf.level) {
+    case 1: return BRANGER_SIZE_1;
+    default:
+    case 2: return BRANGER_SIZE_2;
+    case 3: return BRANGER_SIZE_3;
+    case 4: return BRANGER_SIZE_4;
+    }
 }
 
 void GenBase::range_init() {
@@ -42,26 +44,26 @@ GenSave::GenSave() {
     BZERO(m_last);
     m_N_byte = 0;
 
-    if (conf.level == 1) {
-        filer = NULL;
-        pager = new PagerSave02(conf.open_w("gen"));
-    }
-    else {
-        pager = NULL;
+    // if (conf.level == 1) {
+    //     filer = NULL;
+    //     pager = new PagerSave02(conf.open_w("gen"));
+    // }
+    // else {
+        // pager = NULL;
         filer = new FilerSave(conf.open_w("gen"));
         assert(filer);
         rcoder.init(filer);
         ranger = new Base2Ranger[ranger_cnt()];
         range_init();
-    }
+    // }
 }
 
 GenSave::~GenSave() {
-    if (conf.level > 1)
+    // if (conf.level > 1)
         rcoder.done();
     DELETE(filer);
 
-    delete pager;
+    // delete pager;
     delete pagerNs;
     delete pagerNn;
     // fprintf stats
@@ -143,52 +145,66 @@ inline UCHAR GenSave::normalize_gen(UCHAR gen, UCHAR &qlt) {
     return n;
 }
 
+// void GenSave::save_1(const UCHAR* gen, UCHAR* qlt, size_t size) {
+// 
+//     // rarely_if(not pager)
+//     //     pager_init();
+// 
+//     for (size_t i = 0; i < size; i ++) {
+//         m_last.count ++;
+//         UCHAR n = normalize_gen(gen[i], qlt[i]);
+// 
+//         pager->put02(n);
+//     }
+// }
+
 void GenSave::save_1(const UCHAR* gen, UCHAR* qlt, size_t size) {
-
-    // rarely_if(not pager)
-    //     pager_init();
-
+    UINT32 last = 0;
     for (size_t i = 0; i < size; i ++) {
         m_last.count ++;
         UCHAR n = normalize_gen(gen[i], qlt[i]);
 
-        pager->put02(n);
+        last &= BRANGER_MASK_1;
+        ranger[last].put(&rcoder, n);
+        last = ((last<<2) + n) ;
     }
 }
 
 void GenSave::save_2(const UCHAR* gen, UCHAR* qlt, size_t size) {
-    UINT32 last = 0x007616c7 & BRANGER_MASK_2;
+    UINT32 last = 0x007616c7;
     for (size_t i = 0; i < size; i ++) {
         m_last.count ++;
         UCHAR n = normalize_gen(gen[i], qlt[i]);
 
+        last &= BRANGER_MASK_2;
         ranger[last].put(&rcoder, n);
-        last = ((last<<2) + n) & BRANGER_MASK_2;
+        last = ((last<<2) + n);
     }
 }
 
 void GenSave::save_3(const UCHAR* gen, UCHAR* qlt, size_t size) {
-    UINT32 last = 0x007616c7 & BRANGER_MASK_3;
+    UINT32 last = 0x007616c7;
     for (size_t i = 0; i < size; i ++) {
         m_last.count ++;
         UCHAR n = normalize_gen(gen[i], qlt[i]);
 
+        last &= BRANGER_MASK_3;
         PREFETCH(ranger + last); 
         ranger[last].put(&rcoder, n);
-        last = ((last<<2) + n) & BRANGER_MASK_3;
-        // PREFETCH(ranger + last);
+        last = ((last<<2) + n);
     }
 }
 
 void GenSave::save_4(const UCHAR* gen, UCHAR* qlt, size_t size) {
-    UINT32 last = 0x007616c7 & BRANGER_MASK_3;
+    UINT32 last = 0x007616c7;
     for (size_t i = 0; i < size; i ++) {
         m_last.count ++;
         UCHAR n = normalize_gen(gen[i], qlt[i]);
 
+        last &= BRANGER_MASK_4;
         PREFETCH(ranger + last); 
         ranger[last].put(&rcoder, n);
-        last = ((last<<2) + n) & BRANGER_MASK_4;
+        last = ((last<<2) + n);
     }
 }
 
@@ -241,26 +257,26 @@ GenLoad::GenLoad() {
         "ACGT" ;
 
 
-    if (conf.level == 1) {
-        pager = new PagerLoad02(conf.open_r("gen"), &m_valid);
-        filer = NULL;
-    }
-    else {
-        pager = NULL;
+    // if (conf.level == 1) {
+    //     pager = new PagerLoad02(conf.open_r("gen"), &m_valid);
+    //     filer = NULL;
+    // }
+    // else {
+    //     pager = NULL;
         filer = new FilerLoad(conf.open_r("gen"), &m_valid);
         assert(filer);
         rcoder.init(filer);
         ranger = new Base2Ranger[ranger_cnt()];
         range_init();
-    }
+    // }
 }
 
 GenLoad::~GenLoad() {
-    if (conf.level > 1)
+    // if (conf.level > 1)
         rcoder.done();
     DELETE(filer);
 
-    delete pager;
+    // delete pager;
     delete pagerNs;
     delete pagerNn;
 }
@@ -280,13 +296,29 @@ void GenLoad::normalize_gen(UCHAR & gen, UCHAR qlt) {
    }
 }
 
+// UINT32 GenLoad::load_1(UCHAR* gen, const UCHAR* qlt, size_t size) {
+//     for (size_t i = 0; i < size; i ++ ) {
+//         m_last.count ++ ;
+//         gen[i] = m_gencode [ pager->get02() ];
+//         // if lossless
+//         normalize_gen(gen[i], qlt[i]); 
+//    }
+// 
+//     return m_valid ? size : 0;
+// }
+
 UINT32 GenLoad::load_1(UCHAR* gen, const UCHAR* qlt, size_t size) {
+
+    UINT32 last = 0;
+
     for (size_t i = 0; i < size; i ++ ) {
         m_last.count ++ ;
-        gen[i] = m_gencode [ pager->get02() ];
-        // if lossless
-        normalize_gen(gen[i], qlt[i]); 
-   }
+        last &= BRANGER_MASK_1;
+        UCHAR b = ranger[last].get(&rcoder);
+        gen[i] = m_gencode [ b ];
+        last = ((last<<2) + b);
+        normalize_gen(gen[i], qlt[i]);
+    }
 
     return m_valid ? size : 0;
 }
@@ -301,7 +333,6 @@ UINT32 GenLoad::load_2(UCHAR* gen, const UCHAR* qlt, size_t size) {
         UCHAR b = ranger[last].get(&rcoder);
         gen[i] = m_gencode [ b ];
         last = ((last<<2) + b);
-        
         normalize_gen(gen[i], qlt[i]);
     }
 

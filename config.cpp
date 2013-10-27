@@ -113,10 +113,10 @@ Usage: \n\
 -l level         : compression level 1 to 4 (default is 2 ) \n\
 -1, -2, -3, -4   : alias for -l 1, -l 2, etc \n\
  where levels are:\n\
- 1: worse compression, yet use less than 10M memory \n\
- 2: default - use (reletively) little memory \n\
+ 1: worse compression, yet uses only 3.5M memory \n\
+ 2: default - use (reletively) little memory, resonable compression \n\
  3: best compression, use about 250M \n\
- 4: squeeze few more megabytes, for high resources cost (competition mode?) \n\
+ 4: compress even more, but very costly (competition mode?) \n\
 \n\
 (DISABLED -TBD)-s size          : set partition to <size> (megabyte units) \n\
 (DISABLED -TBD)-p partition     : only open this partition (-d implied) \n\
