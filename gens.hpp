@@ -25,6 +25,9 @@ protected:
 #define BRANGER_SIZE_3 (1<<24)
 #define BRANGER_MASK_3 (BRANGER_SIZE_3-1)
 
+#define BRANGER_SIZE_4 (1<<26)
+#define BRANGER_MASK_4 (BRANGER_SIZE_4-1)
+
     Base2Ranger* ranger; //[BRANGER_SIZE];
     RCoder rcoder;
 
@@ -55,6 +58,7 @@ public:
     void save_1(const UCHAR* gen, UCHAR* qlt, size_t size);
     void save_2(const UCHAR* gen, UCHAR* qlt, size_t size);
     void save_3(const UCHAR* gen, UCHAR* qlt, size_t size);
+    void save_4(const UCHAR* gen, UCHAR* qlt, size_t size);
     // void pager_init();
 
 private:
@@ -77,6 +81,7 @@ public:
     UINT32 load_1(UCHAR* gen, const UCHAR* qlt, size_t size);
     UINT32 load_2(UCHAR* gen, const UCHAR* qlt, size_t size);
     UINT32 load_3(UCHAR* gen, const UCHAR* qlt, size_t size);
+    UINT32 load_4(UCHAR* gen, const UCHAR* qlt, size_t size);
 
 private:
     UCHAR get_2();

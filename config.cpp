@@ -110,12 +110,16 @@ Usage: \n\
 -f comp-basename : reuired - basename for files (TODO: onefile)\n\
 -d               : decode (instead of encoding) \n\
 -O               : overwrite existing files\n\
--l level         : compression level 1, 2, or 3 (default is 2 ) \n\
-                 : { 1 = less resources, 3 = best compression } \n\
--1, -2, -3       : alias for -l 1, -l 2, -l 3 \n\
+-l level         : compression level 1 to 4 (default is 2 ) \n\
+-1, -2, -3, -4   : alias for -l 1, -l 2, etc \n\
+ where levels are:\n\
+ 1: worse compression, yet use less than 10M memory \n\
+ 2: default - use (reletively) little memory \n\
+ 3: best compression, use about 250M \n\
+ 4: squeeze few more megabytes, for high resources cost (competition mode?) \n\
 \n\
--s size          : set partition to <size> (megabyte units) \n\
--p partition     : only open this partition (-d implied) \n\
+(DISABLED -TBD)-s size          : set partition to <size> (megabyte units) \n\
+(DISABLED -TBD)-p partition     : only open this partition (-d implied) \n\
 \n\
 -P               : profile mode (stop after ) \n\
 -v / -h          : internal version / this message \n\
@@ -178,7 +182,7 @@ Config::Config(){
 
 static int range_level(int level) {
     return
-        level > 3 ? 3 :
+        level > 4 ? 4 :
         level < 1 ? 1 :
         level ;
 }
@@ -195,7 +199,7 @@ void Config::init(int argc, char **argv, int ver) {
     bool overwrite = false;
 
     // TODO? long options 
-    const char* short_opt = "POvhd 123 u:f:s:p:l:"; 
+    const char* short_opt = "POvhd 1234 u:f:s:p:l:"; 
     for ( int opt = getopt(argc, argv, short_opt);
           opt != -1;
           opt     = getopt(argc, argv, short_opt))
@@ -213,7 +217,7 @@ void Config::init(int argc, char **argv, int ver) {
             break;
             
         case 'l': level = strtoll(optarg, 0, 0);  break;
-        case '1': case '2' : case '3':
+        case '1': case '2' : case '3': case '4':
             level = opt - '0'; break;
 
         case 'd': encode     = false; break;

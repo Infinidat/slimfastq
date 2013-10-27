@@ -291,6 +291,14 @@ int UsrSave::encode() {
                 rec.save_3(p_rec, p_rec_end);
                 qlt.save_3(p_qlt, m_llen);
             } break;
+        case 4:
+            while(get_record(&p_rec, &p_rec_end, &p_gen, &p_qlt) and
+                  ++ m_rec_total < sanity ) {
+
+                gen.save_4(p_gen, p_qlt, m_llen);
+                rec.save_3(p_rec, p_rec_end);
+                qlt.save_3(p_qlt, m_llen);
+            } break;
         }
     }
     conf.set_info("num_records", m_rec_total);
@@ -471,6 +479,17 @@ int UsrLoad::decode() {
 
             qlt.load_3(b_qlt, m_llen);
             gen.load_3(b_gen, b_qlt, m_llen);
+            save();
+        } break;
+    case 4:
+        while (n_recs --) {
+            rarely_if (m_last.rec_count == m_last.index) update();
+            m_rec_size = rec.load_3(b_rec);
+            rarely_if (not m_rec_size)
+                croak("premature EOF - %llu records left", n_recs+1);
+
+            qlt.load_3(b_qlt, m_llen);
+            gen.load_4(b_gen, b_qlt, m_llen);
             save();
         } break;
     }
