@@ -44,7 +44,7 @@ class Base2Ranger {
 public:
     void init() { // BZERO made it even slower
         for (int i = 0; i < 4; i++)
-            freq[i] = 3;
+            freq[i] = 2;
         // total = 4;
     }
 

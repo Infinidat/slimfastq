@@ -178,21 +178,34 @@ void test_power_ranger() {
         rc_finit();
     }
     TITLE("ranger put_i / get_i");
+    int arr[] = { -121, -122, -1, 575};
     {
         rc_init();
         PowerRanger ranger;
         BZERO(ranger);
-        for (int i = 0; i < 300; i++)
+        for (int i = 0; i < 4; i++)
+            ranger.put_i(rc, arr[i]);
+        for (int i = -300; i < 300; i++)
             ranger.put_i(rc, i);
+        for (int i = -100; i < 100; i++)
+            ranger.put_i(rc, i*7);
         rc_finit();
     }
     {
         rc_init(1);
         PowerRanger ranger;
         BZERO(ranger);
-        for (int i = 0; i < 300; i++) {
+        for (int i = 0; i < 4; i++){
+            int c = ranger.get_i(rc);
+            assert(c == arr[i]);
+        }
+        for (int i = -300; i < 300; i++) {
             int c = ranger.get_i(rc);
             assert(c == i);
+        }
+        for (int i = -100; i < 100; i++) {
+            int c = ranger.get_i(rc);
+            assert(c == i*7);
         }
         rc_finit();
     }

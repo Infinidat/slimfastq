@@ -17,21 +17,33 @@
 class RecBase {
 protected: 
 
+    enum exception_t {
+        ET_v0,
+        ET_v1,
+        ET_v2,
+        ET_v3,
+        ET_v9,
+        ET_al,
+        ET_iseq,
+        ET_END
+    };
+
     RecBase()  {}
     ~RecBase() {rcoder.done();}
 
     PowerRanger ranger[10];
     RCoder rcoder;
+    PowerRanger rangerx[10];
+    RCoder rcoderx;
 
     const char* m_ids[10];
     int m_len[10];
 
     struct {
         UINT64 line_n;
-        UINT64 tile;
-        UINT64 x;
-        UINT64 y;
-        UINT64 n[4];
+        // UINT64 x;
+        // UINT64 y;
+        UINT64 n[10];
         UINT64 rec_count;
         UINT64 rec_count_tag;
         UCHAR alal;
@@ -65,6 +77,19 @@ protected:
     UINT64    get_u(int i, UINT64* old=NULL) {
         return ranger[i].get_u(&rcoder, old);
     };
+
+    void putx_i(int i, long long num, UINT64* old=NULL) {
+        rangerx[i].put_i(&rcoderx, num, old);
+    }
+    void putx_u(int i, UINT64    num, UINT64* old=NULL) {
+        rangerx[i].put_u(&rcoderx, num, old);
+    }
+    long long getx_i(int i, UINT64* old=NULL) {
+        return rangerx[i].get_i(&rcoderx, old);
+    }
+    UINT64    getx_u(int i, UINT64* old=NULL) {
+        return rangerx[i].get_u(&rcoderx, old);
+    };
 };
 
 class RecSave : private RecBase {
@@ -75,27 +100,21 @@ public:
     bool save_1(const UCHAR* buf, const UCHAR* end) { return save_2(buf, end); }
     bool save_2(const UCHAR* buf, const UCHAR* end);
     bool save_3(const UCHAR* buf, const UCHAR* end) { return save_2(buf, end); }
-    // void pager_init();
 private:
-    // enum { UT_ALLELE,
-    //        UT_BASES,
-    //        UT_END } UpdateType;
-    // void update(UpdateType type, UINT64 val);
-    // bool is_allele(char a);
     void save_allele(char a);
     bool save_t_1(const UCHAR* buf, const UCHAR* end);
     bool save_t_3(const UCHAR* buf, const UCHAR* end);
     bool save_t_5(const UCHAR* buf, const UCHAR* end);
+    bool save_t_6(const UCHAR* buf, const UCHAR* end);
+    bool save_t_7(const UCHAR* buf, const UCHAR* end);
+
+    void update(exception_t type, int val);
 
     void determine_rec_type(const UCHAR* buf, const UCHAR* end);
     int  get_rec_type(const char* start);
-    // void putgap(UINT64 gap);
-    // void putgap(UINT64 num, UINT64& old);
-    // void putgap(UINT64 gap, bool flag);
 
-    // PagerSave16* pager;
-    // PagerSave02* pager2;
     FilerSave* filer;
+    FilerSave* filerx;
 };
 
 class RecLoad : private RecBase {
@@ -109,21 +128,18 @@ public:
     size_t load_3(UCHAR* buf) { return load_2(buf) ;}
 
 private:
-    // update();
+
     size_t load_t_1(UCHAR* buf);
     size_t load_t_3(UCHAR* buf);
     size_t load_t_5(UCHAR* buf);
+    size_t load_t_6(UCHAR* buf);
+    size_t load_t_7(UCHAR* buf);
+    void update(); // update last values
 
-    // UINT16 get16();
-    // UINT64 getgap();
-    // UINT64 getgap(UINT64& old);
-    // UINT64 getgap(bool * flag);
     void determine_ids(int size) ;
 
-    // PagerLoad16* pager;
-    // PagerLoad02* pager2;
-
     FilerLoad* filer;
+    FilerLoad* filerx;
 };
 
 

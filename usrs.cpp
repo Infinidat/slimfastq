@@ -196,7 +196,7 @@ bool UsrSave::get_record(UCHAR** rec, UCHAR** rec_end, UCHAR** gen, UCHAR** qlt)
     m_cur += m_llen;
     CHECK_OVERFLOW;
 
-    if (m_cur < m_end)
+    likely_if (m_cur < m_end)
         expect('\n');
 
     m_last.rec_count++;

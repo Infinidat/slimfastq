@@ -26,9 +26,9 @@ std::ofstream filename_stream;
 
 void croak(const char* msg) {
     if (errno) 
-        fprintf(stderr, "%s: %s\n", msg, strerror(errno));
+        fprintf(stderr, "error: %s: %s\n", msg, strerror(errno));
     else 
-        fprintf(stderr, "%s\n", msg);
+        fprintf(stderr, "error: %s\n", msg);
     exit(1);
 }
 

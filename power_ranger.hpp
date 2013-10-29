@@ -250,12 +250,12 @@ public:
     }
 
     bool put_u(RCoder *rc, UINT64 num, UINT64* old=NULL) {
-    // if (old) {
-    //     // assert(num >= *old); what's worse?
-    //     UINT64 t = num - *old;
-    //     *old = num;
-    //     num = t;
-    // }
+    if (old) {
+        // assert(num >= *old); what's worse?
+        UINT64 t = num - *old;
+        *old = num;
+        num = t;
+    }
     // likely_if(not (num & (-1ULL<<8 ))) {
     //     put(rc, 16, 0);
     //     put(rc, 17, 0xff & (num));

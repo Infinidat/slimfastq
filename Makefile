@@ -43,7 +43,7 @@ clean: profclean
 # SOURCES = jfastq.cpp config.cpp fq_qlts.cpp pager.cpp fq_usrs.cpp
 # HEADERS = common.hpp config.hpp fq_qlts.hpp pager.hpp fq_usrs.hpp
 
-SOURCES= $(filter-out utest.cpp one.cpp molder.cpp, $(shell ls *.cpp))
+SOURCES= $(filter-out findshun.cpp utest.cpp one.cpp molder.cpp, $(shell ls *.cpp))
 HEADERS= $(shell echo *.hpp)
 jfastq: $(SOURCES) $(HEADERS)
 	g++ $(FLAGS) -o $@ $(SOURCES)
@@ -70,7 +70,7 @@ molder: molder.cpp pager.cpp pager.hpp
 tags:
 	etags $(SOURCES) $(HEADERS)
 
-UTSRC= $(filter-out one.cpp molder.cpp jfastq.cpp, $(shell ls *.cpp))
+UTSRC= $(filter-out findshun.cpp one.cpp molder.cpp jfastq.cpp, $(shell ls *.cpp))
 UTHDR= $(shell ls *.hpp)
 jfastq.utest: $(UTSRC) $(UTHDR)
 	g++ $(FLAGS) $(UTSRC) -o $@
@@ -89,14 +89,14 @@ utest: jfastq.utest
 # 	cmp ../data/s.fastq ../data/s.fastq.tst
 
 test: all
-	for f in $(TEST_FILES) ; do \
-		for l in 1 2 3 4; do \
+	for l in 1 2 3 4; do \
+		for f in $(TEST_FILES) ; do \
 			echo $$f $$l...   ; \
 			rm /tmp/mytst.* || true; \
 			./jfastq -u $$f -f /tmp/mytst -O -l $$l && \
 			./jfastq -u /tmp/mytst.fastq -f /tmp/mytst -O -d && \
 			tools/mydiff.pl $$f /tmp/mytst.fastq || break ; \
-		done ; \
+		done || break ; \
 	done
 
 playground:
@@ -127,3 +127,5 @@ one.opt:
 # 	make profclean
 
 
+findshun: findshun.cpp
+	g++ $(COFLAGS) -o $@ $<
