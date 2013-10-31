@@ -1,16 +1,15 @@
+/////////////////////////////////////////////////////////////////////////////
+// This code was taken from fqz_comp. According to James Bonfield it is    //
+// based on Eugene Shelwien's coders6c2.zip                                //
+//                                                                         //
+// (James admires the coder's efficiency, and so do I)                     //
+/////////////////////////////////////////////////////////////////////////////
+
 
 #ifdef  ZP_RANGECODER_H
 #error  Do not load me twice
 #endif
 #define ZP_RANGECODER_H
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This code was taken from fqz_comp. According to James Bonfield it is    //
-// based on Eugene Shelwien's coders6c2.zip                                //
-//                                                                         //
-// (James also admires the RangeCoder's efficiency, and so do I)           //
-/////////////////////////////////////////////////////////////////////////////
 
 
 #include "filer.hpp"
