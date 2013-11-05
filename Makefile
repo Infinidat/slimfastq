@@ -11,19 +11,19 @@ FLAGS_OPT2 = $(WALL) $(PROF_DIR) $(FLAGS_FAST)
 
 SAMPLE_DIR=samples
 TEST_FILES = $(wildcard $(SAMPLE_DIR)/*.fq)
-all:  jfastq 
-opt:  jfastq.opt
+all:  slimfastq 
+opt:  slimfastq.opt
 
 prof-opt.run:
 	for l in 1 2 3; do\
 		for f in $(TEST_FILES) ; do \
 			echo $$f ... ; \
-			./jfastq.prof -f /tmp/mytst -u $$f -O -P -l $$l ; \
-			./jfastq.prof -f /tmp/mytst -u /tmp/mytst.copy -O -d ; \
+			./slimfastq.prof -f /tmp/mytst -u $$f -O -P -l $$l ; \
+			./slimfastq.prof -f /tmp/mytst -u /tmp/mytst.copy -O -d ; \
 		done ; \
 	done
 
-prof-opt: jfastq.prof
+prof-opt: slimfastq.prof
 	make prof-opt.run
 	make opt
 	make profclean
@@ -37,32 +37,32 @@ profclean:
 
 clean: profclean
 	find . -name '*.o' -delete
-	rm jfastq jfastq.opt jfastq.prof || true
+	rm slimfastq slimfastq.opt slimfastq.prof || true
 
-# jfastq
-# SOURCES = jfastq.cpp config.cpp fq_qlts.cpp pager.cpp fq_usrs.cpp
+# slimfastq
+# SOURCES = slimfastq.cpp config.cpp fq_qlts.cpp pager.cpp fq_usrs.cpp
 # HEADERS = common.hpp config.hpp fq_qlts.hpp pager.hpp fq_usrs.hpp
 
 SOURCES= $(filter-out findshun.cpp utest.cpp one.cpp molder.cpp, $(shell ls *.cpp))
 HEADERS= $(shell echo *.hpp)
-jfastq: $(SOURCES) $(HEADERS)
+slimfastq: $(SOURCES) $(HEADERS)
 	g++ $(FLAGS) -o $@ $(SOURCES)
 
-.PHONY: jfastq.prof jfastq.opt jfastq.run
-run: jfastq.run
+.PHONY: slimfastq.prof slimfastq.opt slimfastq.run
+run: slimfastq.run
 
-jfastq.run:
+slimfastq.run:
 	g++ $(FLAGS_OPT2) -o $@ $(SOURCES)
 
-jfastq.opt:
+slimfastq.opt:
 	mv PROF/*.gcda . || true
 	g++ $(FLAGS_OPT)  -o $@ $(SOURCES)
 	mv *.gcda PROF || true
-jfastq.prof:
+slimfastq.prof:
 	g++ $(FLAGS_PROF) -o $@ $(SOURCES)
 
 prof:
-	g++ -O3 -fstrict-aliasing -ffast-math -pg -o jfastq.prof $(SOURCES)
+	g++ -O3 -fstrict-aliasing -ffast-math -pg -o slimfastq.prof $(SOURCES)
 
 molder: molder.cpp pager.cpp pager.hpp
 	g++ $(FLAGS) molder.cpp pager.cpp -o $@
@@ -70,22 +70,22 @@ molder: molder.cpp pager.cpp pager.hpp
 tags:
 	etags $(SOURCES) $(HEADERS)
 
-UTSRC= $(filter-out findshun.cpp one.cpp molder.cpp jfastq.cpp, $(shell ls *.cpp))
+UTSRC= $(filter-out findshun.cpp one.cpp molder.cpp slimfastq.cpp, $(shell ls *.cpp))
 UTHDR= $(shell ls *.hpp)
-jfastq.utest: $(UTSRC) $(UTHDR)
+slimfastq.utest: $(UTSRC) $(UTHDR)
 	g++ $(FLAGS) $(UTSRC) -o $@
 
-utest: jfastq.utest
-	./jfastq.utest
+utest: slimfastq.utest
+	./slimfastq.utest
 
 # small: all
-# 	./jfastq -f ../data/small.fq -u ../data/small.fq -O
-# 	./jfastq -f ../data/small.fq -u ../data/small.fq.tst -O	-d
+# 	./slimfastq -f ../data/small.fq -u ../data/small.fq -O
+# 	./slimfastq -f ../data/small.fq -u ../data/small.fq.tst -O	-d
 # 	../data/mydiff.pl ../data/small.fq ../data/small.fq.tst
 
 # time: prof-opt
-# 	time ./jfastq.opt -f ../data/t -u ../data/s.fastq -O
-# 	time ./jfastq.opt -f ../data/t -u ../data/s.fastq.tst -O -d
+# 	time ./slimfastq.opt -f ../data/t -u ../data/s.fastq -O
+# 	time ./slimfastq.opt -f ../data/t -u ../data/s.fastq.tst -O -d
 # 	cmp ../data/s.fastq ../data/s.fastq.tst
 
 test: all
@@ -93,8 +93,8 @@ test: all
 		for f in $(TEST_FILES) ; do \
 			echo $$f $$l...   ; \
 			rm /tmp/mytst.* || true; \
-			./jfastq -u $$f -f /tmp/mytst -O -l $$l && \
-			./jfastq -u /tmp/mytst.fastq -f /tmp/mytst -O -d && \
+			./slimfastq -u $$f -f /tmp/mytst -O -l $$l && \
+			./slimfastq -u /tmp/mytst.fastq -f /tmp/mytst -O -d && \
 			tools/mydiff.pl $$f /tmp/mytst.fastq || break ; \
 		done || break ; \
 	done
@@ -104,8 +104,8 @@ tost: all
 		for f in $(TEST_FILES) ; do \
 			echo $$f $$l...   ; \
 			rm /tmp/mytst.* || true; \
-			./jfastq -u $$f -f /tmp/mytst -O -l $$l && \
-			./jfastq -u /tmp/mytst.fastq -f /tmp/mytst -O -d && \
+			./slimfastq -u $$f -f /tmp/mytst -O -l $$l && \
+			./slimfastq -u /tmp/mytst.fastq -f /tmp/mytst -O -d && \
 			tools/mydiff.pl $$f /tmp/mytst.fastq || break ; \
 		done || break ; \
 	done
