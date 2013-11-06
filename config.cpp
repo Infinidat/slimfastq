@@ -77,6 +77,18 @@ void Config::load_info() const {
 }
 
 void Config::save_info() const {
+    FILE* f = fopen(m_info_filename, "w");
+    if (not f)
+        croak(m_info_filename);
+
+    for (info_itr_t
+         itr  = info_map.begin();
+         itr != info_map.end();
+         itr ++)
+        fprintf(f, "%s=%s\n", itr->first.c_str(), itr->second.c_str());
+
+    fclose(f);
+    /*
     std::ofstream os_f(m_info_filename);
     if (not os_f.is_open())
         croak(m_info_filename);
@@ -86,6 +98,10 @@ void Config::save_info() const {
          itr != info_map.end();
          itr ++)
         os_f << itr->first << "=" << itr->second << "\n";
+
+    os_f.close();
+    */
+
     m_saved = true;
 }
 
@@ -320,7 +336,7 @@ void Config::set_part_offs(unsigned long long offs) const {
 }
 
 Config::~Config() {
-    save_info();
+    // save_info();
 
 #if 0
  TODO:
