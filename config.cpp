@@ -114,6 +114,14 @@ long long Config::get_long(const char* key, long long val) const {
 }
 
 void Config::set_info(const char* key, const char* val) const {
+    for (int i = 0; val[i]; i++)
+        if (i > 0x100) {
+            // bug finder
+            fprintf(stderr, "bad set_info: %s\n", key);
+            exit(1);
+        }
+            
+
     info_map.insert(info_pair(key, val));
     if (m_saved) // not during startup?
         save_info();

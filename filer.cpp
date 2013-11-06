@@ -42,6 +42,8 @@ FilerLoad::FilerLoad(FILE* fh, bool* valid_ptr) {
 
 FilerLoad::~FilerLoad() {
     fclose(m_in);
+    m_in = NULL;
+    *m_valid_ptr = false;
 }
 
 bool FilerLoad::is_valid() const { return m_valid ; }
@@ -84,6 +86,8 @@ FilerSave::FilerSave(FILE* fh) {
 FilerSave::~FilerSave() {
     save_page();
     fclose(m_out);
+    m_out = NULL;
+    m_valid = false;
 }
 
 bool FilerSave::is_valid() const { return m_valid; }
