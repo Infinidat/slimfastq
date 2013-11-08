@@ -25,7 +25,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
-
+// #include <ctype.h>
 #include "recs.hpp"
 
 #define MAX_LLINE 400           // TODO: assert max is enough at constructor
@@ -33,43 +33,159 @@
 
 void RecBase::range_init() {
     BZERO(ranger);
-    BZERO(rangerx);
 }
 
 RecSave::RecSave() {
 
     m_valid = true;
-    m_type = 0;
 
     BZERO(m_last);
     BZERO(stats);
-    BZERO(m_ids);
-    
     range_init();
 
     filer = new FilerSave(conf.open_w("rec"));
     assert(filer);
     rcoder.init(filer);
-
-    filerx = new FilerSave(conf.open_w("rec.x"));
-    assert(filerx);
-    rcoderx.init(filerx);
 }
 
 RecSave::~RecSave() {
-    putx_u(0, 0);
-    putx_u(1, ET_END);
+    put_len(0, 0);
     rcoder.done();
-    rcoderx.done();
     DELETE(filer);
-    DELETE(filerx);
-    fprintf(stderr, "::: REC big u/i: %u/%u ex:%u\n",
-            stats.big_u, stats.big_i, stats.exceptions);
+    fprintf(stderr, "::: REC big i: %u\n",
+            stats.big_i);
+}
+
+UCHAR* sncpy(UCHAR* target, const UCHAR* source, int n) {
+    int  i;
+    for (i = 0 ; i < n and source[i]; i++)
+        target[i] = source[i];
+    target[i] = 0;
+    return target + i;
+}
+
+void RecSave::save_first_line(const UCHAR* buf, const UCHAR* end) {
+    UCHAR first[MAX_LLINE];
+    sncpy(first, buf, end-buf);
+    conf.set_info("rec.first", (const char*)first);
+
+    assert(m_last.initilized == false);
+    m_last.initilized = true;
 }
 
 static bool is_digit(UCHAR c) {
     return c >= '0' and c <= '9';
 }
+
+static long long getnum(const UCHAR* &p) {
+    // get number, forward pointer to border
+    long long ret ;
+    for(ret = 0; is_digit(*p); p++)
+        ret = (ret<<3) + (ret<<1) + (*p) - '0';
+    return ret;
+}
+
+static bool isspace(UCHAR c) { switch(c) {
+    case 0: case ' ': case '\t' : case '\n': return true;
+    default: return false;
+    } }
+
+static const UCHAR* getspace(const UCHAR* p) {
+    while (not isspace(*p)) p++;
+    return p;
+}
+
+void RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end) {
+    rarely_if(not prev_buf)
+        return save_first_line(buf, end);
+
+    const UCHAR* b = buf;
+    const UCHAR* p = prev_buf;
+
+    for (int index = 0; ; index++) {
+        int len = 0;
+
+        while (*b == *p and LIKELY(b < end))
+            b++, p++, len++;
+        
+        rarely_if(b == end) {
+            put_len(index, 0);
+            return;
+        }
+        likely_if (is_digit(*b) and
+                   is_digit(*p)) {
+            long long new_val = getnum(b);
+            long long old_val = getnum(p);
+            put_len(index, len);
+            put_num(index, new_val - old_val);
+        }
+        else {
+            // find next space in both
+            const UCHAR* space = getspace(b);
+            put_len(index, 0-len);
+            put_str(index, b, space-b);
+            b = space;
+            p = getspace(p);
+        }
+    }
+}
+
+RecLoad::RecLoad() {
+    m_valid = true;
+    range_init();
+
+    filer = new FilerLoad(conf.open_r("rec"), &m_valid);
+    assert(filer);
+    rcoder.init(filer);
+
+    BZERO(m_last);
+}
+
+RecLoad::~RecLoad() {
+    rcoder.done();
+}
+
+
+size_t RecLoad::load_first_line(UCHAR* buf) {
+    assert(not m_last.initilized);
+    m_last.initilized = true;
+
+    const char *first = conf.get_info("rec.first");
+    strcpy((char*)buf, first);
+    return strlen(first);
+}
+
+size_t RecLoad::load_2(UCHAR* buf, const UCHAR* prev) {
+
+    rarely_if(not prev)
+        return load_first_line(buf);
+
+    UCHAR* b = buf;
+    const UCHAR* p = prev;
+
+    for (int index = 0;  ; index++ ) {
+        int len = get_len( index );
+        rarely_if(len = 0) {
+            return p - buf;
+        }
+
+        if (len > 0) {
+            for (int i = 0; i < len; i++)
+                *b ++ = *p ++;
+            long long old_val = getnum(p);
+            long long new_val = old_val + get_num(index);
+            b += sprintf((char*)b, "%lld", new_val);
+        }
+        else {
+            p = getspace(p);
+            b = get_str(index, b);
+        }
+    }
+
+    return 0;
+}
+
+#if 0
 
 static const char* backto(char c, const char* p, const char* start) {
 
@@ -578,7 +694,7 @@ bool RecSave::save_t_5(const UCHAR* buf, const UCHAR* end) {
 
 #undef ATOI
 
-bool RecSave::save_2(const UCHAR* buf, const UCHAR* end) {
+bool RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end) {
 
     rarely_if(not m_type )
         determine_rec_type(buf, end);
@@ -912,3 +1028,4 @@ size_t RecLoad::load_2(UCHAR* buf) {
     croak("Illegal type: %d", m_type);
     return 0;
 }
+#endif

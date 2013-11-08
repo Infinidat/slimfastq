@@ -118,6 +118,8 @@ private:
     bool   m_2nd_rec, m_solid;
     UINT32 m_rec_size;
 
+    bool  flip;
+    UCHAR m_rep[MAX_ID_LLEN + 1 ];
     UCHAR m_rec[MAX_ID_LLEN + 1 ];
     UCHAR m_qlt[MAX_GN_LLEN + 2 ];
     UCHAR m_gen[MAX_GN_LLEN + 4 ];

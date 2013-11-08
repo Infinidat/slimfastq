@@ -28,7 +28,6 @@
 
 #include "common.hpp"
 #include "config.hpp"
-// #include "pager.hpp"
 #include <stdio.h>
 
 #include "filer.hpp"
@@ -43,15 +42,15 @@ while ()
         len++;
    if (digit) {
       if end:
-          save len                         - [0]   - put_i
-          save 0 (as diff)                 - [1]   - put_i
+          save len                         - [0-9]   - put_i
+          save 0 (as diff)                 - [10 ]   - put_i
       if prev is digit:
-          save len                         - [0]   - put_i
-          save prev-new                    - [1]   - put_i
+          save len                         - [0-9]   - put_i
+          save prev-new                    - [10 ]   - put_i
       else:
-          save  -len                       - [0]   - put_i
-          save chr len to space/end        - [2]   - put_u
-          save chrs                        - [3]   - char put - add stream (PowerRanger - CharRanger)
+          save  -len                       - [0-9]   - put_i
+          save chr len to space/end        - [11 ]   - put_u
+          save chrs                        - [12 ]   - char put - add stream (PowerRanger - CharRanger)
    }
 
    also - unify signed/unsigned
@@ -62,79 +61,55 @@ while ()
 class RecBase {
 protected: 
 
-    enum exception_t {
-        ET_v0,
-        ET_v1,
-        ET_v2,
-        ET_v3,
-        ET_v9,
-        ET_al,
-        ET_iseq,
-        ET_END
-    };
-
     RecBase()  {}
     ~RecBase() {rcoder.done();}
 
-    PowerRanger ranger[10];
+    PowerRanger ranger[13];
     RCoder rcoder;
-    PowerRanger rangerx[10];
-    RCoder rcoderx;
-
-    const char* m_ids[10];
-    int m_len[10];
 
     struct {
-        UINT64 line_n;
-        // UINT64 x;
-        // UINT64 y;
-        UINT64 n[10];
         UINT64 rec_count;
-        UINT64 rec_count_tag;
-        UCHAR alal;
+        bool   initilized;
+        // long long num[10]; - TODO: keep array of prev atoi and end pointers
     } m_last;
 
     struct {
-        UINT32 big_u;
         UINT32 big_i;
-        UINT32 exceptions;
     } stats;
 
-    int    m_type;
-    bool   m_valid;
-
-    // const Config* m_conf;
+    bool m_valid;
 
     void range_init();
 
-    // Yeh yeh, I know it should be getter and putter but I'll keep it aligned
-    void put_i(int i, long long num, UINT64* old=NULL) {
-        if (ranger[i].put_i(&rcoder, num, old))
+    UCHAR lenoff(UCHAR i) { return 0 + LIKELY(i < 5) ? i : 4 ; }
+    UCHAR numoff(UCHAR i) { return 5 + LIKELY(i < 5) ? i : 4 ; }
+
+    void put_len(UCHAR i, int len) {
+        ranger[lenoff(i)].put_i(&rcoder, len);
+    }
+    int get_len(UCHAR i) {
+        return ranger[lenoff(i)].get_i(&rcoder);
+    }
+    void put_num(UCHAR i, long long num) {
+        if (ranger[numoff(i)].put_i(&rcoder, num))
             stats.big_i ++;
     }
-    void put_u(int i, UINT64    num, UINT64* old=NULL) {
-        if (ranger[i].put_u(&rcoder, num, old))
-            stats.big_u ++;
+    long long get_num( UCHAR i) {
+        return ranger[numoff(i)].get_i(&rcoder);
     }
-    long long get_i(int i, UINT64* old=NULL) {
-        return ranger[i].get_i(&rcoder, old);
+    const UCHAR* put_str(UCHAR index, const UCHAR* p, UINT32 len) {
+        ranger[index].put_u(&rcoder, len);
+        for (UINT32 i = 0; i < len; i++)
+            ranger[11].put_c(&rcoder, p[i]);
+        return p + len;
     }
-    UINT64    get_u(int i, UINT64* old=NULL) {
-        return ranger[i].get_u(&rcoder, old);
-    };
-
-    void putx_i(int i, long long num, UINT64* old=NULL) {
-        rangerx[i].put_i(&rcoderx, num, old);
+    UCHAR* get_str(UCHAR index, UCHAR* p) {
+        UINT32 len = ranger[index].get_u(&rcoder);
+        for (UINT32 i = 0; i < len; i++)
+            p[i] = ranger[11].get_c(&rcoder);
+        return p + len;
     }
-    void putx_u(int i, UINT64    num, UINT64* old=NULL) {
-        rangerx[i].put_u(&rcoderx, num, old);
-    }
-    long long getx_i(int i, UINT64* old=NULL) {
-        return rangerx[i].get_i(&rcoderx, old);
-    }
-    UINT64    getx_u(int i, UINT64* old=NULL) {
-        return rangerx[i].get_u(&rcoderx, old);
-    };
+    
 };
 
 class RecSave : private RecBase {
@@ -142,24 +117,13 @@ public:
      RecSave();
     ~RecSave();
 
-    bool save_1(const UCHAR* buf, const UCHAR* end) { return save_2(buf, end); }
-    bool save_2(const UCHAR* buf, const UCHAR* end);
-    bool save_3(const UCHAR* buf, const UCHAR* end) { return save_2(buf, end); }
+    void save_1(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end) { save_2(buf, end, prev_buf, prev_end); }
+    void save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end);
+    void save_3(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end) { save_2(buf, end, prev_buf, prev_end); }
 private:
-    void save_allele(char a);
-    bool save_t_1(const UCHAR* buf, const UCHAR* end);
-    bool save_t_3(const UCHAR* buf, const UCHAR* end);
-    bool save_t_5(const UCHAR* buf, const UCHAR* end);
-    bool save_t_6(const UCHAR* buf, const UCHAR* end);
-    bool save_t_7(const UCHAR* buf, const UCHAR* end);
-
-    void update(exception_t type, int val);
-
-    void determine_rec_type(const UCHAR* buf, const UCHAR* end);
-    int  get_rec_type(const char* start);
+    void save_first_line(const UCHAR* buf, const UCHAR* end);
 
     FilerSave* filer;
-    FilerSave* filerx;
 };
 
 class RecLoad : private RecBase {
@@ -168,23 +132,14 @@ public:
     ~RecLoad();
 
     inline bool is_valid() {return m_valid;}
-    size_t load_1(UCHAR* buf) { return load_2(buf) ;}
-    size_t load_2(UCHAR* buf);
-    size_t load_3(UCHAR* buf) { return load_2(buf) ;}
+    size_t load_1(UCHAR* buf, const UCHAR* prev) { return load_2(buf, prev) ;}
+    size_t load_2(UCHAR* buf, const UCHAR* prev);
+    size_t load_3(UCHAR* buf, const UCHAR* prev) { return load_2(buf, prev) ;}
 
 private:
-
-    size_t load_t_1(UCHAR* buf);
-    size_t load_t_3(UCHAR* buf);
-    size_t load_t_5(UCHAR* buf);
-    size_t load_t_6(UCHAR* buf);
-    size_t load_t_7(UCHAR* buf);
-    void update(); // update last values
-
-    void determine_ids(int size) ;
+    size_t load_first_line(UCHAR* buf);
 
     FilerLoad* filer;
-    FilerLoad* filerx;
 };
 
 

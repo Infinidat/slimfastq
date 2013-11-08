@@ -306,7 +306,7 @@ int UsrSave::encode() {
             while(get_record() and
                   ++ m_rec_total < sanity ) {
                 gen.save_1(mp.gen, mp.qlt, m_llen);
-                rec.save_1(mp.rec, mp.rec_end);
+                rec.save_1(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
                 qlt.save_1(mp.qlt, m_llen);
             } break;
         case 2: default:
@@ -314,7 +314,7 @@ int UsrSave::encode() {
                   ++ m_rec_total < sanity ) {
 
                 gen.save_2(mp.gen, mp.qlt, m_llen);
-                rec.save_2(mp.rec, mp.rec_end);
+                rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
                 qlt.save_2(mp.qlt, m_llen);
             } break;
         case 3:
@@ -322,7 +322,7 @@ int UsrSave::encode() {
                   ++ m_rec_total < sanity ) {
 
                 gen.save_3(mp.gen, mp.qlt, m_llen);
-                rec.save_3(mp.rec, mp.rec_end);
+                rec.save_3(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
                 qlt.save_3(mp.qlt, m_llen);
             } break;
         case 4:
@@ -330,7 +330,7 @@ int UsrSave::encode() {
                   ++ m_rec_total < sanity ) {
 
                 gen.save_4(mp.gen, mp.qlt, m_llen);
-                rec.save_3(mp.rec, mp.rec_end);
+                rec.save_3(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
                 qlt.save_3(mp.qlt, m_llen);
             } break;
         }
@@ -343,8 +343,10 @@ int UsrSave::encode() {
 
 UsrLoad::UsrLoad() {
     BZERO(m_last);
+    flip = 0;
     m_out = conf.file_usr();
     m_rec[0] = '@' ;
+    m_rep[0] = '@' ;
     m_llen    = conf.get_long("llen");
     m_2nd_rec = conf.get_long("usr.2id");
     m_solid   = conf.get_bool("usr.solid");
@@ -415,12 +417,15 @@ void UsrLoad::save() {
     size_t llen = m_llen + m_llen_factor ;
 
 #define SAVE(X, L) putline(X, L)
-    SAVE(m_rec, m_rec_size+1);
+    UCHAR* p_rec = flip ? m_rep : m_rec ;
+    flip = flip ? 0 : 1 ;
+
+    SAVE(p_rec, m_rec_size+1);
     if (m_2nd_rec) {
         SAVE(m_gen_ptr, llen);
-        m_rec[0] = '+';
-        SAVE(m_rec, m_rec_size+1);
-        m_rec[0] = '@';
+        p_rec[0] = '+';
+        SAVE(p_rec, m_rec_size+1);
+        p_rec[0] = '@';
     }
     else {
         SAVE(m_gen_ptr, llen + 2);
@@ -477,7 +482,8 @@ int UsrLoad::decode() {
 
     UCHAR* b_qlt = m_qlt+1 ;
     UCHAR* b_gen = m_gen+1 ;
-    UCHAR* b_rec = m_rec+1 ;
+    UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
+    UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
 
     // bool gentype = false;
 
@@ -485,7 +491,7 @@ int UsrLoad::decode() {
     case 1:
         while (n_recs --) {
             rarely_if (m_last.rec_count == m_last.index) update();
-            m_rec_size = rec.load_1(b_rec);
+            m_rec_size = rec.load_1(b_rec, p_rec);
             rarely_if (not m_rec_size)
                 croak("premature EOF - %llu records left", n_recs+1);
 
@@ -496,7 +502,7 @@ int UsrLoad::decode() {
     case 2: default:
         while (n_recs --) {
             rarely_if (m_last.rec_count == m_last.index) update();
-            m_rec_size = rec.load_2(b_rec);
+            m_rec_size = rec.load_2(b_rec, p_rec);
             rarely_if (not m_rec_size)
                 croak("premature EOF - %llu records left", n_recs+1);
 
@@ -507,7 +513,7 @@ int UsrLoad::decode() {
     case 3:
         while (n_recs --) {
             rarely_if (m_last.rec_count == m_last.index) update();
-            m_rec_size = rec.load_3(b_rec);
+            m_rec_size = rec.load_3(b_rec, p_rec);
             rarely_if (not m_rec_size)
                 croak("premature EOF - %llu records left", n_recs+1);
 
@@ -518,7 +524,7 @@ int UsrLoad::decode() {
     case 4:
         while (n_recs --) {
             rarely_if (m_last.rec_count == m_last.index) update();
-            m_rec_size = rec.load_3(b_rec);
+            m_rec_size = rec.load_3(b_rec, p_rec);
             rarely_if (not m_rec_size)
                 croak("premature EOF - %llu records left", n_recs+1);
 
