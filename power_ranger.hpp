@@ -46,7 +46,7 @@ class PowerRanger {
 
         UCHAR count;
         UCHAR syms[NSYM];
-    } p[32] PACKED ;
+    } p[16] PACKED ;
 
     void normalize(int c) {
         for (UINT32 i = p[c].total = 0; i < p[c].iend; i++)
@@ -155,6 +155,13 @@ protected:
     }
 
 public:
+    void put_c(RCoder* rc, UCHAR chr) {
+        put(rc, 8, chr);
+    }
+
+    UCHAR get_c(RCoder* rc) {
+        return get(rc, 8);
+    }
 
     bool put_i(RCoder* rc, long long num, UINT64 * old=NULL) {
         if (old) {
@@ -303,24 +310,24 @@ public:
     //     return true;
     // }
     likely_if(num <= 0x7f) {
-        put(rc, 16, 0xff & num);
+        put(rc, 0, 0xff & num);
         return false;
     }
     likely_if (num < 0x7ffe) {
-        put(rc, 16, 0xff & (0x80 | (num>>8)));
-        put(rc, 17, 0xff & num);
+        put(rc, 0, 0xff & (0x80 | (num>>8)));
+        put(rc, 1, 0xff & num);
         return false;
     }
-    put(rc, 16, 0xff);
+    put(rc, 0, 0xff);
     if (num < 1ULL<<32) {
-        put(rc, 17, 0xfe);
-        for (int shift=0, i=18; shift < 32; shift+=8, i++)
+        put(rc, 1, 0xfe);
+        for (int shift=0, i=2; shift < 32; shift+=8, i++)
             put(rc, i, 0xff & (num>>shift));
         return true;
     }
     {
-        put(rc, 17, 0xff);
-        for (int shift=0, i=22; shift < 64; shift+=8, i++)
+        put(rc, 1, 0xff);
+        for (int shift=0, i=8; shift < 64; shift+=8, i++)
             put(rc, i, 0xff & (num>>shift));
         return true;
     }
@@ -328,23 +335,24 @@ public:
 
 UINT64 get_u(RCoder *rc, UINT64* old=NULL) {
 
-    UINT64 num = get(rc, 16);
+    UINT64 num = get(rc, 0);
     rarely_if(num > 0x7f) {
     
         num <<= 8;
-        num  |= get(rc, 17);
+        num  |= get(rc, 1);
         likely_if(num < 0xfffe)
             num &= 0x7fff;
+
         else likely_if (num == 0xfffe) {
             num = 0;
-            for (int shift=0, i = 18; shift < 32; shift+=8, i++) {
+            for (int shift=0, i = 2; shift < 32; shift+=8, i++) {
                 UINT64 c = get(rc, i);
                 num  |= (c<<shift);
             }
         }
         else {
             num = 0;
-            for (int shift=0, i=22; shift < 64; shift+=8, i++) {
+            for (int shift=0, i=8; shift < 64; shift+=8, i++) {
                 UINT64 c = get(rc, i);
                 num  |= (c<<shift);
             }

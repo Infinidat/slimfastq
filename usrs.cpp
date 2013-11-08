@@ -36,6 +36,7 @@
 
 UsrSave::UsrSave() {
     BZERO(m_last);
+    BZERO(mp);
 
     m_valid  = true ;
     m_cur = m_end = m_rec_total = m_page_count = 0;
@@ -59,6 +60,16 @@ void UsrSave::load_page() {
     size_t start = PLL_STRT - size;
     for (size_t i = 0 ; i < size; i++)
         m_buff[start+i] = m_buff[m_cur+i];
+
+    likely_if (mp.rec != NULL) {
+        UCHAR* pl = mp_last;
+        for (UCHAR* p = mp.rec; p < mp.rec_end; p++ , pl++)
+            *pl = *p;
+        mp.rec = mp_last;
+        mp.rec_end = pl;
+        *pl++ = '\n';           // Just in case
+        *pl   = 0;              // clean debug
+    }
     
     size_t cnt = fread(&m_buff[PLL_STRT], 1, PLL_SIZE, m_in);
     m_cur  = start;
@@ -102,7 +113,7 @@ bool UsrSave::mid_rec_msg() const {
 }
 
 void UsrSave::load_check() {
-    if (m_cur+PLL_STRT < m_end)
+    likely_if (m_cur+PLL_STRT < m_end)
         return;
     for (int i = m_cur, cnt=0; i < m_end; i++)
         if (m_buff[i] == '\n')
@@ -161,7 +172,8 @@ void UsrSave::determine_record() {
     conf.set_info("usr.2id", has_2nd_id); // TODO
 }
 
-bool UsrSave::get_record(UCHAR** rec, UCHAR** rec_end, UCHAR** gen, UCHAR** qlt) {
+// bool UsrSave::get_record(UCHAR** rec, UCHAR** rec_end, UCHAR** gen, UCHAR** qlt) {
+bool UsrSave::get_record() {
     
     load_check();
 
@@ -169,11 +181,13 @@ bool UsrSave::get_record(UCHAR** rec, UCHAR** rec_end, UCHAR** gen, UCHAR** qlt)
 
     if (m_cur >= m_end) return m_valid = false;
     expect('@');
-    (*rec) = &(m_buff[m_cur]);
+    mp.prev_rec = mp.rec;
+    mp.prev_rec_end = mp.rec_end;
+    mp.rec = &(m_buff[m_cur]);
     for (int sanity = MAX_ID_LLEN;
          --  sanity and m_buff[m_cur] != '\n';
          m_cur ++ );
-    (*rec_end) = &(m_buff[m_cur]);
+    mp.rec_end = &(m_buff[m_cur]);
 
     CHECK_OVERFLOW ;
 
@@ -189,7 +203,7 @@ bool UsrSave::get_record(UCHAR** rec, UCHAR** rec_end, UCHAR** gen, UCHAR** qlt)
         m_cur++;
     }
 
-    (*gen) = &(m_buff[m_cur]);
+    mp.gen = &(m_buff[m_cur]);
     const int gi = m_cur ;
     while (m_buff[m_cur] != '\n' and (m_cur-gi) < MAX_GN_LLEN)
         m_cur ++;
@@ -212,7 +226,7 @@ bool UsrSave::get_record(UCHAR** rec, UCHAR** rec_end, UCHAR** gen, UCHAR** qlt)
         m_cur++;
     }
  
-    (*qlt) = &(m_buff[m_cur]);
+    mp.qlt = &(m_buff[m_cur]);
     m_cur += m_llen;
     CHECK_OVERFLOW;
 
@@ -248,7 +262,7 @@ UINT64 UsrSave::estimate_rec_limit() {
 int UsrSave::encode() {
 
     UINT32  sanity = conf.profiling ? 100000 : 1000000000;
-    UCHAR *p_rec, *p_rec_end, *p_gen, *p_qlt;
+    // UCHAR *p_rec, *p_rec_end, *p_gen, *p_qlt;
     // bool gentype = 0;
 
     RecSave rec;
@@ -289,35 +303,35 @@ int UsrSave::encode() {
         switch (conf.level) {
 
         case 1:
-            while(get_record(&p_rec, &p_rec_end, &p_gen, &p_qlt) and
+            while(get_record() and
                   ++ m_rec_total < sanity ) {
-                gen.save_1(p_gen, p_qlt, m_llen);
-                rec.save_1(p_rec, p_rec_end);
-                qlt.save_1(p_qlt, m_llen);
+                gen.save_1(mp.gen, mp.qlt, m_llen);
+                rec.save_1(mp.rec, mp.rec_end);
+                qlt.save_1(mp.qlt, m_llen);
             } break;
         case 2: default:
-            while(get_record(&p_rec, &p_rec_end, &p_gen, &p_qlt) and
+            while(get_record() and
                   ++ m_rec_total < sanity ) {
 
-                gen.save_2(p_gen, p_qlt, m_llen);
-                rec.save_2(p_rec, p_rec_end);
-                qlt.save_2(p_qlt, m_llen);
+                gen.save_2(mp.gen, mp.qlt, m_llen);
+                rec.save_2(mp.rec, mp.rec_end);
+                qlt.save_2(mp.qlt, m_llen);
             } break;
         case 3:
-            while(get_record(&p_rec, &p_rec_end, &p_gen, &p_qlt) and
+            while(get_record() and
                   ++ m_rec_total < sanity ) {
 
-                gen.save_3(p_gen, p_qlt, m_llen);
-                rec.save_3(p_rec, p_rec_end);
-                qlt.save_3(p_qlt, m_llen);
+                gen.save_3(mp.gen, mp.qlt, m_llen);
+                rec.save_3(mp.rec, mp.rec_end);
+                qlt.save_3(mp.qlt, m_llen);
             } break;
         case 4:
-            while(get_record(&p_rec, &p_rec_end, &p_gen, &p_qlt) and
+            while(get_record() and
                   ++ m_rec_total < sanity ) {
 
-                gen.save_4(p_gen, p_qlt, m_llen);
-                rec.save_3(p_rec, p_rec_end);
-                qlt.save_3(p_qlt, m_llen);
+                gen.save_4(mp.gen, mp.qlt, m_llen);
+                rec.save_3(mp.rec, mp.rec_end);
+                qlt.save_3(mp.qlt, m_llen);
             } break;
         }
     }

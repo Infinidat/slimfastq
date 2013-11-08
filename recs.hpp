@@ -34,6 +34,31 @@
 #include "filer.hpp"
 #include "power_ranger.hpp"
 
+/*
+
+save/init_first_line();
+while ()
+   len = 0
+   while(same )
+        len++;
+   if (digit) {
+      if end:
+          save len                         - [0]   - put_i
+          save 0 (as diff)                 - [1]   - put_i
+      if prev is digit:
+          save len                         - [0]   - put_i
+          save prev-new                    - [1]   - put_i
+      else:
+          save  -len                       - [0]   - put_i
+          save chr len to space/end        - [2]   - put_u
+          save chrs                        - [3]   - char put - add stream (PowerRanger - CharRanger)
+   }
+
+   also - unify signed/unsigned
+        - unify char (16 values - last % f ?)
+
+*/
+
 class RecBase {
 protected: 
 

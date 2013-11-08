@@ -54,7 +54,8 @@ public:
     int encode();
 
 private:
-    bool get_record(UCHAR** rec, UCHAR** rec_end, UCHAR** gen, UCHAR** qlt);
+    // bool get_record(UCHAR** rec, UCHAR** rec_end, UCHAR** gen, UCHAR** qlt);
+    bool get_record();
     void load_page();
     void update(exception_t type, UCHAR dat);
     void pager_init();
@@ -81,6 +82,15 @@ private:
     bool  m_solid;
     PagerSave16* pager_x;
     // const Config* m_conf;
+    struct {
+        UCHAR* rec;
+        UCHAR* rec_end;
+        UCHAR* prev_rec;
+        UCHAR* prev_rec_end;
+        UCHAR* gen;
+        UCHAR* qlt;
+    } mp;
+    UCHAR mp_last[MAX_REC_LEN];
 };
 
 class UsrLoad {
