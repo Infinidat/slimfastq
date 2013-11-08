@@ -482,14 +482,14 @@ int UsrLoad::decode() {
 
     UCHAR* b_qlt = m_qlt+1 ;
     UCHAR* b_gen = m_gen+1 ;
-    UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
-    UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
-
     // bool gentype = false;
 
     switch (conf.level) {
     case 1:
         while (n_recs --) {
+            UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
+            UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
+
             rarely_if (m_last.rec_count == m_last.index) update();
             m_rec_size = rec.load_1(b_rec, p_rec);
             rarely_if (not m_rec_size)
@@ -501,6 +501,8 @@ int UsrLoad::decode() {
         } break;
     case 2: default:
         while (n_recs --) {
+            UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
+            UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
             rarely_if (m_last.rec_count == m_last.index) update();
             m_rec_size = rec.load_2(b_rec, p_rec);
             rarely_if (not m_rec_size)
@@ -512,6 +514,8 @@ int UsrLoad::decode() {
         } break;
     case 3:
         while (n_recs --) {
+            UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
+            UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
             rarely_if (m_last.rec_count == m_last.index) update();
             m_rec_size = rec.load_3(b_rec, p_rec);
             rarely_if (not m_rec_size)
@@ -523,6 +527,8 @@ int UsrLoad::decode() {
         } break;
     case 4:
         while (n_recs --) {
+            UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
+            UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
             rarely_if (m_last.rec_count == m_last.index) update();
             m_rec_size = rec.load_3(b_rec, p_rec);
             rarely_if (not m_rec_size)

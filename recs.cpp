@@ -68,8 +68,8 @@ void RecSave::save_first_line(const UCHAR* buf, const UCHAR* end) {
     UCHAR first[MAX_LLINE];
     sncpy(first, buf, end-buf);
     conf.set_info("rec.first", (const char*)first);
+    conf.save_info();
 
-    assert(m_last.initilized == false);
     m_last.initilized = true;
 }
 
@@ -96,7 +96,7 @@ static const UCHAR* getspace(const UCHAR* p) {
 }
 
 void RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end) {
-    rarely_if(not prev_buf)
+    rarely_if(not m_last.initilized)
         return save_first_line(buf, end);
 
     const UCHAR* b = buf;
@@ -109,9 +109,13 @@ void RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, 
             b++, p++, len++;
         
         rarely_if(b == end) {
-            put_len(index, 0);
+            put_len(index, len);
+            put_num(index,   0);
             return;
         }
+        while (RARELY(*b == '0' and is_digit(*p) and len))
+            b--, p--, len--;
+
         likely_if (is_digit(*b) and
                    is_digit(*p)) {
             long long new_val = getnum(b);
@@ -147,7 +151,7 @@ RecLoad::~RecLoad() {
 
 
 size_t RecLoad::load_first_line(UCHAR* buf) {
-    assert(not m_last.initilized);
+
     m_last.initilized = true;
 
     const char *first = conf.get_info("rec.first");
@@ -157,7 +161,7 @@ size_t RecLoad::load_first_line(UCHAR* buf) {
 
 size_t RecLoad::load_2(UCHAR* buf, const UCHAR* prev) {
 
-    rarely_if(not prev)
+    rarely_if(not m_last.initilized)
         return load_first_line(buf);
 
     UCHAR* b = buf;
@@ -165,20 +169,24 @@ size_t RecLoad::load_2(UCHAR* buf, const UCHAR* prev) {
 
     for (int index = 0;  ; index++ ) {
         int len = get_len( index );
-        rarely_if(len = 0) {
-            return p - buf;
-        }
+        if (len < 0) {
 
-        if (len > 0) {
+            len = 0-len;
+            for (int i = 0; i < len; i++)
+                *b ++ = *p ++;
+            p = getspace(p);
+            b = get_str(index, b);
+        }
+        else {
             for (int i = 0; i < len; i++)
                 *b ++ = *p ++;
             long long old_val = getnum(p);
             long long new_val = old_val + get_num(index);
+
+            rarely_if(old_val == new_val)
+                return b - buf;
+
             b += sprintf((char*)b, "%lld", new_val);
-        }
-        else {
-            p = getspace(p);
-            b = get_str(index, b);
         }
     }
 
