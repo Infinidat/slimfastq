@@ -39,64 +39,62 @@ class PowerRanger {
         MAX_FREQ=(1<<16)-32,
     };
 
-    struct {
-        UINT32 total;
-        UINT16 freq[NSYM];
-        UINT16 iend ;
+    UINT32 total;
+    UINT16 freq[NSYM];
+    UINT16 iend ;
 
-        UCHAR count;
-        UCHAR syms[NSYM];
-    } p[16] PACKED ;
+    UCHAR count;
+    UCHAR syms[NSYM];
 
-    void normalize(int c) {
-        for (UINT32 i = p[c].total = 0; i < p[c].iend; i++)
-            p[c].total += (p[c].freq[i] /=2 ); 
+    void normalize() {
+        for (UINT32 i = total = 0; i < iend; i++)
+            total += (freq[i] /=2 ); 
     }
 
-    inline UCHAR sort_of_sort(int c, int i) {
+    inline UCHAR sort_of_sort(int i) {
         likely_if (i == 0 or
-                   (++ p[c].count & 0xf) or
-                   p[c].freq[i] <= p[c].freq[i-1] )
-            return p[c].syms[i];
+                   (++ count & 0xf) or
+                   freq[i] <= freq[i-1] )
+            return syms[i];
 
-        UCHAR t = p[c].syms[i  ];
-        p[c].syms[i] = p[c].syms[i-1];
-        p[c].syms[i-1] = t;
+        UCHAR t = syms[i  ];
+        syms[i] = syms[i-1];
+        syms[i-1] = t;
 
-        UINT16 f = p[c].freq[i];
-        p[c].freq[i]  = p[c].freq[i-1];
-        p[c].freq[i-1] = f;
+        UINT16 f = freq[i];
+        freq[i]  = freq[i-1];
+        freq[i-1] = f;
 
         return t;
     }
 
-protected:
-    void put(RCoder *rc, int c, UCHAR sym) {
+public:
+    void put(RCoder *rc, UCHAR sym) {
         UINT32 sumf  = 0;
         UINT32 i = 0;
 
-        rarely_if(p[c].iend <= sym)
-            for (;p[c].iend <= sym;      p[c].iend++)
-                  p[c].syms[p[c].iend] = p[c].iend;
+        rarely_if(iend <= sym)
+            for (;iend <= sym; iend++)
+                  syms[iend] = iend;
 
-        for (; p[c].syms[i] != sym; sumf += p[c].freq[i++]);
+        for (; syms[i] != sym; sumf += freq[i++]);
         sumf += i;
 
-        UINT32 vtot = p[c].total + NSYM;
-        rc->Encode(sumf, p[c].freq[i]+1, vtot);
+        UINT32 vtot = total + NSYM;
+        rc->Encode(sumf, freq[i]+1, vtot);
 
-        rarely_if(p[c].freq[i] > (MAX_FREQ - STEP))
-            normalize(c);
+        rarely_if(freq[i] > (MAX_FREQ - STEP))
+            normalize();
 
-        p[c].freq[i] += STEP;
-        p[c].total   += STEP;
+        freq[i] += STEP;
+        total   += STEP;
 
-        sort_of_sort(c, i);
+        sort_of_sort(i);
     }
 
-    UINT16 get(RCoder *rc, int c) {
+    UINT16 get(RCoder *rc) {
 
-        UINT32 vtot = p[c].total + NSYM; // - p[c].iend;
+        UINT32 vtot = total + NSYM; // - iend;
         UINT32 sumf = 0;
         UINT32 i;
 
@@ -105,34 +103,91 @@ protected:
               i < NSYM;
               i ++ ) {
 
-            rarely_if(i >= p[c].iend) 
-                p[c].syms[ p[c].iend++ ] = i;
+            rarely_if(i >= iend) 
+                syms[ iend++ ] = i;
         
-            if (sumf +  p[c].freq[i] + 1 <= prob)
-                sumf += p[c].freq[i] + 1;
+            if (sumf +  freq[i] + 1 <= prob)
+                sumf += freq[i] + 1;
             else
                 break;
         }
 
-        rc->Decode(sumf, p[c].freq[i]+1, vtot);
+        rc->Decode(sumf, freq[i]+1, vtot);
 
-        rarely_if(p[c].freq[i] > (MAX_FREQ - STEP))
-            normalize(c);
+        rarely_if(freq[i] > (MAX_FREQ - STEP))
+            normalize();
 
-        p[c].freq[i] += STEP;
-        p[c].total   += STEP;
+        freq[i] += STEP;
+        total   += STEP;
 
-        return sort_of_sort(c, i);
+        return sort_of_sort(i);
     }
+} PACKED;
+
+class PowerRangerU {
+
+    PowerRanger p[15];
 
 public:
-    void put_c(RCoder* rc, UCHAR chr) {
-        put(rc, 8, chr);
-    }
+    bool put_u(RCoder *rc, UINT64 num) {
 
-    UCHAR get_c(RCoder* rc) {
-        return get(rc, 8);
+    likely_if(num <= 0x7f) {
+        p[0].put(rc, 0xff & num);
+        return false;
     }
+    likely_if (num < 0x7ffe) {
+        p[0].put(rc, 0xff & (0x80 | (num>>8)));
+        p[1].put(rc, 0xff & num);
+        return false;
+    }
+    p[0].put(rc, 0xff);
+    if (num < 1ULL<<32) {
+        p[1].put(rc, 0xfe);
+        for (int shift=0, i=2; shift < 32; shift+=8, i++)
+            p[i].put(rc, 0xff & (num>>shift));
+        return true;
+    }
+    {
+        p[1].put(rc, 0xff);
+        for (int shift=0, i=8; shift < 64; shift+=8, i++)
+            p[i].put(rc, 0xff & (num>>shift));
+        return true;
+    }
+}
+
+UINT64 get_u(RCoder *rc) {
+
+    UINT64 num = p[0].get(rc);
+    rarely_if(num > 0x7f) {
+    
+        num <<= 8;
+        num  |= p[1].get(rc);
+        likely_if(num < 0xfffe)
+            num &= 0x7fff;
+
+        else likely_if (num == 0xfffe) {
+            num = 0;
+            for (int shift=0, i = 2; shift < 32; shift+=8, i++) {
+                UINT64 c = p[i].get(rc);
+                num  |= (c<<shift);
+            }
+        }
+        else {
+            num = 0;
+            for (int shift=0, i=8; shift < 64; shift+=8, i++) {
+                UINT64 c = p[i].get(rc);
+                num  |= (c<<shift);
+            }
+        }
+    }
+    return num;
+}
+
+} PACKED;
+
+#endif // already loaded
+
+#ifdef This_is_an_Attic
 
     bool put_i(RCoder* rc, long long num, UINT64 * old=NULL) {
         if (old) {
@@ -200,68 +255,4 @@ public:
             num ;
     }
 
-    bool put_u(RCoder *rc, UINT64 num, UINT64* old=NULL) {
-    if (old) {
-        // assert(num >= *old); what's worse?
-        UINT64 t = num - *old;
-        *old = num;
-        num = t;
-    }
-    likely_if(num <= 0x7f) {
-        put(rc, 0, 0xff & num);
-        return false;
-    }
-    likely_if (num < 0x7ffe) {
-        put(rc, 0, 0xff & (0x80 | (num>>8)));
-        put(rc, 1, 0xff & num);
-        return false;
-    }
-    put(rc, 0, 0xff);
-    if (num < 1ULL<<32) {
-        put(rc, 1, 0xfe);
-        for (int shift=0, i=2; shift < 32; shift+=8, i++)
-            put(rc, i, 0xff & (num>>shift));
-        return true;
-    }
-    {
-        put(rc, 1, 0xff);
-        for (int shift=0, i=8; shift < 64; shift+=8, i++)
-            put(rc, i, 0xff & (num>>shift));
-        return true;
-    }
-}
-
-UINT64 get_u(RCoder *rc, UINT64* old=NULL) {
-
-    UINT64 num = get(rc, 0);
-    rarely_if(num > 0x7f) {
-    
-        num <<= 8;
-        num  |= get(rc, 1);
-        likely_if(num < 0xfffe)
-            num &= 0x7fff;
-
-        else likely_if (num == 0xfffe) {
-            num = 0;
-            for (int shift=0, i = 2; shift < 32; shift+=8, i++) {
-                UINT64 c = get(rc, i);
-                num  |= (c<<shift);
-            }
-        }
-        else {
-            num = 0;
-            for (int shift=0, i=8; shift < 64; shift+=8, i++) {
-                UINT64 c = get(rc, i);
-                num  |= (c<<shift);
-            }
-        }
-    }
-    return
-        ( old) ?
-        (*old += num) :
-        num ;
-}
-
-} PACKED;
-
-#endif // already loaded
+#endif

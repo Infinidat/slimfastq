@@ -49,7 +49,7 @@ RecSave::RecSave() {
 }
 
 RecSave::~RecSave() {
-    put_len(0, 0);
+    put_type(0, ST_END, 0);
     rcoder.done();
     DELETE(filer);
     fprintf(stderr, "::: REC big i: %u | str n/l: %u/%u | zero f/b: %u/%u\n",
@@ -112,8 +112,7 @@ void RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, 
             b++, p++, len++;
         
         rarely_if(b == end) {
-            put_len(index, len);
-            put_type(index, ST_END);
+            put_type(index, ST_END, len);
             return;
         }
 
@@ -130,32 +129,28 @@ void RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, 
                 len-= i;
             }
             else {
-                put_len(index, len);
                 likely_if(is_digit(p[1])) {
                     stats.zero_f++;
-                    put_type(index, ST_0_F);
+                    put_type(index, ST_0_F, len);
                     b++, p++;
                 }
                 else {
                     stats.zero_b++;
-                    put_type(index, ST_0_B);
+                    put_type(index, ST_0_B, len);
                     b++;
                 }
                 continue;
             }
         }
-        put_len(index, len);
-        // likely_if (is_digit(*b) and
-        //            is_digit(*p)) {
         likely_if (is_digit(*b)) {
             long long new_val = getnum(b);
             long long old_val = getnum(p); // TODO: cache old_val
             if (new_val >= old_val) {      // It can't really be equal, can it?
-                put_type(index, ST_GAP);
+                put_type(index, ST_GAP, len);
                 put_num (index, new_val - old_val);
             }
             else {
-                put_type(index, ST_PAG);
+                put_type(index, ST_PAG, len);
                 put_num (index, old_val - new_val);
             }
             continue;
@@ -163,7 +158,7 @@ void RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, 
         {
             // find next space in both
             const UCHAR* space = getspace(b);
-            put_type(index, ST_STR);
+            put_type(index, ST_STR, len);
             put_str(index, b, space-b);
             b = space;
             p = getspace(p);
@@ -206,12 +201,14 @@ size_t RecLoad::load_2(UCHAR* buf, const UCHAR* prev) {
     const UCHAR* p = prev;
 
     for (int index = 0;  ; index++ ) {
-        int len  = get_len( index);
+        UCHAR len;
+        seg_type type = get_type(index, &len);
+
         for (int i = 0; i < len; i++) {
-            assert(*p and *p != '\n'); // IF_DEBUG ...
+            if (1) assert(*p and *p != '\n'); // IF_DEBUG ...
             *b ++ = *p ++;
         }
-        seg_type type = get_type(index);
+
         switch ( type) {
         case ST_GAP: {
                 long long old_val = getnum(p);

@@ -39,11 +39,21 @@ protected:
     RecBase()  {}
     ~RecBase() {rcoder.done();}
 
-    PowerRanger ranger[16];
+    // 10 type
+    // 10 len
+    // 10 num
+
+    struct {
+        PowerRanger type;
+        PowerRanger  len;
+        PowerRanger  str;
+        PowerRangerU num;
+    } PACKED ranger[10];
+
     RCoder rcoder;
 
     struct {
-        UINT64 rec_count;
+        UCHAR  len[10];
         bool   initilized;
         // long long num[10]; - TODO: keep array of prev atoi and end pointers
     } m_last;
@@ -60,7 +70,6 @@ protected:
 
     void range_init();
 
-protected:
     // Division of labor
     enum seg_type {
         ST_GAP,
@@ -73,38 +82,62 @@ protected:
     };
 
 
-    UCHAR MAX5(int b, int i) { return b + (LIKELY(i < 5) ? i : 4); }
+private:
+    UCHAR norm(int i) { return (LIKELY(i < 10) ? i : 9); }
 
-    void put_type(UCHAR i, seg_type type) {
-        ranger[MAX5(10, i)].put_c(&rcoder, type);
+protected:
+    // void put_len(UCHAR i, int len) {
+    //     ranger[MAX5(0, i)].put_u(&rcoder, len);
+    // }
+    // int get_len(UCHAR i) {
+    //     return ranger[MAX5(0, i)].get_u(&rcoder);
+    // }
+    void put_type(UCHAR i, seg_type type, UCHAR len) {
+        i = norm(i);
+        ranger[i].len .put(&rcoder, len);
+        ranger[i].type.put(&rcoder, type);
+        // if (len == m_last.len[i])
+            // ranger[i].type.put(&rcoder, type);
+        // else {
+            // ranger[i].type.put(&rcoder, type | 8);
+            // ranger[i].len .put(&rcoder, len);
+        //     m_last.len[i] = len;
+        // }
     }
-    seg_type get_type(UCHAR i) {
-        return (seg_type) ranger[MAX5(10, i)].get_c(&rcoder);
+    seg_type get_type(UCHAR i, UCHAR* len) {
+        i = norm(i);
+        * len = ranger[i].len .get(&rcoder);
+        return (seg_type) ranger[i].type.get(&rcoder);
+        // UCHAR c  = ranger[i].type.get(&rcoder);
+        // *len =
+        //     (c & 8) ?
+        //     (m_last.len[i] = ranger[i].len .get(&rcoder)) :
+        //     (m_last.len[i]);
+        // return (seg_type)(c & 7);
     }
-    void put_len(UCHAR i, int len) {
-        ranger[MAX5(0, i)].put_u(&rcoder, len);
-    }
-    int get_len(UCHAR i) {
-        return ranger[MAX5(0, i)].get_u(&rcoder);
-    }
+
     void put_num(UCHAR i, long long num) {
-        if (ranger[MAX5(5, i)].put_u(&rcoder, num))
+        i = norm(i);
+        if (ranger[i].num.put_u(&rcoder, num))
             stats.big_i ++;
     }
-    long long get_num( UCHAR i) {
-        return ranger[MAX5(5, i)].get_u(&rcoder);
+    long long get_num(UCHAR i) {
+        i = norm(i);
+        return ranger[i].num.get_u(&rcoder);
     }
     void put_str(UCHAR i, const UCHAR* p, UINT32 len) {
+        i = norm(i);
         stats.str_n ++ ;
         stats.str_l += len;
-        ranger[MAX5(5, i)].put_u(&rcoder, len);
-        for (UINT32 i = 0; i < len; i++)
-            ranger[15].put_c(&rcoder, p[i]);
+        ranger[i].num.put_u(&rcoder, len);
+        for (UINT32 j = 0; j < len; j++)
+            ranger[i].str.put(&rcoder, p[j]);
     }
     UCHAR* get_str(UCHAR i, UCHAR* p) {
-        UINT32 len = ranger[MAX5(5, i)].get_u(&rcoder);
-        for (UINT32 i = 0; i < len; i++)
-            p[i] = ranger[15].get_c(&rcoder);
+        i = norm(i);
+        UINT32 len = ranger[i].num.get_u(&rcoder);
+        for (UINT32 j = 0; j < len; j++)
+            p[j] = ranger[i].str.get(&rcoder);
         return p + len;
     }
 };
