@@ -70,7 +70,7 @@ molder: molder.cpp pager.cpp pager.hpp
 tags:
 	etags $(SOURCES) $(HEADERS)
 
-UTSRC= $(filter-out findshun.cpp one.cpp molder.cpp slimfastq.cpp, $(shell ls *.cpp))
+UTSRC= $(filter-out findshun.cpp one.cpp molder.cpp main.cpp, $(shell ls *.cpp))
 UTHDR= $(shell ls *.hpp)
 slimfastq.utest: $(UTSRC) $(UTHDR)
 	g++ $(FLAGS) $(UTSRC) -o $@

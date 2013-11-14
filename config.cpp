@@ -289,7 +289,14 @@ void Config::init(int argc, char **argv, int ver) {
     if (encode) {
         set_info("config.level", range_level(level));
 
-        f_usr = usr.length() ? fopen(usr.c_str(), "rb") : stdin ;
+        if (usr.length()) {
+            set_info("orig.filename", usr.c_str());
+            f_usr = fopen(usr.c_str(), "rb") ;
+        }
+        else {
+            set_info("orig.filename", "<< stdin >>");
+            f_usr = stdin ;
+        }
         check_fh(f_usr, usr, true);
         filename_stream.open(withsuffix(m_file, ".files"));
     }

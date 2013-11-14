@@ -33,38 +33,13 @@
 #include "filer.hpp"
 #include "power_ranger.hpp"
 
-/*
-
-save/init_first_line();
-while ()
-   len = 0
-   while(same )
-        len++;
-   if (digit) {
-      if end:
-          save len                         - [0-9]   - put_i
-          save 0 (as diff)                 - [10 ]   - put_i
-      if prev is digit:
-          save len                         - [0-9]   - put_i
-          save prev-new                    - [10 ]   - put_i
-      else:
-          save  -len                       - [0-9]   - put_i
-          save chr len to space/end        - [11 ]   - put_u
-          save chrs                        - [12 ]   - char put - add stream (PowerRanger - CharRanger)
-   }
-
-   also - unify signed/unsigned
-        - unify char (16 values - last % f ?)
-
-*/
-
 class RecBase {
 protected: 
 
     RecBase()  {}
     ~RecBase() {rcoder.done();}
 
-    PowerRanger ranger[13];
+    PowerRanger ranger[16];
     RCoder rcoder;
 
     struct {
@@ -75,41 +50,62 @@ protected:
 
     struct {
         UINT32 big_i;
+        UINT32 str_n;
+        UINT32 str_l;
+        UINT32 zero ;
     } stats;
 
     bool m_valid;
 
     void range_init();
 
-    UCHAR lenoff(UCHAR i) { return 0 + LIKELY(i < 5) ? i : 4 ; }
-    UCHAR numoff(UCHAR i) { return 5 + LIKELY(i < 5) ? i : 4 ; }
+protected:
+    // Division of labor
+    enum seg_type {
+        ST_GAP,
+        ST_NUM,
+        ST_END,
+        ST_STR,
+        ST_0_F,
+        ST_0_B,
+        ST_LAST
+    };
 
+
+    UCHAR MAX5(int b, int i) { return b + (LIKELY(i < 5) ? i : 4); }
+
+    void put_type(UCHAR i, seg_type type) {
+        ranger[MAX5(10, i)].put_c(&rcoder, type);
+    }
+    seg_type get_type(UCHAR i) {
+        return (seg_type) ranger[MAX5(10, i)].get_c(&rcoder);
+    }
     void put_len(UCHAR i, int len) {
-        ranger[lenoff(i)].put_i(&rcoder, len);
+        ranger[MAX5(0, i)].put_u(&rcoder, len);
     }
     int get_len(UCHAR i) {
-        return ranger[lenoff(i)].get_i(&rcoder);
+        return ranger[MAX5(0, i)].get_u(&rcoder);
     }
     void put_num(UCHAR i, long long num) {
-        if (ranger[numoff(i)].put_i(&rcoder, num))
+        if (ranger[MAX5(5, i)].put_u(&rcoder, num))
             stats.big_i ++;
     }
     long long get_num( UCHAR i) {
-        return ranger[numoff(i)].get_i(&rcoder);
+        return ranger[MAX5(5, i)].get_u(&rcoder);
     }
-    const UCHAR* put_str(UCHAR index, const UCHAR* p, UINT32 len) {
-        ranger[index].put_u(&rcoder, len);
+    void put_str(UCHAR i, const UCHAR* p, UINT32 len) {
+        stats.str_n ++ ;
+        stats.str_l += len;
+        ranger[MAX5(5, i)].put_u(&rcoder, len);
         for (UINT32 i = 0; i < len; i++)
-            ranger[11].put_c(&rcoder, p[i]);
+            ranger[15].put_c(&rcoder, p[i]);
+    }
+    UCHAR* get_str(UCHAR i, UCHAR* p) {
+        UINT32 len = ranger[MAX5(5, i)].get_u(&rcoder);
+        for (UINT32 i = 0; i < len; i++)
+            p[i] = ranger[15].get_c(&rcoder);
         return p + len;
     }
-    UCHAR* get_str(UCHAR index, UCHAR* p) {
-        UINT32 len = ranger[index].get_u(&rcoder);
-        for (UINT32 i = 0; i < len; i++)
-            p[i] = ranger[11].get_c(&rcoder);
-        return p + len;
-    }
-    
 };
 
 class RecSave : private RecBase {

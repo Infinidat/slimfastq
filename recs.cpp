@@ -52,8 +52,8 @@ RecSave::~RecSave() {
     put_len(0, 0);
     rcoder.done();
     DELETE(filer);
-    fprintf(stderr, "::: REC big i: %u\n",
-            stats.big_i);
+    fprintf(stderr, "::: REC big i: %u | str n/l: %u/%u | zero: %u\n",
+            stats.big_i, stats.str_n, stats.str_l, stats.zero );
 }
 
 UCHAR* sncpy(UCHAR* target, const UCHAR* source, int n) {
@@ -79,10 +79,13 @@ static bool is_digit(UCHAR c) {
 
 static long long getnum(const UCHAR* &p) {
     // get number, forward pointer to border
+    bool zap = RARELY(*p == 0);
+
     long long ret ;
     for(ret = 0; is_digit(*p); p++)
         ret = (ret<<3) + (ret<<1) + (*p) - '0';
-    return ret;
+
+    return zap ? 0 : ret;
 }
 
 static bool isspace(UCHAR c) { switch(c) {
@@ -108,29 +111,47 @@ void RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, 
         while (*b == *p and LIKELY(b < end))
             b++, p++, len++;
         
+        put_len(index, len);
+
         rarely_if(b == end) {
-            put_len(index, len);
-            put_num(index,   0);
+            put_type(index, ST_END);
             return;
         }
-        while (RARELY(*b == '0' and is_digit(*p) and len))
-            b--, p--, len--;
-
+        rarely_if(*b == '0') {
+            likely_if(is_digit(p[1])) {
+                put_type(index, ST_0_F);
+                b++, p++;
+            }
+            else {
+                put_type(index, ST_0_B);
+                b++;
+            }
+            continue;
+        }
         likely_if (is_digit(*b) and
                    is_digit(*p)) {
             long long new_val = getnum(b);
-            long long old_val = getnum(p);
-            put_len(index, len);
-            put_num(index, new_val - old_val);
+            long long old_val = getnum(p); // TODO: cache old_val
+            if (new_val >= old_val) {      // It can't really be equal, can it?
+                put_type(index, ST_GAP);
+                put_num (index, new_val - old_val);
+            }
+            else {
+                put_type(index, ST_NUM);
+                put_num (index, new_val);
+            }
+            continue;
         }
-        else {
+        {
             // find next space in both
             const UCHAR* space = getspace(b);
-            put_len(index, 0-len);
+            put_type(index, ST_STR);
             put_str(index, b, space-b);
             b = space;
             p = getspace(p);
         }
+        rarely_if (p >= prev_end) 
+            p = prev_end-1;
     }
 }
 
@@ -168,25 +189,33 @@ size_t RecLoad::load_2(UCHAR* buf, const UCHAR* prev) {
     const UCHAR* p = prev;
 
     for (int index = 0;  ; index++ ) {
-        int len = get_len( index );
-        if (len < 0) {
-
-            len = 0-len;
-            for (int i = 0; i < len; i++)
-                *b ++ = *p ++;
-            p = getspace(p);
-            b = get_str(index, b);
+        int len  = get_len( index);
+        for (int i = 0; i < len; i++) {
+            assert(*p and *p != '\n'); // IF_DEBUG ...
+            *b ++ = *p ++;
         }
-        else {
-            for (int i = 0; i < len; i++)
-                *b ++ = *p ++;
-            long long old_val = getnum(p);
-            long long new_val = old_val + get_num(index);
+        seg_type type = get_type(index);
+        switch ( type) {
+        case ST_GAP: {
+                long long old_val = getnum(p);
+                long long new_val = old_val + get_num(index);
+                b += sprintf((char*)b, "%lld", new_val);
+            } break;
+        case ST_NUM: {
+                for(; is_digit(*p); p++);
+                long long new_val = get_num(index);
+                b += sprintf((char*)b, "%lld", new_val);                
+            } break;
+        case ST_STR: {
+                p = getspace(p);
+                b = get_str(index, b);
+            } break;
 
-            rarely_if(old_val == new_val)
-                return b - buf;
-
-            b += sprintf((char*)b, "%lld", new_val);
+        case ST_0_F:  p++ ; 
+        case ST_0_B: *b++ = '0'; break;
+        case ST_END: return b - buf;
+        case ST_LAST:
+        default: croak("bad record segment type: %u", type);
         }
     }
 

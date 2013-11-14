@@ -41,6 +41,7 @@
 #include "qlts.hpp"
 #include "recs.hpp"
 #include "gens.hpp"
+// #include "power_ranger.hpp"
 
 #undef  protected
 
@@ -120,13 +121,13 @@ void test_qlt() {
     }
 }
 
+const char* fname = "/tmp/utest~filer";
 bool _valid ;
 RCoder * rc = NULL;
 FilerLoad* filer_l = NULL;
 FilerSave* filer_s = NULL;
 
 void rc_init(bool load=0) {
-    const char* fname = "/tmp/utest~filer";
     _valid = true;
     rc = new RCoder;
     assert(rc);
@@ -178,15 +179,15 @@ void test_log64_ranger() {
 }
 
 void test_power_ranger() {
-    TITLE("power ranger put/get");
+    TITLE("ranger put_c/get_c");
     {
         rc_init(0);
         PowerRanger ranger;
         BZERO(ranger);
         for (int i = 0; i < 300; i++)
-            ranger.put(rc, 0, i&0xff);
+            ranger.put_c(rc, i&0xff);
         for (int i = 0; i < 1000; i+=17)
-            ranger.put(rc, 0, i&0xff);
+            ranger.put_c(rc, i&0xff);
         rc_finit();
     }
     {
@@ -194,11 +195,11 @@ void test_power_ranger() {
         PowerRanger ranger;
         BZERO(ranger);
         for (int i = 0; i < 300; i++) {
-            UCHAR c = ranger.get(rc, 0);
+            UCHAR c = ranger.get_c(rc);
             assert(c == (i&0xff));
         }
         for (int i = 0; i < 1000; i+=17) {
-            UCHAR c = ranger.get(rc, 0);
+            UCHAR c = ranger.get_c(rc);
             assert(c == (i&0xff));
         }
         rc_finit();
@@ -241,7 +242,10 @@ void test_power_ranger() {
         PowerRanger ranger;
         BZERO(ranger);
         for (int i = 0; i < 300; i++)
-            ranger.put(rc, 0, i&0xff);
+            ranger.put_u(rc, i);
+        for (int i = 1000; i ; i--)
+            ranger.put_u(rc, i*77);
+
         rc_finit();
     }
     {
@@ -249,15 +253,19 @@ void test_power_ranger() {
         PowerRanger ranger;
         BZERO(ranger);
         for (int i = 0; i < 300; i++) {
-            int c = ranger.get(rc, 0);
-            assert(c == (i&0xff));
+            int c = ranger.get_u(rc);
+            assert(c == i);
+        }
+        for (int i = 1000; i ; i--) {
+            int c = ranger.get_u(rc);
+            assert(c == i*77);
         }
         rc_finit();
     }
 }
 
-void test_recbase() {
-    const char* fname = "/tmp/utest~filer";
+void test_power_ranger_extra() {
+    TITLE("extra ranger");
     UINT64 array[] =
         { 0xfffffffffff, 0x123456789abcd, 0, 4,
           0xfffffffffff, 0x123456789abcd, 0, 4,
@@ -274,27 +282,30 @@ void test_recbase() {
         FilerSave filer(fh) ;
         assert(filer.is_valid());
 
-        RecBase base ;
-        BZERO(base);
-        base.range_init();
-        base.rcoder.init(&filer);
+        PowerRanger ranger;
+        RCoder rcoder;
+        rcoder.init(&filer);
+        BZERO(ranger);
+        RCoder* r = &rcoder;
+
         // bug hunt
-        base.put_i(0, -1);
-        base.put_u(1, '3');
-        base.put_i(0, 2994389);
-        base.put_u(2, 2308);
+        ranger.put_i(r, -1);
+        ranger.put_u(r, '3');
+        ranger.put_i(r, 2994389);
+        ranger.put_u(r, 2308);
         for (int i = 0; i < 300; i++)
-            base.put_u(0, (i&0x7f));
+            ranger.put_u(r, (i&0x7f));
         for (UINT64 i=0; i < 1000; i++)
-            base.put_u(0, i);
+            ranger.put_u(r, i);
         for (UINT64 i=0xfff0; i < 0x10234; i++) 
-            base.put_u(0, i);
+            ranger.put_u(r, i);
         for (int i = 0; i < 12; i++)
-            base.put_u(0, array[i]);
+            ranger.put_u(r, array[i]);
         for (int i = -300; i < 300; i++)
-            base.put_i(1, i);
+            ranger.put_i(r, i);
         for (int i = 0; i < 8; i++)
-            base.put_i(1, 0|arrai[i]);
+            ranger.put_i(r, 0|arrai[i]);
+        rcoder.done();
     }
     {
         FILE *fh = fopen(fname, "r");
@@ -304,38 +315,91 @@ void test_recbase() {
         FilerLoad filer(fh, &valid) ;
         assert(filer.is_valid());
 
+        PowerRanger ranger;
+        RCoder rcoder;
+        rcoder.init(&filer);
+        BZERO(ranger);
+        RCoder* r = &rcoder;
+
+        assert(ranger.get_i(r) == -1);
+        assert(ranger.get_u(r) == '3');
+        assert(ranger.get_i(r) == 2994389);
+        assert(ranger.get_u(r) == 2308);
+        for (int i = 0; i < 300; i++) {
+            UCHAR c = ranger.get_u(r);
+            assert(c == (i&0x7f));
+        }
+        for (UINT64 i=0; i < 1000; i++) {
+            UINT64 u = ranger.get_u(r);
+            assert(u == i);
+        }
+        for (UINT64 i=0xfff0; i < 0x10234; i++) {
+            UINT64 u = ranger.get_u(r);
+            assert(u == i);
+        }
+        for (int i = 0; i < 12; i++) {
+            UINT64 u = ranger.get_u(r);
+            assert(u == array[i]);
+        }
+        for (int i = -300; i < 300; i++) {
+            long l = ranger.get_i(r);
+            assert(l == i);
+        }
+        for (int i = 0; i < 8; i++) {
+            long u = ranger.get_i(r);
+            assert(u == arrai[i]);            
+        }
+    }
+}
+
+void test_recbase() {
+
+    TITLE("test RecBase");
+    const UCHAR* mystr = (const UCHAR*)"welcome to Amsterdam had have a )*(&^(*4758*^&%)) +++~ time!";
+    int mystr_len = strlen((const char*)mystr);
+    {
+        FILE *fh = fopen(fname, "w");
+        assert(fh);
+
+        FilerSave filer(fh) ;
+        assert(filer.is_valid());
+
         RecBase base ;
         BZERO(base);
         base.range_init();
         base.rcoder.init(&filer);
-        assert(base.get_i(0) == -1);
-        assert(base.get_u(1) == '3');
-        assert(base.get_i(0) == 2994389);
-        assert(base.get_u(2) == 2308);
-        for (int i = 0; i < 300; i++) {
-            UCHAR c = base.get_u(0);
-            assert(c == (i&0x7f));
+
+        base.put_str(0, mystr, mystr_len);
+
+        for (int i = -1000; i < 2000; i++) {
+            base.put_len(0, i*11+9);
+            base.put_num(0, i*7);
         }
-        for (UINT64 i=0; i < 1000; i++) {
-            UINT64 u = base.get_u(0);
-            assert(u == i);
-        }
-        for (UINT64 i=0xfff0; i < 0x10234; i++) {
-            UINT64 u = base.get_u(0);
-            assert(u == i);
-        }
-        for (int i = 0; i < 12; i++) {
-            UINT64 u = base.get_u(0);
-            assert(u == array[i]);
-        }
-        for (int i = -300; i < 300; i++) {
-            long l = base.get_i(1);
-            assert(l == i);
-        }
-        for (int i = 0; i < 8; i++) {
-            long u = base.get_i(1);
-            assert(u == arrai[i]);            
-        }
+
+    }
+    {
+        FILE *fh = fopen(fname, "r");
+        assert(fh);
+        bool valid;
+
+        FilerLoad filer(fh, &valid) ;
+        assert(filer.is_valid());
+        RecBase base ;
+        BZERO(base);
+        base.range_init();
+        base.rcoder.init(&filer);
+
+        UCHAR str[1000];
+        UCHAR* p = base.get_str(0, str);
+        assert(0 == strcmp((const char*)str, (const char*)mystr));
+        assert(p == str + mystr_len);
+
+        for (int i = -1000; i < 2000; i++) {
+            int len = base.get_len(0);
+            assert(len == i*11+9);
+            long long num = base.get_num(0);
+            assert(num == i*7);
+        }        
     }
 }
 
@@ -345,6 +409,7 @@ int main(int argc, char *argv[]) {
     test_log64_ranger();
     test_power_ranger();
     test_qlt();
+    test_power_ranger_extra();
     test_recbase();
 
     return 0;

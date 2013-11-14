@@ -1048,7 +1048,8 @@ void fqz::encode_name2(RangeCoder *rc, char *name, int len) {
 	    last_token_type[ntok] = N_ALPHA;
 
 	    i = s-1;
-	} else if (name[i] == '0') {
+	}
+        else if (name[i] == '0') {
 	    int s = i, v;
 	    while (s < len && name[s] == '0')
 		s++;
@@ -1074,7 +1075,8 @@ void fqz::encode_name2(RangeCoder *rc, char *name, int len) {
 	    last_token_type[ntok] = N_ZERO;
 
 	    i = s-1;
-	} else if (isdigit(name[i])) {
+	}
+        else if (isdigit(name[i])) {
 	    int s = i;
 	    int v = 0;
 	    int d = 0;
@@ -1113,7 +1115,8 @@ void fqz::encode_name2(RangeCoder *rc, char *name, int len) {
 	    last_token_type[ntok] = N_DIGITS;
 
 	    i = s-1;
-	} else {
+	}
+        else {
 	    // n_type = N_CHAR;
 
 	    if (last_token_type[ntok] == N_CHAR) {
@@ -2725,11 +2728,11 @@ int main(int argc, char **argv) {
 // 		f->qual_in, f->qual_out, (double)f->qual_out / f->qual_in,
 // 		(double)c3 / CLOCKS_PER_SEC);
 // #else
-	fprintf(stderr, "Names %10"PRId64" -> %10"PRId64" (%0.3f)\n",
+	fprintf(stderr, "Names %10" PRId64 " -> %10" PRId64 " (%0.3f)\n",
 		f->name_in, f->name_out, (double)f->name_out / f->name_in);
-	fprintf(stderr, "Bases %10"PRId64" -> %10"PRId64" (%0.3f)\n",
+	fprintf(stderr, "Bases %10" PRId64 " -> %10" PRId64 " (%0.3f)\n",
 		f->base_in, f->base_out, (double)f->base_out / f->base_in);
-	fprintf(stderr, "Quals %10"PRId64" -> %10"PRId64" (%0.3f)\n",
+	fprintf(stderr, "Quals %10" PRId64 " -> %10" PRId64 " (%0.3f)\n",
 		f->qual_in, f->qual_out, (double)f->qual_out / f->qual_in);
 // #endif
 
