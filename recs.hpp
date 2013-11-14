@@ -52,7 +52,8 @@ protected:
         UINT32 big_i;
         UINT32 str_n;
         UINT32 str_l;
-        UINT32 zero ;
+        UINT32 zero_f;
+        UINT32 zero_b;
     } stats;
 
     bool m_valid;
@@ -63,7 +64,7 @@ protected:
     // Division of labor
     enum seg_type {
         ST_GAP,
-        ST_NUM,
+        ST_PAG,
         ST_END,
         ST_STR,
         ST_0_F,
