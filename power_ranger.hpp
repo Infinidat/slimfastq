@@ -34,9 +34,9 @@
 
 class PowerRanger {
     enum {
-        STEP=3,
+        STEP=15,
         NSYM=256,
-        MAX_FREQ=(1<<16)-32,
+        MAX_FREQ=(1<<15)-32,
     };
 
     UINT32 total;

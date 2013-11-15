@@ -55,7 +55,7 @@ protected:
     struct {
         UCHAR  len[10];
         bool   initilized;
-        // long long num[10]; - TODO: keep array of prev atoi and end pointers
+        // long long num[10]; - TODO: cache array of prev atoi and end pointers
     } m_last;
 
     struct {

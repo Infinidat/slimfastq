@@ -35,20 +35,12 @@
 class Base2Ranger {
 
     enum { STEP = 1,
-           // MAX_FREQ=(1<<16)-32,
            MAX_FREQ=250,
     };
     
-    // UINT16 total;
     UCHAR  freq[4];
 
     void normalize() {
-        // total =
-        //     // pipe it up
-        //     ( (freq[0] -= (freq[0]>>1)) + 
-        //       (freq[1] -= (freq[1]>>1)) ) +
-        //     ( (freq[2] -= (freq[2]>>1)) +
-        //       (freq[3] -= (freq[3]>>1)) ) ;
         (freq[0] -= (freq[0]>>1),
          freq[1] -= (freq[1]>>1)),
         (freq[2] -= (freq[2]>>1),
@@ -68,7 +60,6 @@ public:
     void init() { // BZERO made it even slower
         for (int i = 0; i < 4; i++)
             freq[i] = 2;
-        // total = 4;
     }
 
     inline void put(RCoder *rc, UCHAR sym) {

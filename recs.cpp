@@ -89,7 +89,7 @@ static long long getnum(const UCHAR* &p) {
 }
 
 static bool isspace(UCHAR c) { switch(c) {
-    case 0: case ' ': case '\t' : case '\n': return true;
+    case 0: case ' ': case '\t' : case '\n': case '/': return true;
     default: return false;
     } }
 

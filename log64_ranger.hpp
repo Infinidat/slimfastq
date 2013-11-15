@@ -34,7 +34,7 @@
 
 class Log64Ranger {
     enum {
-        STEP=8,
+        STEP=6,
         NSYM=64,
         MAX_FREQ=(1<<16)-32,
     };
@@ -47,6 +47,7 @@ class Log64Ranger {
     UCHAR syms[NSYM];
 
     void normalize() {
+
         for (UINT32 i = total = 0; i < iend; i++)
             total += (freq[i] /= 2);
     }
