@@ -39,21 +39,19 @@ protected:
     RecBase()  {}
     ~RecBase() {rcoder.done();}
 
-    // 10 type
-    // 10 len
-    // 10 num
+    enum { NRANGES = 10,
+    };
 
     struct {
         PowerRanger type;
         PowerRanger  len;
         PowerRanger  str;
         PowerRangerU num;
-    } PACKED ranger[10];
+    } PACKED ranger[NRANGES];
 
     RCoder rcoder;
 
     struct {
-        UCHAR  len[10];
         bool   initilized;
         // long long num[10]; - TODO: cache array of prev atoi and end pointers
     } m_last;
@@ -80,66 +78,9 @@ protected:
         ST_0_B,
         ST_LAST
     };
-
-
-private:
-    UCHAR norm(int i) { return (LIKELY(i < 10) ? i : 9); }
-
-protected:
-    // void put_len(UCHAR i, int len) {
-    //     ranger[MAX5(0, i)].put_u(&rcoder, len);
-    // }
-    // int get_len(UCHAR i) {
-    //     return ranger[MAX5(0, i)].get_u(&rcoder);
-    // }
-    void put_type(UCHAR i, seg_type type, UCHAR len) {
-        i = norm(i);
-        ranger[i].len .put(&rcoder, len);
-        ranger[i].type.put(&rcoder, type);
-        // if (len == m_last.len[i])
-            // ranger[i].type.put(&rcoder, type);
-        // else {
-            // ranger[i].type.put(&rcoder, type | 8);
-            // ranger[i].len .put(&rcoder, len);
-        //     m_last.len[i] = len;
-        // }
-    }
-    seg_type get_type(UCHAR i, UCHAR* len) {
-        i = norm(i);
-        * len = ranger[i].len .get(&rcoder);
-        return (seg_type) ranger[i].type.get(&rcoder);
-        // UCHAR c  = ranger[i].type.get(&rcoder);
-        // *len =
-        //     (c & 8) ?
-        //     (m_last.len[i] = ranger[i].len .get(&rcoder)) :
-        //     (m_last.len[i]);
-        // return (seg_type)(c & 7);
-    }
-
-    void put_num(UCHAR i, long long num) {
-        i = norm(i);
-        if (ranger[i].num.put_u(&rcoder, num))
-            stats.big_i ++;
-    }
-    long long get_num(UCHAR i) {
-        i = norm(i);
-        return ranger[i].num.get_u(&rcoder);
-    }
-    void put_str(UCHAR i, const UCHAR* p, UINT32 len) {
-        i = norm(i);
-        stats.str_n ++ ;
-        stats.str_l += len;
-        ranger[i].num.put_u(&rcoder, len);
-        for (UINT32 j = 0; j < len; j++)
-            ranger[i].str.put(&rcoder, p[j]);
-    }
-    UCHAR* get_str(UCHAR i, UCHAR* p) {
-        i = norm(i);
-        UINT32 len = ranger[i].num.get_u(&rcoder);
-        for (UINT32 j = 0; j < len; j++)
-            p[j] = ranger[i].str.get(&rcoder);
-        return p + len;
-    }
+    // TODO:
+    // GIP, PIG - copy to next border, then set num
+    // eliminate ST_0_? 
 };
 
 class RecSave : private RecBase {
@@ -152,6 +93,9 @@ public:
     void save_3(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end) { save_2(buf, end, prev_buf, prev_end); }
 private:
     void save_first_line(const UCHAR* buf, const UCHAR* end);
+    void put_type(UCHAR i, seg_type type, UCHAR len);
+    void put_num(UCHAR i, long long num);
+    void put_str(UCHAR i, const UCHAR* p, UINT32 len);
 
     FilerSave* filer;
 };
@@ -168,6 +112,10 @@ public:
 
 private:
     size_t load_first_line(UCHAR* buf);
+
+    long long get_num(UCHAR i);
+    UCHAR     get_type(UCHAR i, UCHAR* len);
+    UCHAR*    get_str(UCHAR i, UCHAR* p);
 
     FilerLoad* filer;
 };

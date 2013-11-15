@@ -98,6 +98,34 @@ static const UCHAR* getspace(const UCHAR* p) {
     return p;
 }
 
+
+void RecSave::put_str(UCHAR i, const UCHAR* p, UINT32 len) {
+    stats.str_n ++ ;
+    stats.str_l += len;
+    ranger[i].num.put_u(&rcoder, len);
+    for (UINT32 j = 0; j < len; j++)
+        ranger[i].str.put(&rcoder, p[j]);
+}
+
+
+void RecSave::put_num(UCHAR i, long long num) {
+    if (ranger[i].num.put_u(&rcoder, num))
+        stats.big_i ++;
+}
+
+void RecSave::put_type(UCHAR i, seg_type type, UCHAR len) {
+    ranger[i].len .put(&rcoder, len);
+    ranger[i].type.put(&rcoder, type);
+    // if (len == m_last.len[i])
+    // ranger[i].type.put(&rcoder, type);
+    // else {
+    // ranger[i].type.put(&rcoder, type | 8);
+    // ranger[i].len .put(&rcoder, len);
+    //     m_last.len[i] = len;
+    // }
+}
+
+
 void RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end) {
     rarely_if(not m_last.initilized)
         return save_first_line(buf, end);
@@ -106,6 +134,7 @@ void RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, 
     const UCHAR* p = prev_buf;
 
     for (int index = 0; ; index++) {
+        rarely_if(index > NRANGES-1) index = NRANGES-1;
         int len = 0;
 
         while (*b == *p and LIKELY(b < end))
@@ -192,6 +221,28 @@ size_t RecLoad::load_first_line(UCHAR* buf) {
     return strlen(first);
 }
 
+UCHAR RecLoad::get_type(UCHAR i, UCHAR* len) {
+    *len = ranger[i].len.get(&rcoder);
+    return ranger[i].type.get(&rcoder);
+    // UCHAR c  = ranger[i].type.get(&rcoder);
+    // *len =
+    //     (c & 8) ?
+    //     (m_last.len[i] = ranger[i].len .get(&rcoder)) :
+    //     (m_last.len[i]);
+    // return (seg_type)(c & 7);
+}
+
+long long RecLoad::get_num(UCHAR i) {
+    return ranger[i].num.get_u(&rcoder);
+}
+
+UCHAR* RecLoad::get_str(UCHAR i, UCHAR* p) {
+    UINT32 len = ranger[i].num.get_u(&rcoder);
+    for (UINT32 j = 0; j < len; j++)
+        p[j] = ranger[i].str.get(&rcoder);
+    return p + len;
+}
+
 size_t RecLoad::load_2(UCHAR* buf, const UCHAR* prev) {
 
     rarely_if(not m_last.initilized)
@@ -201,8 +252,9 @@ size_t RecLoad::load_2(UCHAR* buf, const UCHAR* prev) {
     const UCHAR* p = prev;
 
     for (int index = 0;  ; index++ ) {
+        rarely_if(index > NRANGES-1) index = NRANGES-1;
         UCHAR len;
-        seg_type type = get_type(index, &len);
+        seg_type type = (seg_type) get_type(index, &len);
 
         for (int i = 0; i < len; i++) {
             if (1) assert(*p and *p != '\n'); // IF_DEBUG ...
