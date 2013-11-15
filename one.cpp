@@ -1,3 +1,7 @@
+
+
+// This Brilliant code was written by James Bonfield 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1003,7 +1007,7 @@ enum name_type {N_UNK = 0, N_ALPHA, N_CHAR,
 void fqz::encode_name2(RangeCoder *rc, char *name, int len) {
     int i, j, k;
 
-    static int last_token_type[1024];
+    static int last_token_type[1024]; // je: initialized?
     static int last_token_int[1024];
     static int last_token_str[1024];
 
@@ -1048,7 +1052,7 @@ void fqz::encode_name2(RangeCoder *rc, char *name, int len) {
 	    last_token_type[ntok] = N_ALPHA;
 
 	    i = s-1;
-	}
+	} // end isalpha
         else if (name[i] == '0') {
 	    int s = i, v;
 	    while (s < len && name[s] == '0')
