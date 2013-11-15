@@ -25,7 +25,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
-// #include <ctype.h>
+#include <ctype.h>
 #include "recs.hpp"
 
 #define MAX_LLINE 400           // TODO: assert max is enough at constructor
@@ -73,16 +73,16 @@ void RecSave::save_first_line(const UCHAR* buf, const UCHAR* end) {
     m_last.initilized = true;
 }
 
-static bool is_digit(UCHAR c) {
-    return c >= '0' and c <= '9';
-}
+// static bool isdigit(UCHAR c) {
+//     return c >= '0' and c <= '9';
+// }
 
 static long long getnum(const UCHAR* &p) {
     // get number, forward pointer to border
     bool zap = RARELY(*p == 0);
 
     long long ret ;
-    for(ret = 0; is_digit(*p); p++)
+    for(ret = 0; isdigit(*p); p++)
         ret = (ret<<3) + (ret<<1) + (*p) - '0';
 
     return zap ? 0 : ret;
@@ -135,43 +135,51 @@ void RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, 
 
     for (int index = 0; ; index++) {
         rarely_if(index > NRANGES-1) index = NRANGES-1;
+        const int blen = end - b;
         int len = 0;
+        // while (*b == *p and LIKELY(b < end))
+        //     b++, p++, len++;
+        while (b[len] == p[len] and LIKELY(len < blen))
+            len ++;
 
-        while (*b == *p and LIKELY(b < end))
-            b++, p++, len++;
-        
-        rarely_if(b == end) {
+        rarely_if(len == blen) {
             put_type(index, ST_END, len);
             return;
         }
 
-        rarely_if(*b == '0') {
+        while (len and isdigit(b[len-1]))
+            len --;
 
-            int i = 1;
-            while (i < len and
-                   b[-i] == '0')
-                i ++ ;
+        b += len;
+        p += len;
 
-            if (is_digit(b[-i]) and i < len) {
-                b  -= i;
-                p  -= i;
-                len-= i;
-            }
-            else {
-                likely_if(is_digit(p[1])) {
-                    stats.zero_f++;
-                    put_type(index, ST_0_F, len);
-                    b++, p++;
-                }
-                else {
-                    stats.zero_b++;
-                    put_type(index, ST_0_B, len);
-                    b++;
-                }
-                continue;
-            }
-        }
-        likely_if (is_digit(*b)) {
+        // rarely_if(*b == '0') {
+        // 
+        //     int i = 1;
+        //     while (i < len and
+        //            b[-i] == '0')
+        //         i ++ ;
+        // 
+        //     if (isdigit(b[-i]) and i < len) {
+        //         b  -= i;
+        //         p  -= i;
+        //         len-= i;
+        //     }
+        //     else {
+        //         likely_if(isdigit(p[1])) {
+        //             stats.zero_f++;
+        //             put_type(index, ST_0_F, len);
+        //             b++, p++;
+        //         }
+        //         else {
+        //             stats.zero_b++;
+        //             put_type(index, ST_0_B, len);
+        //             b++;
+        //         }
+        //         continue;
+        //     }
+        // }
+        likely_if (isdigit(*b) and *b != '0') {
             long long new_val = getnum(b);
             long long old_val = getnum(p); // TODO: cache old_val
             if (new_val >= old_val) {      // It can't really be equal, can it?
