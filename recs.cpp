@@ -31,6 +31,45 @@
 #define MAX_LLINE 400           // TODO: assert max is enough at constructor
 
 
+class SRStack {
+    int idx ;
+    int odx ;
+    struct {
+        UCHAR type;
+        UCHAR len;
+        long long num;
+        const UCHAR* ptr;
+    } s[100]; // unlimited, AFAWK
+
+public:
+    SRStack() { idx = odx = 0; }
+    inline void push(UCHAR type, UCHAR len, long long num, const UCHAR* ptr=NULL) {
+        s[idx].type = type;
+        s[idx].len  = len ;
+        s[idx].num  = num;
+        s[idx].ptr  = ptr;
+        idx++;
+        assert(idx < 100);
+    }
+    inline bool pop(UCHAR &type, UCHAR &len, long long &num, const UCHAR* &ptr) {
+        // order is: first, <reverse order>, last
+        int i;
+        if (odx == 0)
+            i = 0, odx = idx-1 ;
+        else if (odx == 1)
+            i = idx-1, odx = idx;
+        else
+            i = --odx;
+
+        type = s[i].type;
+        len  = s[i].len;
+        num  = s[i].num;
+        ptr  = s[i].ptr;
+        return true;
+    }
+    inline bool done() { return odx == idx; }
+};
+
 void RecBase::range_init() {
     BZERO(ranger);
 }
@@ -72,10 +111,6 @@ void RecSave::save_first_line(const UCHAR* buf, const UCHAR* end) {
 
     m_last.initilized = true;
 }
-
-// static bool isdigit(UCHAR c) {
-//     return c >= '0' and c <= '9';
-// }
 
 static long long getnum(const UCHAR* &p) {
     // get number, forward pointer to border
@@ -129,100 +164,88 @@ void RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, 
     const UCHAR* b = buf;
     const UCHAR* p = prev_buf;
 
-    // TODO:
-    // make (100) stack of [type, len, num]
-    // iterate rec - push
-    // decode 1st (index ++)
-    // decode pop stack (index ++) while stack > 1
-    // saving order is [1st, last, last-1, last-2 ...]
-    // load all stack to end
-    // encode 1st (index ++)
-    // encode pop stack (index ++) while stack > 1
-    // 
-    // ALSO:
-    // save all number - avoid zero while walking through
-
-    for (int index = 0; ; index++) {
-        rarely_if(index > NRANGES-1) index = NRANGES-1;
+    SRStack srs;
+    while (1) {
         const int blen = end - b;
         int len = 0;
-        // while (*b == *p and LIKELY(b < end))
-        //     b++, p++, len++;
         while (b[len] == p[len] and LIKELY(len < blen))
             len ++;
 
         rarely_if(len == blen) {
-            put_type(index, ST_END, len);
-            return;
+            srs.push(ST_END, len, 0);
+            break;              // LOOP END
         }
 
         while (len and isdigit(b[len-1]))
-            len --;
+            len --;             // TODO: set digit border while forward
 
         b += len;
         p += len;
 
-        // rarely_if(*b == '0') {
-        // 
-        //     int i = 1;
-        //     while (i < len and
-        //            b[-i] == '0')
-        //         i ++ ;
-        // 
-        //     if (isdigit(b[-i]) and i < len) {
-        //         b  -= i;
-        //         p  -= i;
-        //         len-= i;
-        //     }
-        //     else {
-        //         likely_if(isdigit(p[1])) {
-        //             stats.zero_f++;
-        //             put_type(index, ST_0_F, len);
-        //             b++, p++;
-        //         }
-        //         else {
-        //             stats.zero_b++;
-        //             put_type(index, ST_0_B, len);
-        //             b++;
-        //         }
-        //         continue;
-        //     }
-        // }
         likely_if (isdigit(*b) and *b != '0') {
+            bool single = len == 1 and b[-1] == p[-1];
             long long new_val = getnum(b);
             long long old_val = getnum(p); // TODO: cache old_val
-            if (len == 1 and b[-1] == p[-1]) {
-                if (new_val >= old_val) {      // It can't really be equal, can it?
-                    put_type(index, ST_GAP);
-                    put_num (index, new_val - old_val);
-                }
-                else {
-                    put_type(index, ST_PAG);
-                    put_num (index, old_val - new_val);
-                }
+            if (single) {
+                if (new_val >= old_val)    // It can't really be equal, can it?
+                    srs.push(ST_GAP, 0, new_val - old_val);
+                else 
+                    srs.push(ST_PAG, 0, old_val - new_val);
             }
             else {
-                if (new_val >= old_val) {      // It can't really be equal, can it?
-                    put_type(index, ST_GAPL, len);
-                    put_num (index, new_val - old_val);
-                }
-                else {
-                    put_type(index, ST_PAGL, len);
-                    put_num (index, old_val - new_val);
-                }
+                if (new_val >= old_val)
+                    srs.push(ST_GAPL, len, new_val - old_val);
+                else 
+                    srs.push(ST_PAGL, len, old_val - new_val);
             }
             continue;
         }
         {
             // find next space in both
             const UCHAR* space = getspace(b);
-            put_type(index, ST_STR, len);
-            put_str(index, b, space-b);
+            srs.push(ST_STR, len, space-b, b);
             b = space;
             p = getspace(p);
         }
         rarely_if (p >= prev_end) 
             p = prev_end-1;
+    }
+
+    UCHAR utype;
+    UCHAR len;
+    long long num;
+    const UCHAR* ptr;
+    for (int index = 0;
+         srs.pop(utype, len, num, ptr);
+         index++) {
+        rarely_if(index > NRANGES-1) index = NRANGES-1;
+        const seg_type type = (seg_type) utype;
+
+        switch (type) {
+        case ST_END: 
+            put_type(index, type, len);
+            assert(srs.done());
+            return;
+
+        case ST_GAP:
+        case ST_PAG:
+            put_type(index, type);
+            put_num(index, num);
+            break;
+
+        case ST_GAPL:
+        case ST_PAGL:
+            put_type(index, type, len);
+            put_num(index, num);
+            break;
+
+        case ST_STR:
+            put_type(index, type, len);
+            put_str(index, ptr, num);
+            break;
+
+        case ST_LAST: assert(0);
+        }
     }
 }
 
@@ -274,38 +297,62 @@ size_t RecLoad::load_2(UCHAR* buf, const UCHAR* prev) {
     rarely_if(not m_last.initilized)
         return load_first_line(buf);
 
-    UCHAR* b = buf;
-    const UCHAR* p = prev;
+    SRStack srs;
+    UCHAR tmp_buf[1000];
+    UCHAR* p_buf = tmp_buf;
+    const UCHAR *p_tmp;
+    UCHAR type, len;
+    long long num;
 
     for (int index = 0;  ; index++ ) {
         rarely_if(index > NRANGES-1) index = NRANGES-1;
-        seg_type type = (seg_type) get_type(index);
-        UCHAR len = (type == ST_GAP or type == ST_PAG) ? 1 : get_len(index);
+        type = get_type(index);
+        assert(type < ST_LAST);
+        len = (type == ST_GAP or type == ST_PAG) ? 1 : get_len(index);
+        if (type == ST_END) {
+            srs.push(type, len, 0);
+            break;
+        }
+        num = get_num(index);
+        if (type == ST_STR) {
+            p_tmp = p_buf;
+            p_buf = get_str(index, p_buf);
+            srs.push(type, len, num, p_tmp);
+        }
+        else
+            srs.push(type, len, num);
+    }
+
+    UCHAR* b = buf;
+    const UCHAR* p = prev;
+
+    while (srs.pop(type, len, num, p_tmp)) {
         for (int i = 0; i < len; i++) {
             if (1) assert(*p and *p != '\n'); // IF_DEBUG ...
             *b ++ = *p ++;
         }
-        switch ( type) {
+        switch ((seg_type)type) {
         case ST_GAPL:
         case ST_GAP: {
                 long long old_val = getnum(p);
-                long long new_val = get_num(index);
-                b += sprintf((char*)b, "%lld", old_val + new_val );
+                b += sprintf((char*)b, "%lld", old_val + num );
             } break;
         case ST_PAGL:
         case ST_PAG: {
                 long long old_val = getnum(p);
-                long long new_val = get_num(index);
-                b += sprintf((char*)b, "%lld", old_val - new_val);
+                b += sprintf((char*)b, "%lld", old_val - num);
             } break;
         case ST_STR: {
                 p = getspace(p);
-                b = get_str(index, b);
+                for (int j = 0; j < num; j++)
+                    *b++ = *p_tmp++;
             } break;
 
         // case ST_0_F:  p++ ; 
         // case ST_0_B: *b++ = '0'; break;
-        case ST_END: return b - buf;
+        case ST_END:
+            *b = 0;             // just for easy debugging
+            return b - buf;
         // case ST_LAST:
         default: croak("bad record segment type: %u", type);
         }

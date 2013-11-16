@@ -78,7 +78,7 @@ protected:
         ST_STR,
         // ST_0_F,
         // ST_0_B,
-        // ST_LAST
+        ST_LAST
     };
     // TODO:
     // GIP, PIG - copy to next border, then set num
