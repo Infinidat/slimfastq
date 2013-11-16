@@ -117,7 +117,7 @@ private:
     const char* m_gencode;
 
     FilerLoad* filer;
-    PagerLoad02* pager;
+    // PagerLoad02* pager;
     PagerLoad16* pagerNs;
     PagerLoad16* pagerNn;
 };

@@ -401,13 +401,3 @@ UINT32 GenLoad::load_4(UCHAR* gen, const UCHAR* qlt, size_t size) {
     return m_valid ? size : 0;
 }
 
-/* Solid map: 
-  0 : ACGT => ACGT
-  1 : ACGT => CATG
-  2 : ACGT => GTAC
-  3 : ACGT => TGCA
-
-  last = first dummy
-  str .= (last = map[ cur ] [ last ])
-
-*/

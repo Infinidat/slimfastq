@@ -71,7 +71,10 @@ public:
 };
 
 void RecBase::range_init() {
-    BZERO(ranger);
+    const int cnt = conf.level > 2 ? N_RANGE_BIG : N_RANGE_SML;
+    ranger = new ranger_t [cnt];
+    bzero(ranger, sizeof(ranger[0]) * cnt);
+    m_range_last = cnt-1;
 }
 
 RecSave::RecSave() {
@@ -91,8 +94,8 @@ RecSave::~RecSave() {
     put_type(0, ST_END, 0);
     rcoder.done();
     DELETE(filer);
-    fprintf(stderr, "::: REC big i: %u | str n/l: %u/%u | zero f/b: %u/%u\n",
-            stats.big_i, stats.str_n, stats.str_l, stats.zero_f, stats.zero_b );
+    fprintf(stderr, "::: REC big i: %u | str n/l: %u/%u \n",
+            stats.big_i, stats.str_n, stats.str_l );
 }
 
 UCHAR* sncpy(UCHAR* target, const UCHAR* source, int n) {
@@ -123,13 +126,15 @@ static long long getnum(const UCHAR* &p) {
     return zap ? 0 : ret;
 }
 
-static bool isspace(UCHAR c) { switch(c) {
-    case 0: case ' ': case '\t' : case '\n': case '/': return true;
-    default: return false;
-    } }
+// static bool isspace(UCHAR c) { switch(c) {
+//     case 0  : case ' ': case '\t' : case '\n': case '/': cat ':':
+//     case '_': 
+//         return true;
+//     default: return false;
+//     } }
 
 static const UCHAR* getspace(const UCHAR* p) {
-    while (not isspace(*p)) p++;
+    while (not isdigit(*p) and not isalpha(*p)) p++;
     return p;
 }
 
@@ -157,7 +162,7 @@ void RecSave::put_type(UCHAR i, seg_type type) {
     ranger[i].type.put(&rcoder, type);
 }
 
-void RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end) {
+void RecSave::save_1(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end) {
     rarely_if(not m_last.initilized)
         return save_first_line(buf, end);
 
@@ -218,7 +223,7 @@ void RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, 
     for (int index = 0;
          srs.pop(utype, len, num, ptr);
          index++) {
-        rarely_if(index > NRANGES-1) index = NRANGES-1;
+        rarely_if(index > m_range_last) index = m_range_last;
         const seg_type type = (seg_type) utype;
 
         switch (type) {
@@ -244,9 +249,18 @@ void RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, 
             put_str(index, ptr, num);
             break;
 
-        case ST_LAST: assert(0);
+        default:
+            assert(0);
         }
     }
+}
+
+void RecSave::save_3(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end) {
+    // TODO:
+    // split by getspace
+    // save each num/str as var
+    // if spaces are not equal, save as str (unlikely, affects compression ratio)
+    // use ST_SAME when strcmp == 0
 }
 
 RecLoad::RecLoad() {
@@ -292,7 +306,7 @@ UCHAR* RecLoad::get_str(UCHAR i, UCHAR* p) {
     return p + len;
 }
 
-size_t RecLoad::load_2(UCHAR* buf, const UCHAR* prev) {
+size_t RecLoad::load_1(UCHAR* buf, const UCHAR* prev) {
 
     rarely_if(not m_last.initilized)
         return load_first_line(buf);
@@ -305,7 +319,7 @@ size_t RecLoad::load_2(UCHAR* buf, const UCHAR* prev) {
     long long num;
 
     for (int index = 0;  ; index++ ) {
-        rarely_if(index > NRANGES-1) index = NRANGES-1;
+        rarely_if(index > m_range_last) index = m_range_last;
         type = get_type(index);
         assert(type < ST_LAST);
         len = (type == ST_GAP or type == ST_PAG) ? 1 : get_len(index);

@@ -39,15 +39,19 @@ protected:
     RecBase()  {}
     ~RecBase() {rcoder.done();}
 
-    enum { NRANGES = 10,
+    enum { N_RANGE_SML = 10,
+           N_RANGE_BIG = 100,
     };
+    int m_range_last;
 
-    struct {
+    struct ranger_t {
         PowerRanger type;
         PowerRanger  len;
         PowerRanger  str;
         PowerRangerU num;
-    } PACKED ranger[NRANGES];
+    } PACKED ;
+
+    ranger_t* ranger;
 
     RCoder rcoder;
 
@@ -78,6 +82,7 @@ protected:
         ST_STR,
         // ST_0_F,
         // ST_0_B,
+        ST_SAME,
         ST_LAST
     };
     // TODO:
@@ -90,9 +95,8 @@ public:
      RecSave();
     ~RecSave();
 
-    void save_1(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end) { save_2(buf, end, prev_buf, prev_end); }
-    void save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end);
-    void save_3(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end) { save_2(buf, end, prev_buf, prev_end); }
+    void save_1(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end);
+    void save_3(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end);
 private:
     void save_first_line(const UCHAR* buf, const UCHAR* end);
     void put_type(UCHAR i, seg_type type, UCHAR len);
@@ -109,9 +113,7 @@ public:
     ~RecLoad();
 
     inline bool is_valid() {return m_valid;}
-    size_t load_1(UCHAR* buf, const UCHAR* prev) { return load_2(buf, prev) ;}
-    size_t load_2(UCHAR* buf, const UCHAR* prev);
-    size_t load_3(UCHAR* buf, const UCHAR* prev) { return load_2(buf, prev) ;}
+    size_t load_1(UCHAR* buf, const UCHAR* prev);
 
 private:
     size_t load_first_line(UCHAR* buf);
