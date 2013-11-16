@@ -72,11 +72,13 @@ protected:
     enum seg_type {
         ST_GAP,
         ST_PAG,
+        ST_GAPL,
+        ST_PAGL,
         ST_END,
         ST_STR,
-        ST_0_F,
-        ST_0_B,
-        ST_LAST
+        // ST_0_F,
+        // ST_0_B,
+        // ST_LAST
     };
     // TODO:
     // GIP, PIG - copy to next border, then set num
@@ -94,6 +96,7 @@ public:
 private:
     void save_first_line(const UCHAR* buf, const UCHAR* end);
     void put_type(UCHAR i, seg_type type, UCHAR len);
+    void put_type(UCHAR i, seg_type type);
     void put_num(UCHAR i, long long num);
     void put_str(UCHAR i, const UCHAR* p, UINT32 len);
 
@@ -113,9 +116,10 @@ public:
 private:
     size_t load_first_line(UCHAR* buf);
 
-    long long get_num(UCHAR i);
-    UCHAR     get_type(UCHAR i, UCHAR* len);
-    UCHAR*    get_str(UCHAR i, UCHAR* p);
+    long long get_num (UCHAR i);
+    UCHAR     get_type(UCHAR i);
+    UCHAR     get_len (UCHAR i);
+    UCHAR*    get_str (UCHAR i, UCHAR* p);
 
     FilerLoad* filer;
 };
