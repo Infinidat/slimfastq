@@ -40,7 +40,8 @@ protected:
     ~RecBase() {rcoder.done();}
 
     enum { N_RANGE_SML = 10,
-           N_RANGE_BIG = 100,
+           // N_RANGE_BIG = 100,
+           N_RANGE_BIG = 10,
     };
     int m_range_last;
 

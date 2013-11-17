@@ -206,10 +206,10 @@ void RecSave::save_1(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, 
         }
         {
             // find next space in both
-            const UCHAR* space = getspace(b);
+            const UCHAR* space = getspace(b+1);
             srs.push(ST_STR, len, space-b, b);
             b = space;
-            p = getspace(p);
+            p = getspace(p+1);
         }
         rarely_if (p >= prev_end) 
             p = prev_end-1;
@@ -348,7 +348,7 @@ size_t RecLoad::load_1(UCHAR* buf, const UCHAR* prev) {
                 b += sprintf((char*)b, "%lld", old_val - num);
             } break;
         case ST_STR: {
-                p = getspace(p);
+                p = getspace(p+1);
                 for (int j = 0; j < num; j++)
                     *b++ = *p_tmp++;
             } break;
@@ -478,7 +478,7 @@ size_t RecLoad::load_3(UCHAR* buf, const UCHAR* prev) {
         } break;
 
         case ST_STR: {
-            p = getspace(p);
+            p += getspace(p, dummy);
             b = get_str(index, b);
             // (fallback) let deliminators have their own index 
         } break;
