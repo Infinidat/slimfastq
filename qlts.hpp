@@ -30,6 +30,7 @@
 #include "config.hpp"
 #include "filer.hpp"
 #include "log64_ranger.hpp"
+#include "power_ranger.hpp"
 
 #define RANGER_SIZE_2 (1<<16)
 #define RANGER_MASK_2 (RANGER_SIZE_2-1)
@@ -41,6 +42,7 @@ class QltBase {
 protected:
 
     Log64Ranger* ranger;
+    PowerRanger  exranger;
     RCoder rcoder;
     bool m_valid;
 

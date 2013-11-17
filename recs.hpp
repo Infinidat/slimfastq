@@ -74,6 +74,7 @@ protected:
 
     // Division of labor
     enum seg_type {
+        ST_SAME,
         ST_GAP,
         ST_PAG,
         ST_GAPL,
@@ -82,7 +83,6 @@ protected:
         ST_STR,
         // ST_0_F,
         // ST_0_B,
-        ST_SAME,
         ST_LAST
     };
     // TODO:
@@ -114,6 +114,7 @@ public:
 
     inline bool is_valid() {return m_valid;}
     size_t load_1(UCHAR* buf, const UCHAR* prev);
+    size_t load_3(UCHAR* buf, const UCHAR* prev);
 
 private:
     size_t load_first_line(UCHAR* buf);

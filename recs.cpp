@@ -117,13 +117,11 @@ void RecSave::save_first_line(const UCHAR* buf, const UCHAR* end) {
 
 static long long getnum(const UCHAR* &p) {
     // get number, forward pointer to border
-    bool zap = RARELY(*p == 0);
-
     long long ret ;
     for(ret = 0; isdigit(*p); p++)
         ret = (ret<<3) + (ret<<1) + (*p) - '0';
 
-    return zap ? 0 : ret;
+    return ret;
 }
 
 // static bool isspace(UCHAR c) { switch(c) {
@@ -133,11 +131,12 @@ static long long getnum(const UCHAR* &p) {
 //     default: return false;
 //     } }
 
+static bool isword(UCHAR c) { return isdigit(c) or isalpha(c);}
+
 static const UCHAR* getspace(const UCHAR* p) {
-    while (not isdigit(*p) and not isalpha(*p)) p++;
+    while (isword(*p)) p++;
     return p;
 }
-
 
 void RecSave::put_str(UCHAR i, const UCHAR* p, UINT32 len) {
     stats.str_n ++ ;
@@ -255,14 +254,6 @@ void RecSave::save_1(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, 
     }
 }
 
-void RecSave::save_3(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end) {
-    // TODO:
-    // split by getspace
-    // save each num/str as var
-    // if spaces are not equal, save as str (unlikely, affects compression ratio)
-    // use ST_SAME when strcmp == 0
-}
-
 RecLoad::RecLoad() {
     m_valid = true;
     range_init();
@@ -374,3 +365,132 @@ size_t RecLoad::load_1(UCHAR* buf, const UCHAR* prev) {
 
     return 0;
 }
+
+static int getspace(const UCHAR* p, bool &digit) {
+    digit = true;
+    for (int i = 0; ; i++ )
+        if (not isdigit(p[i])) {
+            if (not isalpha(p[i]))
+                return i;
+            digit = false;
+        }
+}
+
+static long long getnum(const UCHAR* p, int len) {
+    long long ret = 0;
+    for(int i = 0; i < len; i ++)
+        ret = (ret<<3) + (ret<<1) + p[i] - '0';
+    return ret;
+}
+
+void RecSave::save_3(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end) {
+    // TODO:
+    // split by getspace
+    // save each num/str as var
+    // if spaces are not equal, save as str (unlikely, affects compression ratio)
+    // use ST_SAME when strcmp == 0
+
+    rarely_if(not m_last.initilized)
+        return save_first_line(buf, end);
+
+    const UCHAR* b = buf;
+    const UCHAR* p = prev_buf;
+
+    for (int index = 0; ; index ++) {
+        rarely_if(index > m_range_last) index = m_range_last;
+
+        rarely_if(b >= end) {
+            put_type(index, ST_END);
+            return;
+        }
+
+        bool bd, pd;
+        int blen, plen;
+        rarely_if(p >= prev_end) {
+            bd = pd = false;
+            blen = end-b;
+            plen = 0;
+        }
+        else {
+            blen = getspace(b, bd);
+            plen = getspace(p, pd);
+        }
+
+        likely_if (blen == plen and 0 == memcmp(p, b, blen+1)) {
+            // all match, including deliminator
+            put_type(index, ST_SAME);
+            b += blen + 1;
+            p += plen + 1;
+        }
+
+        else if ((bd and pd) and
+                 LIKELY(b[blen] == p[plen] or (b+blen >= end)) and
+                 LIKELY(b[0] != '0' and blen<20 and plen<20)) {
+            // numbers, matching deliminator
+            long long new_val = getnum(b, blen);
+            long long old_val = getnum(p, plen); // TODO: cache old_val
+            if (new_val > old_val) {
+                put_type(index, ST_GAP);
+                put_num (index, new_val-old_val);
+            }
+            else {
+                put_type(index, ST_PAG);
+                put_num (index, old_val-new_val);
+            }
+            b += blen + 1;
+            p += plen + 1;
+        }
+        else {
+            // fallback, string, includes deliminator
+            put_type(index, ST_STR);
+            put_str (index, b, blen+1);
+            b += blen;
+            p += plen;
+        }
+    }
+}
+size_t RecLoad::load_3(UCHAR* buf, const UCHAR* prev) {
+    rarely_if(not m_last.initilized)
+        return load_first_line(buf);
+    
+    UCHAR* b = buf;
+    const UCHAR* p = prev;
+    bool dummy ;
+
+    for (int index = 0;  ; index++ ) {
+        rarely_if(index > m_range_last) index = m_range_last;
+        UCHAR type = get_type(index);
+        switch((seg_type)type) {
+        case ST_SAME: {
+            int plen = getspace(p, dummy);
+            memcpy(b, p, plen+1);
+            b += plen+1;
+            p += plen+1;
+        } break;
+
+        case ST_PAG:
+        case ST_GAP: {
+            long long old_val = getnum(p);
+            long long num = get_num(index);
+            long long val = type == ST_GAP ? old_val + num : old_val - num ;
+            b += sprintf((char*)b, "%lld", val);
+            *b ++ = *p ++;
+        } break;
+
+        case ST_STR: {
+            p = getspace(p);
+            b = get_str(index, b);
+            // (fallback) let deliminators have their own index 
+        } break;
+
+        case ST_END:
+            *b = 0;             // debugging
+            return b - buf - *p == '\n';
+
+        default:
+            croak("bad record segment type: %u", type);
+
+        };
+    }
+}
+
