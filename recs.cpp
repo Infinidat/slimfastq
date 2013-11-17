@@ -186,7 +186,7 @@ void RecSave::save_1(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, 
         b += len;
         p += len;
 
-        likely_if (isdigit(*b) and *b != '0') {
+        likely_if (len and isdigit(*b) and *b != '0') {
             bool single = len == 1 and b[-1] == p[-1];
             long long new_val = getnum(b);
             long long old_val = getnum(p); // TODO: cache old_val
@@ -361,6 +361,10 @@ size_t RecLoad::load_1(UCHAR* buf, const UCHAR* prev) {
         // case ST_LAST:
         default: croak("bad record segment type: %u", type);
         }
+        // rarely_if (p >= prev_end) 
+        //     p = prev_end-1;
+        rarely_if(*p == '\n')
+            p -- ;
     }
 
     return 0;
