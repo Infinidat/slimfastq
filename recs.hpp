@@ -62,6 +62,8 @@ protected:
         UINT32 big_i;
         UINT32 str_n;
         UINT32 str_l;
+        UINT32 new_n;
+        UINT32 new_l;
     } stats;
 
     bool m_valid;

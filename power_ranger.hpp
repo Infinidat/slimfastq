@@ -195,56 +195,53 @@ UINT64 get_u(RCoder *rc) {
 
 } PACKED;
 
-#endif // already loaded
+class PowerRangerI {
 
-#ifdef This_is_an_Attic
+    PowerRanger p[15];
 
-    bool put_i(RCoder* rc, long long num, UINT64 * old=NULL) {
-        if (old) {
-            // assert(num >= *old); should we assert at in-efficiency?
-            long long t = num - *old;
-            *old = num;
-            num = t;
-        }
+public:
+    bool put_i(RCoder* rc, long long num) {
+
         likely_if( num >= -0x80+3 and
                    num <= 0x7f) {
-            put(rc, 0, num & 0xff);
+            p[0].put(rc, num & 0xff);
             return false;
         }
         likely_if (num >= -0x8000 and
                    num <=  0x7fff) {
-            put(rc, 0, 0x80);
-            put(rc, 1, 0xff & (num));
-            put(rc, 2, 0xff & (num>>8));
+            p[0].put(rc, 0x80);
+            p[1].put(rc, 0xff & (num));
+            p[2].put(rc, 0xff & (num>>8));
             return false;
         }
         if (num >= -0x80000000LL and
             num <=  0x7fffffffLL ) {
-            put(rc, 0, 0x81);
+            p[0].put(rc, 0x81);
             for (int shift = 0, i=3; shift < 32; shift+=8, i++)
-                put(rc, i, 0xff&(num>>shift));
+                p[i].put(rc, 0xff&(num>>shift));
             return true;
         }
         {
-            put(rc, 0, 0x82);
+            p[0].put(rc, 0x82);
             for (int shift = 0, i=7; shift < 64; shift+=8, i++)
-                put(rc, i, 0xff&(num>>shift));
+                p[i].put(rc, 0xff&(num>>shift));
         
             return true;
         }
     }
 
-    long long get_i(RCoder* rc, UINT64* old=NULL) {
-        long long num = get(rc, 0);
+    long long get_i(RCoder* rc) {
+        long long num = p[0].get(rc);
+
         rarely_if(num == 0x80 ) {
-            num  = get(rc, 1);
-            num |= get(rc, 2) << 8;
+            num  = p[1].get(rc);
+            num |= p[2].get(rc) << 8;
             num  = (short) num;
         }
         else rarely_if(num == 0x81) {
                 num = 0;
                 for (int shift = 0, i=3; shift < 32; shift+=8, i++) {
-                    int c = get(rc, i);
+                    int c = p[i].get(rc);
                     num |= c << shift;
                 }
                 num  = (int) num;
@@ -252,17 +249,16 @@ UINT64 get_u(RCoder *rc) {
         else rarely_if(num == 0x82) {
                 num = 0;
                 for (int shift = 0, i=7; shift < 64; shift+=8, i++) {
-                    UINT64 c = get(rc, i);
+                    UINT64 c = p[i].get(rc);
                     num |=  c << shift;
                 }
             }
         else if (0x80&num)
             num = (char)num;
 
-        return
-            ( old) ?
-            (*old += num) :
-            num ;
+        return num ;
     }
 
-#endif
+} PACKED ;
+
+#endif 

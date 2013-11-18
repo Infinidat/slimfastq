@@ -31,45 +31,6 @@
 #define MAX_LLINE 400           // TODO: assert max is enough at constructor
 
 
-class SRStack {
-    int idx ;
-    int odx ;
-    struct {
-        UCHAR type;
-        UCHAR len;
-        long long num;
-        const UCHAR* ptr;
-    } s[100]; // unlimited, AFAWK
-
-public:
-    SRStack() { idx = odx = 0; }
-    inline void push(UCHAR type, UCHAR len, long long num, const UCHAR* ptr=NULL) {
-        s[idx].type = type;
-        s[idx].len  = len ;
-        s[idx].num  = num;
-        s[idx].ptr  = ptr;
-        idx++;
-        assert(idx < 100);
-    }
-    inline bool pop(UCHAR &type, UCHAR &len, long long &num, const UCHAR* &ptr) {
-        // order is: first, <reverse order>, last
-        int i;
-        if (odx == 0)
-            i = 0, odx = idx-1 ;
-        else if (odx == 1)
-            i = idx-1, odx = idx;
-        else
-            i = --odx;
-
-        type = s[i].type;
-        len  = s[i].len;
-        num  = s[i].num;
-        ptr  = s[i].ptr;
-        return true;
-    }
-    inline bool done() { return odx == idx; }
-};
-
 void RecBase::range_init() {
     // const int cnt = conf.level > 2 ? N_RANGE_BIG : N_RANGE_SML;
     // ranger = new ranger_t [cnt];
@@ -93,11 +54,10 @@ RecSave::RecSave() {
 }
 
 RecSave::~RecSave() {
-    put_type(0, ST_END, 0);
     rcoder.done();
     DELETE(filer);
-    fprintf(stderr, "::: REC big i: %u | str n/l: %u/%u \n",
-            stats.big_i, stats.str_n, stats.str_l );
+    fprintf(stderr, "::: REC big int: %u | str num/sum: %u/%u | new line num/sum: %u/%u\n",
+            stats.big_i, stats.str_n, stats.str_l, stats.new_n, stats.new_l );
 }
 
 UCHAR* sncpy(UCHAR* target, const UCHAR* source, int n) {
@@ -118,8 +78,6 @@ void RecSave::save_first_line(const UCHAR* buf, const UCHAR* end) {
 }
 
 void RecSave::put_str(UCHAR i, const UCHAR* p, UINT32 len) {
-    stats.str_n ++ ;
-    stats.str_l += len;
     ranger[i].num.put_u(&rcoder, len);
     for (UINT32 j = 0; j < len; j++)
         ranger[i].str.put(&rcoder, p[j]);
@@ -129,11 +87,6 @@ void RecSave::put_str(UCHAR i, const UCHAR* p, UINT32 len) {
 void RecSave::put_num(UCHAR i, long long num) {
     if (ranger[i].num.put_u(&rcoder, num))
         stats.big_i ++;
-}
-
-void RecSave::put_type(UCHAR i, seg_type type, UCHAR len) {
-    ranger[i].type.put(&rcoder, type);
-    ranger[i].len .put(&rcoder, len);
 }
 
 void RecSave::put_type(UCHAR i, seg_type type) {
@@ -166,10 +119,6 @@ size_t RecLoad::load_first_line(UCHAR* buf) {
 
 UCHAR RecLoad::get_type(UCHAR i) {
     return ranger[i].type.get(&rcoder);
-}
-
-UCHAR RecLoad::get_len(UCHAR i) {
-    return ranger[i].len.get(&rcoder);
 }
 
 long long RecLoad::get_num(UCHAR i) {
@@ -239,6 +188,8 @@ void RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, 
         // Too bad, new spacer
         put_type(0, ST_STR);
         put_str (0, buf, end-buf);
+        stats.new_n ++ ;
+        stats.new_l += end-buf;
         return;
     }
 
@@ -271,6 +222,8 @@ void RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, 
         else {
             put_type(i+1, ST_STR);
             put_str (i+1, b, smap[lmap].wln[i]);
+            stats.str_n ++ ;
+            stats.str_l += smap[lmap].wln[i];
         }
     }
 }
@@ -298,6 +251,14 @@ size_t RecLoad::load_2(UCHAR* buf, const UCHAR* prev) {
                 b = get_str(i+1, b);
             } break;
 
+            // case ST_GAP: {
+            //     long long pval;
+            //     bool expect_num = is_number(prev + smap[0].off[i], smap[0].wln[i], pval);
+            //     assert(expect_num);
+            //     long long gap = get_num(i+1);
+            //     b += sprintf((char*)b, "%lld", pval + gap);
+            // } break;
+
             case ST_GAP:
             case ST_PAG: {
                 long long pval;
@@ -320,8 +281,56 @@ size_t RecLoad::load_2(UCHAR* buf, const UCHAR* prev) {
     return b-buf-1;
 }
 
-#if 0
-//////////////////////   Atic (well, technicaly it's a deep basement)
+#ifdef This_is_an_Attic
+// (well, technicaly it's a deep basement)
+
+class SRStack {
+    int idx ;
+    int odx ;
+    struct {
+        UCHAR type;
+        UCHAR len;
+        long long num;
+        const UCHAR* ptr;
+    } s[100]; // unlimited, AFAWK
+
+public:
+    SRStack() { idx = odx = 0; }
+    inline void push(UCHAR type, UCHAR len, long long num, const UCHAR* ptr=NULL) {
+        s[idx].type = type;
+        s[idx].len  = len ;
+        s[idx].num  = num;
+        s[idx].ptr  = ptr;
+        idx++;
+        assert(idx < 100);
+    }
+    inline bool pop(UCHAR &type, UCHAR &len, long long &num, const UCHAR* &ptr) {
+        // order is: first, <reverse order>, last
+        int i;
+        if (odx == 0)
+            i = 0, odx = idx-1 ;
+        else if (odx == 1)
+            i = idx-1, odx = idx;
+        else
+            i = --odx;
+
+        type = s[i].type;
+        len  = s[i].len;
+        num  = s[i].num;
+        ptr  = s[i].ptr;
+        return true;
+    }
+    inline bool done() { return odx == idx; }
+};
+
+UCHAR RecLoad::get_len(UCHAR i) {
+    return ranger[i].len.get(&rcoder);
+}
+
+void RecSave::put_type(UCHAR i, seg_type type, UCHAR len) {
+    ranger[i].type.put(&rcoder, type);
+    ranger[i].len .put(&rcoder, len);
+}
 
 static long long getnum(const UCHAR* &p) {
     // get number, forward pointer to border
