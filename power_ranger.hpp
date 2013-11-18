@@ -32,6 +32,8 @@
 #include "coder.hpp"
 #endif
 
+#include <string.h>
+
 class PowerRanger {
     enum {
         STEP=15,
@@ -69,6 +71,14 @@ class PowerRanger {
     }
 
 public:
+    PowerRanger() {
+        total = 0;
+        BZERO(freq);
+        iend = 0;
+        count = 0;
+        BZERO(syms);
+    }
+
     void put(RCoder *rc, UCHAR sym) {
         UINT32 sumf  = 0;
         UINT32 i = 0;

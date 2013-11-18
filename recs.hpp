@@ -39,11 +39,8 @@ protected:
     RecBase()  {}
     ~RecBase() {rcoder.done();}
 
-    enum { N_RANGE_SML = 10,
-           // N_RANGE_BIG = 100,
-           N_RANGE_BIG = 10,
+    enum { m_range_last = 66
     };
-    int m_range_last;
 
     struct ranger_t {
         PowerRanger type;
@@ -52,7 +49,7 @@ protected:
         PowerRangerU num;
     } PACKED ;
 
-    ranger_t* ranger;
+    ranger_t ranger[66];
 
     RCoder rcoder;
 
@@ -65,8 +62,6 @@ protected:
         UINT32 big_i;
         UINT32 str_n;
         UINT32 str_l;
-        UINT32 zero_f;
-        UINT32 zero_b;
     } stats;
 
     bool m_valid;
@@ -86,9 +81,16 @@ protected:
         // ST_0_B,
         ST_LAST
     };
-    // TODO:
-    // GIP, PIG - copy to next border, then set num
-    // eliminate ST_0_? 
+
+    struct space_map {
+        int   off[65];
+        int   wln[65];
+        UCHAR str[65];
+        UCHAR len;
+    };
+    space_map smap[2];
+    bool lmap;
+    void map_space(const UCHAR* p, bool index);
 };
 
 class RecSave : private RecBase {
@@ -97,6 +99,7 @@ public:
     ~RecSave();
 
     void save_1(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end);
+    void save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end);
     void save_3(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end);
 private:
     void save_first_line(const UCHAR* buf, const UCHAR* end);
@@ -115,6 +118,7 @@ public:
 
     inline bool is_valid() {return m_valid;}
     size_t load_1(UCHAR* buf, const UCHAR* prev);
+    size_t load_2(UCHAR* buf, const UCHAR* prev);
     size_t load_3(UCHAR* buf, const UCHAR* prev);
 
 private:

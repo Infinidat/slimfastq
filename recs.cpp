@@ -71,10 +71,10 @@ public:
 };
 
 void RecBase::range_init() {
-    const int cnt = conf.level > 2 ? N_RANGE_BIG : N_RANGE_SML;
-    ranger = new ranger_t [cnt];
-    bzero(ranger, sizeof(ranger[0]) * cnt);
-    m_range_last = cnt-1;
+    // const int cnt = conf.level > 2 ? N_RANGE_BIG : N_RANGE_SML;
+    // ranger = new ranger_t [cnt];
+    // // bzero(ranger, sizeof(ranger[0]) * cnt);
+    // m_range_last = cnt-1;
 }
 
 RecSave::RecSave() {
@@ -88,6 +88,8 @@ RecSave::RecSave() {
     filer = new FilerSave(conf.open_w("rec"));
     assert(filer);
     rcoder.init(filer);
+
+    smap[0].len = smap[1].len = 0;
 }
 
 RecSave::~RecSave() {
@@ -115,29 +117,6 @@ void RecSave::save_first_line(const UCHAR* buf, const UCHAR* end) {
     m_last.initilized = true;
 }
 
-static long long getnum(const UCHAR* &p) {
-    // get number, forward pointer to border
-    long long ret ;
-    for(ret = 0; isdigit(*p); p++)
-        ret = (ret<<3) + (ret<<1) + (*p) - '0';
-
-    return ret;
-}
-
-// static bool isspace(UCHAR c) { switch(c) {
-//     case 0  : case ' ': case '\t' : case '\n': case '/': cat ':':
-//     case '_': 
-//         return true;
-//     default: return false;
-//     } }
-
-static bool isword(UCHAR c) { return isdigit(c) or isalpha(c);}
-
-static const UCHAR* getspace(const UCHAR* p) {
-    while (isword(*p)) p++;
-    return p;
-}
-
 void RecSave::put_str(UCHAR i, const UCHAR* p, UINT32 len) {
     stats.str_n ++ ;
     stats.str_l += len;
@@ -159,6 +138,227 @@ void RecSave::put_type(UCHAR i, seg_type type, UCHAR len) {
 
 void RecSave::put_type(UCHAR i, seg_type type) {
     ranger[i].type.put(&rcoder, type);
+}
+
+RecLoad::RecLoad() {
+    m_valid = true;
+    range_init();
+
+    filer = new FilerLoad(conf.open_r("rec"), &m_valid);
+    assert(filer);
+    rcoder.init(filer);
+
+    BZERO(m_last);
+}
+
+RecLoad::~RecLoad() {
+    rcoder.done();
+}
+
+size_t RecLoad::load_first_line(UCHAR* buf) {
+
+    m_last.initilized = true;
+
+    const char *first = conf.get_info("rec.first");
+    strcpy((char*)buf, first);
+    return strlen(first);
+}
+
+UCHAR RecLoad::get_type(UCHAR i) {
+    return ranger[i].type.get(&rcoder);
+}
+
+UCHAR RecLoad::get_len(UCHAR i) {
+    return ranger[i].len.get(&rcoder);
+}
+
+long long RecLoad::get_num(UCHAR i) {
+    return ranger[i].num.get_u(&rcoder);
+}
+
+UCHAR* RecLoad::get_str(UCHAR i, UCHAR* p) {
+    UINT32 len = ranger[i].num.get_u(&rcoder);
+    for (UINT32 j = 0; j < len; j++)
+        p[j] = ranger[i].str.get(&rcoder);
+    return p + len;
+}
+
+
+////////////////////////////////
+
+static bool isword(UCHAR c) { return isdigit(c) or isalpha(c);}
+
+void RecBase::map_space(const UCHAR* p, bool index) {
+    smap[index].len = 0;
+    smap[index].off[0] = 0;
+    for (int i = 0; ; i++) {
+        if (not isword(p[i])) {
+            smap[index].wln[smap[index].len  ] = i - smap[index].off[smap[index].len];
+            smap[index].str[smap[index].len++] = p[i];
+            smap[index].off[smap[index].len  ] = i + 1;
+
+            rarely_if (p[i] == 0 or p[i] == '\n')
+                break;
+
+            rarely_if(smap[index].len > 64)
+                croak("ERROR: irregulal record (over 64 non alpha non digit). Is it a valid fastq file?");
+        }
+    }
+}
+
+#define IS_CLR(exmap, offset) (0 == (exmap&(1ULL<<offset)))
+#define IS_SET(exmap, offset) !IS_CLR(exmap, offset)
+#define DO_SET(exmap, offset) (exmap |=  (1ULL<<offset))
+#define DO_CLR(exmap, offset) (exmap &= ~(1ULL<<offset))
+#define BCOUNT(exmap)       __builtin_popcount(exmap)
+#define BFIRST(exmap)       __builtin_ffsl(exmap)
+
+static bool is_number(const UCHAR* p, int len, long long &num) {
+    num = 0;
+    for (int i = 0 ; i < len; i ++)
+        if (isdigit(p[i]))
+            num = (num<<3) + (num<<1) + (p[i]) - '0';
+        else
+            return false;
+    return true;
+}
+
+void RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end) {
+    rarely_if(not m_last.initilized) {
+        save_first_line(buf, end);
+        map_space(buf, 0);
+        lmap = 0;
+        return;
+    }
+    bool pmap = lmap;
+    lmap = lmap ? 0 : 1;
+    map_space(buf, lmap);
+
+    if (smap[lmap].len != smap[pmap].len or 
+        memcmp(smap[lmap].str, smap[pmap].str, smap[lmap].len)) {
+        // Too bad, new spacer
+        put_type(0, ST_STR);
+        put_str (0, buf, end-buf);
+        return;
+    }
+
+    put_type(0, ST_SAME);
+    UINT64 map = 0;
+    for (int i = 0; i < smap[lmap].len; i ++) 
+        if ( smap[lmap].wln[i] != smap[pmap].wln[i] or 
+             memcmp(buf + smap[lmap].off[i], prev_buf + smap[pmap].off[i], smap[lmap].wln[i]))
+            DO_SET(map, i);
+
+    put_num(0, map);
+
+    for (int i = 0; i < smap[lmap].len; i ++) {
+        if (IS_CLR(map, i))     // TODO: use BFIRST
+            continue;
+        long long bnum, pnum;
+        const UCHAR* b =      buf + smap[lmap].off[i];
+        const UCHAR* p = prev_buf + smap[pmap].off[i];
+        if (is_number(b, smap[lmap].wln[i], bnum) and
+            is_number(p, smap[pmap].wln[i], pnum)) {
+            if (bnum > pnum) {
+                put_type(i+1, ST_GAP);
+                put_num (i+1, bnum - pnum);
+            }
+            else {
+                put_type(i+1, ST_PAG);
+                put_num (i+1, pnum - bnum);
+            }
+        }
+        else {
+            put_type(i+1, ST_STR);
+            put_str (i+1, b, smap[lmap].wln[i]);
+        }
+    }
+}
+
+size_t RecLoad::load_2(UCHAR* buf, const UCHAR* prev) {
+
+    rarely_if(not m_last.initilized)
+        return load_first_line(buf);
+
+    UCHAR type = get_type(0);
+    if (type == ST_STR) {
+        UCHAR* b = get_str(0, buf);
+        return b - buf;
+    }
+    assert (type == ST_SAME);
+    map_space(prev, 0);
+    UINT64 map = get_num(0);
+    UCHAR* b = buf;
+    for (int i = 0; i < smap[0].len; i++) {
+        if (IS_SET(map, i)) {
+
+            type = get_type(i+1);
+            switch ((seg_type)type) {
+            case ST_STR: {
+                b = get_str(i+1, b);
+            } break;
+
+            case ST_GAP:
+            case ST_PAG: {
+                long long pval;
+                bool expect_num = is_number(prev + smap[0].off[i], smap[0].wln[i], pval);
+                assert(expect_num);
+                long long gap = get_num(i+1);
+                long long val = type == ST_GAP ? pval + gap : pval - gap ;
+                b += sprintf((char*)b, "%lld", val);
+            } break;
+
+            default:
+                croak("bade type value %d", type);
+            }
+        }
+        else {
+            b = (UCHAR*)mempcpy(b, prev + smap[0].off[i], smap[0].wln[i]);
+        }
+        *b ++ = smap[0].str[i];
+    }
+    return b-buf-1;
+}
+
+#if 0
+//////////////////////   Atic (well, technicaly it's a deep basement)
+
+static long long getnum(const UCHAR* &p) {
+    // get number, forward pointer to border
+    long long ret ;
+    for(ret = 0; isdigit(*p); p++)
+        ret = (ret<<3) + (ret<<1) + (*p) - '0';
+
+    return ret;
+}
+
+// static bool isspace(UCHAR c) { switch(c) {
+//     case 0  : case ' ': case '\t' : case '\n': case '/': cat ':':
+//     case '_': 
+//         return true;
+//     default: return false;
+//     } }
+
+static const UCHAR* getspace(const UCHAR* p) {
+    while (isword(*p)) p++;
+    return p;
+}
+
+static int getspace(const UCHAR* p, bool &digit) {
+    digit = true;
+    for (int i = 0; ; i++ )
+        if (not isdigit(p[i])) {
+            if (not isalpha(p[i]))
+                return i;
+            digit = false;
+        }
+}
+
+static long long getnum(const UCHAR* p, int len) {
+    long long ret = 0;
+    for(int i = 0; i < len; i ++)
+        ret = (ret<<3) + (ret<<1) + p[i] - '0';
+    return ret;
 }
 
 void RecSave::save_1(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end) {
@@ -254,49 +454,6 @@ void RecSave::save_1(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, 
     }
 }
 
-RecLoad::RecLoad() {
-    m_valid = true;
-    range_init();
-
-    filer = new FilerLoad(conf.open_r("rec"), &m_valid);
-    assert(filer);
-    rcoder.init(filer);
-
-    BZERO(m_last);
-}
-
-RecLoad::~RecLoad() {
-    rcoder.done();
-}
-
-size_t RecLoad::load_first_line(UCHAR* buf) {
-
-    m_last.initilized = true;
-
-    const char *first = conf.get_info("rec.first");
-    strcpy((char*)buf, first);
-    return strlen(first);
-}
-
-UCHAR RecLoad::get_type(UCHAR i) {
-    return ranger[i].type.get(&rcoder);
-}
-
-UCHAR RecLoad::get_len(UCHAR i) {
-    return ranger[i].len.get(&rcoder);
-}
-
-long long RecLoad::get_num(UCHAR i) {
-    return ranger[i].num.get_u(&rcoder);
-}
-
-UCHAR* RecLoad::get_str(UCHAR i, UCHAR* p) {
-    UINT32 len = ranger[i].num.get_u(&rcoder);
-    for (UINT32 j = 0; j < len; j++)
-        p[j] = ranger[i].str.get(&rcoder);
-    return p + len;
-}
-
 size_t RecLoad::load_1(UCHAR* buf, const UCHAR* prev) {
 
     rarely_if(not m_last.initilized)
@@ -370,23 +527,6 @@ size_t RecLoad::load_1(UCHAR* buf, const UCHAR* prev) {
     return 0;
 }
 
-static int getspace(const UCHAR* p, bool &digit) {
-    digit = true;
-    for (int i = 0; ; i++ )
-        if (not isdigit(p[i])) {
-            if (not isalpha(p[i]))
-                return i;
-            digit = false;
-        }
-}
-
-static long long getnum(const UCHAR* p, int len) {
-    long long ret = 0;
-    for(int i = 0; i < len; i ++)
-        ret = (ret<<3) + (ret<<1) + p[i] - '0';
-    return ret;
-}
-
 void RecSave::save_3(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end) {
     // TODO:
     // split by getspace
@@ -453,6 +593,7 @@ void RecSave::save_3(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, 
         }
     }
 }
+
 size_t RecLoad::load_3(UCHAR* buf, const UCHAR* prev) {
     rarely_if(not m_last.initilized)
         return load_first_line(buf);
@@ -498,3 +639,4 @@ size_t RecLoad::load_3(UCHAR* buf, const UCHAR* prev) {
     }
 }
 
+#endif
