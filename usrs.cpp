@@ -240,24 +240,24 @@ bool UsrSave::get_record() {
 #undef  CHECK_OVERFLOW
 }
 
-UINT64 UsrSave::estimate_rec_limit() {
-    int  i, cnt;
-    for (i = m_cur, cnt=0;
-         i < m_end and cnt < 4;
-         i ++ )
-        if (m_buff[i] == '\n')
-            cnt ++;
-    
-    if (cnt < 4)
-        croak("This usr file is too small");
-
-    UINT64 limit = conf.partition.size / (i-m_cur);
-    // if (limit < 500000)
-    if (limit < 5000) // for debuging
-        croak("This partition partition is too small (records limit=%lld)", limit);
-
-    return limit;
-}
+// UINT64 UsrSave::estimate_rec_limit() {
+//     int  i, cnt;
+//     for (i = m_cur, cnt=0;
+//          i < m_end and cnt < 4;
+//          i ++ )
+//         if (m_buff[i] == '\n')
+//             cnt ++;
+//     
+//     if (cnt < 4)
+//         croak("This usr file is too small");
+// 
+//     UINT64 limit = conf.partition.size / (i-m_cur);
+//     // if (limit < 500000)
+//     if (limit < 5000) // for debuging
+//         croak("This partition partition is too small (records limit=%lld)", limit);
+// 
+//     return limit;
+// }
 
 int UsrSave::encode() {
 

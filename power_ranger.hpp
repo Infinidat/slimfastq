@@ -36,7 +36,7 @@
 
 class PowerRanger {
     enum {
-        STEP=15,
+        STEP=14,
         NSYM=256,
         MAX_FREQ=(1<<15)-32,
     };
@@ -50,7 +50,7 @@ class PowerRanger {
 
     void normalize() {
         for (UINT32 i = total = 0; i < iend; i++)
-            total += (freq[i] /=2 ); 
+            total += (freq[i] >>= 1 ); 
     }
 
     inline UCHAR sort_of_sort(int i) {
@@ -72,11 +72,7 @@ class PowerRanger {
 
 public:
     PowerRanger() {
-        total = 0;
-        BZERO(freq);
-        iend = 0;
-        count = 0;
-        BZERO(syms);
+        bzero(this, sizeof(*this));
     }
 
     void put(RCoder *rc, UCHAR sym) {

@@ -40,13 +40,7 @@ size_t QltBase::ranger_cnt() {
 
 void QltBase::range_init() {
     bzero(ranger, sizeof(ranger[0]) * ranger_cnt());
-    BZERO(exranger);
 }
-
-// enum FQQ_STMP {
-//     FQQ_STMP_TREE = 0x7ababa00,
-//     FQQ_STMP_DATA = 0x7adada00, // last byte used to store algorithm
-// };
 
 QltSave::QltSave()  {
     filer  = new FilerSave(conf.open_w("qlt"));
@@ -72,11 +66,10 @@ bool QltSave::is_valid() {
 
 void QltSave::save_1(const UCHAR* buf, size_t size) {
     UINT32 last = 0;
-    for (size_t i = 0; i < size; i++) {
-        UCHAR b = UCHAR(buf[i] - '!');
+    for (const UCHAR* p = buf ; p < buf + size; p++) {
+        UCHAR b = UCHAR(*p-'!');
 
         rarely_if(b >= 63) {
-            // croak("Illegal quality value 0x%x. Aborting\n", buf[i]);
             ranger[last].put(&rcoder, 63);
             exranger.put(&rcoder, b);
             continue;
@@ -89,8 +82,8 @@ void QltSave::save_1(const UCHAR* buf, size_t size) {
 
 void QltSave::save_2(const UCHAR* buf, size_t size) {
     UINT32 last = 0;
-    for (size_t i = 0; i < size; i++) {
-        UCHAR b = UCHAR(buf[i] - '!');
+    for (const UCHAR* p = buf ; p < buf + size; p++) {
+        UCHAR b = UCHAR(*p-'!');
 
         rarely_if(b >= 63) {
             ranger[last].put(&rcoder, 63);
@@ -110,8 +103,8 @@ void QltSave::save_3(const UCHAR* buf, size_t size) {
     UCHAR q1 = 0, q2 = 0;
     UINT32 di = 0;
 
-    for (size_t i = 0;;) {
-        UCHAR b = UCHAR(buf[i++] - '!');
+    for (const UCHAR* p = buf ; p < buf + size; p++) {
+        UCHAR b = UCHAR(*p-'!');
 
         rarely_if(b >= 63) {
             ranger[last].put(&rcoder, 63);
@@ -121,9 +114,6 @@ void QltSave::save_3(const UCHAR* buf, size_t size) {
 
         PREFETCH(ranger + last);
         ranger[last].put(&rcoder, b);
-
-        rarely_if(i >= size)
-            break;
 
         if (++ di & 1) {
             last = calc_last_delta(delta, b, q1, q2);
@@ -164,16 +154,17 @@ bool QltLoad::is_valid() {
 UINT32 QltLoad::load_1(UCHAR* buf, const size_t size) {
 
     UINT32 last = 0 ;
-    for (size_t i = 0; i < size ; i++) {
+
+    for (UCHAR* p = buf; p < buf + size ; p++) {
         UCHAR b = ranger[last].get(&rcoder);
 
         rarely_if(b == 63) {
             b = exranger.get(&rcoder);
-            buf[i] = UCHAR('!' + b);
+            *p = UCHAR('!' + b);
             continue;
         }
 
-        buf[i] = UCHAR('!' + b);
+        *p = UCHAR('!' + b);
         last = calc_last_1(last, b);
     }
     return m_valid ? size : 0;
@@ -182,17 +173,17 @@ UINT32 QltLoad::load_1(UCHAR* buf, const size_t size) {
 UINT32 QltLoad::load_2(UCHAR* buf, const size_t size) {
 
     UINT32 last = 0 ;
-    for (size_t i = 0; i < size ; i++) {
+    for (UCHAR* p = buf; p < buf + size ; p++) {
         PREFETCH(ranger + last);
         UCHAR b = ranger[last].get(&rcoder);
 
         rarely_if(b == 63) {
             b = exranger.get(&rcoder);
-            buf[i] = UCHAR('!' + b);
+            *p = UCHAR('!' + b);
             continue;
         }
 
-        buf[i] = UCHAR('!' + b);
+        *p = UCHAR('!' + b);
         last = calc_last_2(last, b);
     }
     return m_valid ? size : 0;
@@ -205,17 +196,17 @@ UINT32 QltLoad::load_3(UCHAR* buf, const size_t size) {
     UCHAR  q1 = 0, q2 = 0;
     UINT32 di = 0;
     
-    for (size_t i = 0; i < size ; i ++) {
+    for (UCHAR* p = buf; p < buf + size ; p++) {
         PREFETCH(ranger + last);
         UCHAR b = ranger[last].get(&rcoder);
 
         rarely_if(b == 63) {
             b = exranger.get(&rcoder);
-            buf[i] = UCHAR('!' + b);
+            *p = UCHAR('!' + b);
             continue;
         }
 
-        buf[i] = UCHAR('!' + b);
+        *p = UCHAR('!' + b);
 
         if (++di & 1) {
             last = calc_last_delta(delta, b, q1, q2);

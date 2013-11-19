@@ -47,6 +47,13 @@ typedef unsigned long long UINT64;
 #define BZERO(X) bzero(&X, sizeof(X))
 #define DELETE(X) do {if (X) delete X; X = NULL; } while (0)
 
+#define IS_CLR(exmap, offset) (0 == (exmap&(1ULL<<offset)))
+#define IS_SET(exmap, offset) !IS_CLR(exmap, offset)
+#define DO_SET(exmap, offset) (exmap |=  (1ULL<<offset))
+#define DO_CLR(exmap, offset) (exmap &= ~(1ULL<<offset))
+#define BCOUNT(exmap)       __builtin_popcount(exmap)
+#define BFIRST(exmap)       __builtin_ffsl(exmap)
+
 #ifdef DO_DEBUG
 #define DEBUG 1
 #else
@@ -54,10 +61,10 @@ typedef unsigned long long UINT64;
 #endif 
 
 #ifdef __SSE__
-// This prefetch saves 8 seconds (one 5.4G fastq), but seems to little use slightly
-// more cpu (or is it just doing the same work quota at lesser time?)
 #   include <xmmintrin.h>
 #   define PREFETCH(X) _mm_prefetch((const char *)(X), _MM_HINT_T0)
+// This prefetch saves 8 seconds (on 5.4G fastq), but seems to use slightly
+// more cpu (or is it just doing the same work quota at lesser time?)
 #else
 #   define PREFETCH(X)
 #endif

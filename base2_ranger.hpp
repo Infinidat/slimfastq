@@ -35,7 +35,8 @@
 class Base2Ranger {
 
     enum { STEP = 1,
-           MAX_FREQ=250,
+           MAX_FREQ=254,
+           INIT_VAL=3,
     };
     
     UCHAR  freq[4];
@@ -57,9 +58,11 @@ class Base2Ranger {
     }
 
 public:
-    void init() { // BZERO made it even slower
-        for (int i = 0; i < 4; i++)
-            freq[i] = 2;
+    Base2Ranger() {
+        // BZERO made it slower
+        // for (int i = 0; i < 4; i++)
+        //     freq[i] = 2;
+        (freq[0] = freq[1] = INIT_VAL ), (freq[2] = freq[3] = INIT_VAL);
     }
 
     inline void put(RCoder *rc, UCHAR sym) {

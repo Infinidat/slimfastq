@@ -155,13 +155,6 @@ void RecBase::map_space(const UCHAR* p, bool index) {
     }
 }
 
-#define IS_CLR(exmap, offset) (0 == (exmap&(1ULL<<offset)))
-#define IS_SET(exmap, offset) !IS_CLR(exmap, offset)
-#define DO_SET(exmap, offset) (exmap |=  (1ULL<<offset))
-#define DO_CLR(exmap, offset) (exmap &= ~(1ULL<<offset))
-#define BCOUNT(exmap)       __builtin_popcount(exmap)
-#define BFIRST(exmap)       __builtin_ffsl(exmap)
-
 static bool is_number(const UCHAR* p, int len, long long &num) {
     num = 0;
     for (int i = 0 ; i < len; i ++)
@@ -193,7 +186,7 @@ void RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, 
         return;
     }
 
-    put_type(0, ST_SAME);
+    put_type(0, ST_SAME);       // TODO: make it exception list in separate filer
     UINT64 map = 0;
     for (int i = 0; i < smap[lmap].len; i ++) 
         if ( smap[lmap].wln[i] != smap[pmap].wln[i] or 
@@ -202,9 +195,9 @@ void RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, 
 
     put_num(0, map);
 
-    for (int i = 0; i < smap[lmap].len; i ++) {
-        if (IS_CLR(map, i))     // TODO: use BFIRST
-            continue;
+    while (map) {
+        int i = BFIRST(map)-1;
+        DO_CLR(map, i);
         long long bnum, pnum;
         const UCHAR* b =      buf + smap[lmap].off[i];
         const UCHAR* p = prev_buf + smap[pmap].off[i];
@@ -250,14 +243,6 @@ size_t RecLoad::load_2(UCHAR* buf, const UCHAR* prev) {
             case ST_STR: {
                 b = get_str(i+1, b);
             } break;
-
-            // case ST_GAP: {
-            //     long long pval;
-            //     bool expect_num = is_number(prev + smap[0].off[i], smap[0].wln[i], pval);
-            //     assert(expect_num);
-            //     long long gap = get_num(i+1);
-            //     b += sprintf((char*)b, "%lld", pval + gap);
-            // } break;
 
             case ST_GAP:
             case ST_PAG: {

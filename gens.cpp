@@ -45,11 +45,8 @@ size_t GenBase::ranger_cnt() {
 }
 
 void GenBase::range_init() {
-    const int cnt = ranger_cnt();
-    for (int i = 0 ; i < cnt; i++)
-        ranger[i].init();
     // bzero(ranger, sizeof(ranger[0])* cnt);
-    // memset(ranger, 1, sizeof(ranger[0])*BRANGER_SIZE);
+    // memset(ranger, 2, sizeof(ranger[0])*BRANGER_SIZE);
 }
 
 //////////
@@ -66,42 +63,25 @@ GenSave::GenSave() {
     BZERO(m_last);
     m_N_byte = 0;
 
-    // if (conf.level == 1) {
-    //     filer = NULL;
-    //     pager = new PagerSave02(conf.open_w("gen"));
-    // }
-    // else {
-        // pager = NULL;
-        filer = new FilerSave(conf.open_w("gen"));
-        assert(filer);
-        rcoder.init(filer);
-        ranger = new Base2Ranger[ranger_cnt()];
-        range_init();
-    // }
+    filer = new FilerSave(conf.open_w("gen"));
+    assert(filer);
+    rcoder.init(filer);
+    ranger = new Base2Ranger[ranger_cnt()];
+    range_init();
 }
 
 GenSave::~GenSave() {
-    // if (conf.level > 1)
-        rcoder.done();
+    rcoder.done();
     DELETE(filer);
 
-    // delete pager;
     delete pagerNs;
     delete pagerNn;
     // fprintf stats
 }
 
-// void GenSave::pager_init() {
-//     DELETE( pager   );
-//     DELETE( pagerNs );
-//     DELETE( pagerNn );
-//     pager = new PagerSave02(m_conf->open_w("gen"));
-// 
-//     BZERO(m_last);
-// }
-
 void GenSave::putgapNs(UINT64 gap) {
-    // pagerNs ||= new ... if only life could have been like perl .. 
+    // TODO: Convert to filer, PowerRanger
+
     rarely_if(not pagerNs)
         pagerNs = new PagerSave16(conf.open_w("gen.Ns"));
 
@@ -129,9 +109,7 @@ inline UCHAR GenSave::normalize_gen(UCHAR gen, UCHAR &qlt) {
     case '1': case 'C': n = 1; break;
     case '2': case 'G': n = 2; break;
     case '3': case 'T': n = 3; break;
-    case '.': case 'N': n = 0;
-        bad_n = true;
-        break;
+    case '.': case 'N': n = 0; bad_n = true; break;
     default: croak("unexpected genome char: %c", gen);
     }
         
@@ -182,9 +160,11 @@ inline UCHAR GenSave::normalize_gen(UCHAR gen, UCHAR &qlt) {
 
 void GenSave::save_1(const UCHAR* gen, UCHAR* qlt, size_t size) {
     UINT32 last = 0;
-    for (size_t i = 0; i < size; i ++) {
+    // for (size_t i = 0; i < size; i ++) {
+    const UCHAR* g = gen; UCHAR* q = qlt;
+    for (; g < gen + size ; g++, q++) {
         m_last.count ++;
-        UCHAR n = normalize_gen(gen[i], qlt[i]);
+        UCHAR n = normalize_gen(*g, *q);
 
         last &= BRANGER_MASK_1;
         ranger[last].put(&rcoder, n);
@@ -194,9 +174,10 @@ void GenSave::save_1(const UCHAR* gen, UCHAR* qlt, size_t size) {
 
 void GenSave::save_2(const UCHAR* gen, UCHAR* qlt, size_t size) {
     UINT32 last = 0x007616c7;
-    for (size_t i = 0; i < size; i ++) {
+    const UCHAR* g = gen; UCHAR* q = qlt;
+    for (; g < gen + size ; g++, q++) {
         m_last.count ++;
-        UCHAR n = normalize_gen(gen[i], qlt[i]);
+        UCHAR n = normalize_gen(*g, *q);
 
         last &= BRANGER_MASK_2;
         ranger[last].put(&rcoder, n);
@@ -206,9 +187,10 @@ void GenSave::save_2(const UCHAR* gen, UCHAR* qlt, size_t size) {
 
 void GenSave::save_3(const UCHAR* gen, UCHAR* qlt, size_t size) {
     UINT32 last = 0x007616c7;
-    for (size_t i = 0; i < size; i ++) {
+    const UCHAR* g = gen; UCHAR* q = qlt;
+    for (; g < gen + size ; g++, q++) {
         m_last.count ++;
-        UCHAR n = normalize_gen(gen[i], qlt[i]);
+        UCHAR n = normalize_gen(*g, *q);
 
         last &= BRANGER_MASK_3;
         PREFETCH(ranger + last); 
@@ -219,9 +201,10 @@ void GenSave::save_3(const UCHAR* gen, UCHAR* qlt, size_t size) {
 
 void GenSave::save_4(const UCHAR* gen, UCHAR* qlt, size_t size) {
     UINT32 last = 0x007616c7;
-    for (size_t i = 0; i < size; i ++) {
+    const UCHAR* g = gen; UCHAR* q = qlt;
+    for (; g < gen + size ; g++, q++) {
         m_last.count ++;
-        UCHAR n = normalize_gen(gen[i], qlt[i]);
+        UCHAR n = normalize_gen(*g, *q);
 
         last &= BRANGER_MASK_4;
         PREFETCH(ranger + last); 
@@ -278,27 +261,17 @@ GenLoad::GenLoad() {
         "acgt" :
         "ACGT" ;
 
-
-    // if (conf.level == 1) {
-    //     pager = new PagerLoad02(conf.open_r("gen"), &m_valid);
-    //     filer = NULL;
-    // }
-    // else {
-    //     pager = NULL;
-        filer = new FilerLoad(conf.open_r("gen"), &m_valid);
-        assert(filer);
-        rcoder.init(filer);
-        ranger = new Base2Ranger[ranger_cnt()];
-        range_init();
-    // }
+    filer = new FilerLoad(conf.open_r("gen"), &m_valid);
+    assert(filer);
+    rcoder.init(filer);
+    ranger = new Base2Ranger[ranger_cnt()];
+    range_init();
 }
 
 GenLoad::~GenLoad() {
-    // if (conf.level > 1)
-        rcoder.done();
+    rcoder.done();
     DELETE(filer);
 
-    // delete pager;
     delete pagerNs;
     delete pagerNn;
 }
@@ -318,28 +291,19 @@ void GenLoad::normalize_gen(UCHAR & gen, UCHAR qlt) {
    }
 }
 
-// UINT32 GenLoad::load_1(UCHAR* gen, const UCHAR* qlt, size_t size) {
-//     for (size_t i = 0; i < size; i ++ ) {
-//         m_last.count ++ ;
-//         gen[i] = m_gencode [ pager->get02() ];
-//         // if lossless
-//         normalize_gen(gen[i], qlt[i]); 
-//    }
-// 
-//     return m_valid ? size : 0;
-// }
-
 UINT32 GenLoad::load_1(UCHAR* gen, const UCHAR* qlt, size_t size) {
 
     UINT32 last = 0;
 
-    for (size_t i = 0; i < size; i ++ ) {
+    UCHAR* g = gen; const UCHAR* q = qlt;
+    for (; g < gen + size ; g++, q++) {
         m_last.count ++ ;
         last &= BRANGER_MASK_1;
         UCHAR b = ranger[last].get(&rcoder);
-        gen[i] = m_gencode [ b ];
+
+        *g = m_gencode [ b ];
         last = ((last<<2) + b);
-        normalize_gen(gen[i], qlt[i]);
+        normalize_gen(*g, *q);
     }
 
     return m_valid ? size : 0;
@@ -349,13 +313,15 @@ UINT32 GenLoad::load_2(UCHAR* gen, const UCHAR* qlt, size_t size) {
 
     UINT32 last = 0x007616c7;
 
-    for (size_t i = 0; i < size; i ++ ) {
+    UCHAR* g = gen; const UCHAR* q = qlt;
+    for (; g < gen + size ; g++, q++) {
         m_last.count ++ ;
         last &= BRANGER_MASK_2;
         UCHAR b = ranger[last].get(&rcoder);
-        gen[i] = m_gencode [ b ];
+
+        *g = m_gencode [ b ];
         last = ((last<<2) + b);
-        normalize_gen(gen[i], qlt[i]);
+        normalize_gen(*g, *q);
     }
 
     return m_valid ? size : 0;
@@ -365,17 +331,17 @@ UINT32 GenLoad::load_3(UCHAR* gen, const UCHAR* qlt, size_t size) {
 
     UINT32 last = 0x007616c7;
 
-    for (size_t i = 0; i < size; i ++ ) {
+    UCHAR* g = gen; const UCHAR* q = qlt;
+    for (; g < gen + size ; g++, q++) {
         m_last.count ++ ;
-
         last &= BRANGER_MASK_3;
 
         PREFETCH(ranger + last);
         UCHAR b = ranger[last].get(&rcoder);
-        gen[i] = m_gencode [ b ];
+        *g = m_gencode [ b ];
 
         last = ((last<<2) + b);
-        normalize_gen(gen[i], qlt[i]);
+        normalize_gen(*g, *q);
     }
 
     return m_valid ? size : 0;
@@ -385,17 +351,18 @@ UINT32 GenLoad::load_4(UCHAR* gen, const UCHAR* qlt, size_t size) {
 
     UINT32 last = 0x007616c7;
 
-    for (size_t i = 0; i < size; i ++ ) {
+    UCHAR* g = gen; const UCHAR* q = qlt;
+    for (; g < gen + size ; g++, q++) {
         m_last.count ++ ;
 
         last &= BRANGER_MASK_4;
 
         PREFETCH(ranger + last);
         UCHAR b = ranger[last].get(&rcoder);
-        gen[i] = m_gencode [ b ];
+        *g = m_gencode [ b ];
 
         last = ((last<<2) + b);
-        normalize_gen(gen[i], qlt[i]);
+        normalize_gen(*g, *q);
     }
 
     return m_valid ? size : 0;
