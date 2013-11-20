@@ -62,8 +62,6 @@ protected:
     //     return ( b | (last << 6) ) & RANGER_MASK_3;
     //     // TODO: use delta
     // }
-    inline static UINT32 min_val(UINT32 a, UINT32 b) { return a>b?b:a; }
-    inline static UCHAR  max_val(UCHAR  a, UCHAR  b) { return a>b?a:b; }
     inline static UINT32 calc_last_delta(UINT32 &delta, UCHAR q, UCHAR q1, UCHAR q2) {
 
         // This brilliant code could only be of James Bonfield
@@ -72,9 +70,9 @@ protected:
 
         return
             ( q
-              | (max_val(q1, q2) << 6)
-              | ((q1 == q2)      << 12)
-              | (min_val(7, (delta>>3)) << 13)
+              | ((q1 < q2        ? q2         : q1) <<  6)
+              | ((q1 == q2                        ) << 12)
+              | ((7 > (delta>>3) ? (delta>>3) : 7 ) << 13)
               ) & RANGER_MASK_2 ;
     }
 };

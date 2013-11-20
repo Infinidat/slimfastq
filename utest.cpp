@@ -185,9 +185,9 @@ void test_power_ranger() {
         PowerRanger ranger;
         BZERO(ranger);
         for (int i = 0; i < 300; i++)
-            ranger.put_c(rc, i&0xff);
+            ranger.put(rc, i&0xff);
         for (int i = 0; i < 1000; i+=17)
-            ranger.put_c(rc, i&0xff);
+            ranger.put(rc, i&0xff);
         rc_finit();
     }
     {
@@ -195,11 +195,11 @@ void test_power_ranger() {
         PowerRanger ranger;
         BZERO(ranger);
         for (int i = 0; i < 300; i++) {
-            UCHAR c = ranger.get_c(rc);
+            UCHAR c = ranger.get(rc);
             assert(c == (i&0xff));
         }
         for (int i = 0; i < 1000; i+=17) {
-            UCHAR c = ranger.get_c(rc);
+            UCHAR c = ranger.get(rc);
             assert(c == (i&0xff));
         }
         rc_finit();
@@ -208,7 +208,7 @@ void test_power_ranger() {
     int arr[] = { -121, -122, -1, 575};
     {
         rc_init();
-        PowerRanger ranger;
+        PowerRangerI ranger;
         BZERO(ranger);
         for (int i = 0; i < 4; i++)
             ranger.put_i(rc, arr[i]);
@@ -220,7 +220,7 @@ void test_power_ranger() {
     }
     {
         rc_init(1);
-        PowerRanger ranger;
+        PowerRangerI ranger;
         BZERO(ranger);
         for (int i = 0; i < 4; i++){
             int c = ranger.get_i(rc);
@@ -239,7 +239,7 @@ void test_power_ranger() {
     TITLE("ranger put_u / get_u");
     {
         rc_init();
-        PowerRanger ranger;
+        PowerRangerU ranger;
         BZERO(ranger);
         for (int i = 0; i < 300; i++)
             ranger.put_u(rc, i);
@@ -250,7 +250,7 @@ void test_power_ranger() {
     }
     {
         rc_init(1);
-        PowerRanger ranger;
+        PowerRangerU ranger;
         BZERO(ranger);
         for (int i = 0; i < 300; i++) {
             int c = ranger.get_u(rc);
@@ -282,16 +282,16 @@ void test_power_ranger_extra() {
         FilerSave filer(fh) ;
         assert(filer.is_valid());
 
-        PowerRanger ranger;
+        PowerRangerU ranger;
         RCoder rcoder;
         rcoder.init(&filer);
         BZERO(ranger);
         RCoder* r = &rcoder;
 
         // bug hunt
-        ranger.put_i(r, -1);
+        ranger.put_u(r, -1);
         ranger.put_u(r, '3');
-        ranger.put_i(r, 2994389);
+        ranger.put_u(r, 2994389);
         ranger.put_u(r, 2308);
         for (int i = 0; i < 300; i++)
             ranger.put_u(r, (i&0x7f));
@@ -302,9 +302,9 @@ void test_power_ranger_extra() {
         for (int i = 0; i < 12; i++)
             ranger.put_u(r, array[i]);
         for (int i = -300; i < 300; i++)
-            ranger.put_i(r, i);
+            ranger.put_u(r, i);
         for (int i = 0; i < 8; i++)
-            ranger.put_i(r, 0|arrai[i]);
+            ranger.put_u(r, 0|arrai[i]);
         rcoder.done();
     }
     {
@@ -315,15 +315,15 @@ void test_power_ranger_extra() {
         FilerLoad filer(fh, &valid) ;
         assert(filer.is_valid());
 
-        PowerRanger ranger;
+        PowerRangerU ranger;
         RCoder rcoder;
         rcoder.init(&filer);
         BZERO(ranger);
         RCoder* r = &rcoder;
 
-        assert(ranger.get_i(r) == -1);
+        assert(ranger.get_u(r) == -1);
         assert(ranger.get_u(r) == '3');
-        assert(ranger.get_i(r) == 2994389);
+        assert(ranger.get_u(r) == 2994389);
         assert(ranger.get_u(r) == 2308);
         for (int i = 0; i < 300; i++) {
             UCHAR c = ranger.get_u(r);
@@ -342,11 +342,11 @@ void test_power_ranger_extra() {
             assert(u == array[i]);
         }
         for (int i = -300; i < 300; i++) {
-            long l = ranger.get_i(r);
+            long l = ranger.get_u(r);
             assert(l == i);
         }
         for (int i = 0; i < 8; i++) {
-            long u = ranger.get_i(r);
+            long u = ranger.get_u(r);
             assert(u == arrai[i]);            
         }
     }

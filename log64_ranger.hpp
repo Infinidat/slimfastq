@@ -36,7 +36,7 @@ class Log64Ranger {
     enum {
         STEP=6,
         NSYM=64,
-        MAX_FREQ=(1<<16)-32,
+        MAX_FREQ=(1<<16)-64,
     };
 
     UINT32 total;
@@ -47,16 +47,11 @@ class Log64Ranger {
     UCHAR syms[NSYM];
 
     void normalize() {
-
         for (UINT32 i = total = 0; i < iend; i++)
             total += (freq[i] /= 2);
     }
 
     inline UCHAR sort_of_sort(int i) {
-        likely_if (i == 0 or
-                   (++ count & 0xf) or
-                   freq[i] <= freq[i-1] )
-            return syms[i];
 
         UCHAR c = syms[i  ];
         syms[i] = syms[i-1];
@@ -67,6 +62,25 @@ class Log64Ranger {
         freq[i-1] = f;
 
         return c;
+    }
+
+    inline UCHAR update_freq(int i) {
+
+        rarely_if(freq[i] > (MAX_FREQ - STEP)) {
+            if  ((freq[i] == total))
+                return syms[i];
+
+            normalize();
+        }
+
+        freq[i] += STEP;
+        total   += STEP;
+
+        return LIKELY (i == 0 or
+                       (++ count & 0xf) or
+                       freq[i] <= freq[i-1] ) ?
+            syms[i] :
+            sort_of_sort(i);
     }
 
 public:
@@ -86,13 +100,7 @@ public:
         UINT32 vtot = total + NSYM;
         rc->Encode(sumf, freq[i]+1, vtot);
 
-        rarely_if(freq[i] > (MAX_FREQ - STEP))
-            normalize();
-
-        freq[i] += STEP;
-        total   += STEP;
-
-        sort_of_sort(i);
+        update_freq(i);
     }
 
     inline UINT16 get(RCoder *rc) {
@@ -118,13 +126,7 @@ public:
 
         rc->Decode(sumf, freq[i]+1, vtot);
 
-        rarely_if(freq[i] > (MAX_FREQ - STEP))
-            normalize();
-
-        freq[i] += STEP;
-        total   += STEP;
-
-        return sort_of_sort(i);
+        return update_freq(i);
     }
 
 } PACKED;

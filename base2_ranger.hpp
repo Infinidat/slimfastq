@@ -57,6 +57,14 @@ class Base2Ranger {
         return (freq[0] + freq[1]) + (freq[2] + freq[3]);
     }
 
+    inline void update_freq(int sym , UINT16 total) {
+
+        rarely_if(freq[sym] > (MAX_FREQ))
+            normalize();
+
+        freq[sym] += STEP;
+    }
+
 public:
     Base2Ranger() {
         // BZERO made it slower
@@ -86,10 +94,7 @@ public:
         //                     1+ freq[3], total); break;
         }
 
-        rarely_if(freq[sym] > (MAX_FREQ))
-            normalize();
-
-        freq[sym] += STEP;
+        update_freq(sym, total);
     }
 
     inline UCHAR get(RCoder *rc) {
@@ -111,11 +116,7 @@ public:
         // rc->Decode(sumf, freq[i] +1, total);
         rc->Decode(sumf, freq[i], total);
 
-        rarely_if(freq[i] > (MAX_FREQ))
-            normalize();
-
-        freq[i] += STEP;
-
+        update_freq(i, total);
         return i;
     }
 } PACKED ;

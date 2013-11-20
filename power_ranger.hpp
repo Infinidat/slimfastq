@@ -54,10 +54,6 @@ class PowerRanger {
     }
 
     inline UCHAR sort_of_sort(int i) {
-        likely_if (i == 0 or
-                   (++ count & 0xf) or
-                   freq[i] <= freq[i-1] )
-            return syms[i];
 
         UCHAR t = syms[i  ];
         syms[i] = syms[i-1];
@@ -68,6 +64,25 @@ class PowerRanger {
         freq[i-1] = f;
 
         return t;
+    }
+
+    inline UCHAR update_freq(int i) {
+
+        rarely_if(freq[i] > (MAX_FREQ - STEP)) {
+            if  (freq[i] + 256U > total)
+                return syms[i];
+
+            normalize();
+        }
+
+        freq[i] += STEP;
+        total   += STEP;
+
+        return LIKELY (i == 0 or
+                       (++ count & 0xf) or
+                       freq[i] <= freq[i-1] ) ?
+            syms[i] :
+            sort_of_sort(i);
     }
 
 public:
@@ -89,13 +104,7 @@ public:
         UINT32 vtot = total + NSYM;
         rc->Encode(sumf, freq[i]+1, vtot);
 
-        rarely_if(freq[i] > (MAX_FREQ - STEP))
-            normalize();
-
-        freq[i] += STEP;
-        total   += STEP;
-
-        sort_of_sort(i);
+        update_freq(i);
     }
 
     UINT16 get(RCoder *rc) {
@@ -120,13 +129,7 @@ public:
 
         rc->Decode(sumf, freq[i]+1, vtot);
 
-        rarely_if(freq[i] > (MAX_FREQ - STEP))
-            normalize();
-
-        freq[i] += STEP;
-        total   += STEP;
-
-        return sort_of_sort(i);
+        return update_freq(i);
     }
 } PACKED;
 
