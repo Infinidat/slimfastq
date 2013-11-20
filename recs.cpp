@@ -169,39 +169,46 @@ void RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, 
     rarely_if(not m_last.initilized) {
         save_first_line(buf, end);
         map_space(buf, 0);
-        lmap = 0;
+        imap = 0;
+        // last_map = 0;
         return;
     }
-    bool pmap = lmap;
-    lmap = lmap ? 0 : 1;
-    map_space(buf, lmap);
+    bool pmap = imap;
+    imap = imap ? 0 : 1;
+    map_space(buf, imap);
 
-    if (smap[lmap].len != smap[pmap].len or 
-        memcmp(smap[lmap].str, smap[pmap].str, smap[lmap].len)) {
+    if (smap[imap].len != smap[pmap].len or 
+        memcmp(smap[imap].str, smap[pmap].str, smap[imap].len)) {
         // Too bad, new spacer
-        put_type(0, ST_STR);
+        put_type(0, ST_LINE);
         put_str (0, buf, end-buf);
+        // last_map = 0;
         stats.new_n ++ ;
         stats.new_l += end-buf;
         return;
     }
 
-    put_type(0, ST_SAME);       // TODO: make it exception list in separate filer
     UINT64 map = 0;
-    for (int i = 0; i < smap[lmap].len; i ++) 
-        if ( smap[lmap].wln[i] != smap[pmap].wln[i] or 
-             memcmp(buf + smap[lmap].off[i], prev_buf + smap[pmap].off[i], smap[lmap].wln[i]))
+    for (int i = 0; i < smap[imap].len; i ++) 
+        if ( smap[imap].wln[i] != smap[pmap].wln[i] or 
+             memcmp(buf + smap[imap].off[i], prev_buf + smap[pmap].off[i], smap[imap].wln[i]))
             DO_SET(map, i);
 
-    put_num(0, map);
+    // if (last_map == map)
+        put_type(0, ST_SAME);
+    // else {
+    //     put_type(0, ST_SMAP);
+        put_num (0, map);
+    //     last_map =  map;
+    // }
 
     while (map) {
         int i = BFIRST(map)-1;
         DO_CLR(map, i);
         long long bnum, pnum;
-        const UCHAR* b =      buf + smap[lmap].off[i];
+        const UCHAR* b =      buf + smap[imap].off[i];
         const UCHAR* p = prev_buf + smap[pmap].off[i];
-        if (is_number(b, smap[lmap].wln[i], bnum) and
+        if (is_number(b, smap[imap].wln[i], bnum) and
             is_number(p, smap[pmap].wln[i], pnum)) {
             if (bnum > pnum) {
                 put_type(i+1, ST_GAP);
@@ -214,35 +221,42 @@ void RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, 
         }
         else {
             put_type(i+1, ST_STR);
-            put_str (i+1, b, smap[lmap].wln[i]);
+            put_str (i+1, b, smap[imap].wln[i]);
             stats.str_n ++ ;
-            stats.str_l += smap[lmap].wln[i];
+            stats.str_l += smap[imap].wln[i];
         }
     }
 }
 
 size_t RecLoad::load_2(UCHAR* buf, const UCHAR* prev) {
 
-    rarely_if(not m_last.initilized)
+    rarely_if(not m_last.initilized) {
+        // last_map = 0;
         return load_first_line(buf);
+    }
 
     UCHAR type = get_type(0);
-    if (type == ST_STR) {
+    if (type == ST_LINE) {
+        // last_map = 0;
         UCHAR* b = get_str(0, buf);
         return b - buf;
     }
-    assert (type == ST_SAME);
     map_space(prev, 0);
+    // if (type == ST_SMAP)
+    //     last_map = get_num(0);
+    // else
+    rarely_if (type != ST_SAME)
+        croak("REC: bad type value %d", type);
+
     UINT64 map = get_num(0);
+
     UCHAR* b = buf;
     for (int i = 0; i < smap[0].len; i++) {
-        if (IS_SET(map, i)) {
+        // if (IS_SET(last_map, i)) {
+         if (IS_SET(map, i)) {
 
             type = get_type(i+1);
             switch ((seg_type)type) {
-            case ST_STR: {
-                b = get_str(i+1, b);
-            } break;
 
             case ST_GAP:
             case ST_PAG: {
@@ -254,8 +268,12 @@ size_t RecLoad::load_2(UCHAR* buf, const UCHAR* prev) {
                 b += sprintf((char*)b, "%lld", val);
             } break;
 
+            case ST_STR: {
+                b = get_str(i+1, b);
+            } break;
+
             default:
-                croak("bade type value %d", type);
+                croak("REC: bad type value %d", type);
             }
         }
         else {

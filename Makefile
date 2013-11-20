@@ -113,30 +113,5 @@ tost: all
 playground:
 	@ echo $(filter-out molder.cpp, $(shell echo *.cpp))
 
-
-ONESRC=one.cpp
-one: $(ONESRC)
-	g++ $(FLAGS) -o $@ $<
-
-COFLAGS  = -O3 -g -fomit-frame-pointer -fstrict-aliasing -ffast-math -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -Wall -msse2
-one.opt:
-	g++ $(COFLAGS) -o $@ $(ONESRC)
-# 	mv PROF/*.gcda . || true
-# 	g++ $(FLAGS_OPT)  -o $@ $(ONESRC)
-# 	mv *.gcda PROF || true
-# 
-# one.prof:
-# 	g++ $(FLAGS_PROF) -o $@ $(ONESRC)
-# 
-# one-prof-opt: one.prof
-# 	for f in $(TEST_FILES) ; do \
-# 		echo $$f ... ; \
-# 		./one.prof $$f /tmp/mytst ; \
-# 		./one.prof -d  /tmp/mytst /tmp/mytst.copy ; \
-# 		done
-# 	make one.opt
-# 	make profclean
-
-
 findshun: findshun.cpp
 	g++ $(COFLAGS) -o $@ $<

@@ -32,6 +32,7 @@
 
 #include "filer.hpp"
 #include "power_ranger.hpp"
+// #include "base2_ranger.hpp"
 
 class RecBase {
 protected: 
@@ -44,7 +45,8 @@ protected:
 
     struct ranger_t {
         PowerRanger type;
-        PowerRanger  len;
+        // PowerRanger  len;
+        // Base2Ranger type;
         PowerRanger  str;
         PowerRangerU num;
     } PACKED ;
@@ -72,17 +74,26 @@ protected:
 
     // Division of labor
     enum seg_type {
-        ST_SAME,
-        ST_GAP,
-        ST_PAG,
-        ST_GAPL,
-        ST_PAGL,
-        ST_END,
-        ST_STR,
-        // ST_0_F,
-        // ST_0_B,
-        ST_LAST
+        ST_SAME = 0,
+        ST_SMAP = 1,
+        ST_LINE = 2,
+
+        ST_GAP = 0,
+        ST_PAG = 1,
+        ST_STR = 2,
     };
+    // enum seg_type {
+    //     ST_SAME,
+    //     ST_GAP,
+    //     ST_PAG,
+    //     ST_GAPL,
+    //     ST_PAGL,
+    //     ST_END,
+    //     ST_STR,
+    //     // ST_0_F,
+    //     // ST_0_B,
+    //     ST_LAST
+    // };
 
     struct space_map {
         int   off[65];
@@ -91,7 +102,8 @@ protected:
         UCHAR len;
     };
     space_map smap[2];
-    bool lmap;
+    bool imap;
+    // UINT64 last_map;
     void map_space(const UCHAR* p, bool index);
 };
 
