@@ -29,15 +29,15 @@
 
 #include "common.hpp"
 #include "config.hpp"
-#include "pager.hpp"
 #include <stdio.h>
 
 #include "filer.hpp"
 #include "base2_ranger.hpp"
+#include "xfile.hpp"
 
 class GenBase {
 protected:
-    GenBase(){}
+    GenBase() {}
     ~GenBase(){}
 
 #define BRANGER_SIZE_1 (1<<18)
@@ -52,7 +52,7 @@ protected:
 #define BRANGER_SIZE_4 (1<<26)
 #define BRANGER_MASK_4 (BRANGER_SIZE_4-1)
 
-    Base2Ranger* ranger; //[BRANGER_SIZE];
+    Base2Ranger* ranger;
     RCoder rcoder;
 
     struct {
@@ -61,8 +61,6 @@ protected:
         UINT64 Nn_index;
     } m_last;
         
-    // const Config* m_conf;
-
     struct {
         UINT32 big_gaps;
     } m_stats ;
@@ -76,14 +74,13 @@ protected:
 
 class GenSave : private GenBase {
 public:
-    GenSave();
+    GenSave() ;
     ~GenSave();
 
     void save_1(const UCHAR* gen, UCHAR* qlt, size_t size);
     void save_2(const UCHAR* gen, UCHAR* qlt, size_t size);
     void save_3(const UCHAR* gen, UCHAR* qlt, size_t size);
     void save_4(const UCHAR* gen, UCHAR* qlt, size_t size);
-    // void pager_init();
 
 private:
     inline void putgapNs(UINT64 gap);
@@ -91,10 +88,8 @@ private:
     inline UCHAR normalize_gen(UCHAR gen, UCHAR &qlt);
 
     FilerSave* filer;
-    // PagerSave02* pager;
-    PagerSave16* pagerNs;
-    PagerSave16* pagerNn;
-
+    XFileSave* x_Ns;
+    XFileSave* x_Nn;
 };
 
 class GenLoad : private GenBase {
@@ -117,9 +112,8 @@ private:
     const char* m_gencode;
 
     FilerLoad* filer;
-    // PagerLoad02* pager;
-    PagerLoad16* pagerNs;
-    PagerLoad16* pagerNn;
+    XFileLoad* x_Ns;
+    XFileLoad* x_Nn;
 };
 
 

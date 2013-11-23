@@ -23,91 +23,48 @@
 /***********************************************************************************************************************/
 
 
-#ifndef COMMON_FILER_H
-#define COMMON_FILER_H
+#ifndef FQ_XFILE_H
+#define FQ_XFILE_H
 
-#include "common.hpp"
+
 #include <stdio.h>
-#include <assert.h>
-#include <string.h>
+#include "common.hpp"
+#include "config.hpp"
 
-#define FILER_PAGE 0x2000
+#include "filer.hpp"
+#include "power_ranger.hpp"     // exception list
 
-class FilerLoad {
-public:
-    FilerLoad(FILE* fh, bool *valid_ptr);
-    ~FilerLoad();
+class XFileBase {
 
-    bool is_valid() const ;
-    size_t    tell() const ;
+protected:
 
-    inline UCHAR get() {
-        rarely_if(m_count <= m_cur) load_page();
-        return m_valid ? m_buff[m_cur++] : 0;
-    }
+    XFileBase(const char* filename);
 
-    inline UINT64 get4() { return getN(4);}
-    inline UINT64 get8() { return getN(8);}
-
-private:
-    inline UINT64 getN(int N) {
-        UINT64 val = 0;
-        for (int i = N-1; i>=0; i--)
-            val |= (UINT64(get()) << (8*i));
-        return val;
-    }
-    void load_page();
-
-    bool   m_valid;
-    UCHAR  m_buff[ FILER_PAGE+10 ]; 
-    size_t m_cur, m_count;
-    FILE  *m_in;
-    bool  *m_valid_ptr;
-    UINT64 m_page_count; 
-};
-
-class FilerSave {
-public:
-    FilerSave(FILE* fh);
-    ~FilerSave();
-    bool is_valid() const ;
-    inline bool put(UCHAR c) {
-        rarely_if(m_cur >= FILER_PAGE)
-            save_page();
-        m_buff[m_cur++] = c;
-        return m_valid;
-    }
-    inline bool putS(UCHAR* str, size_t len) {
-
-        while (len) {
-            size_t wlen = len < FILER_PAGE-m_cur ? len : FILER_PAGE-m_cur;
-            memcpy(m_buff+m_cur, str, wlen);
-            len -= wlen ;
-            likely_if (len <= 0)
-                return m_valid;
-            save_page();
-        }
-        assert(0);
-        return m_valid;
-    }
-
-    inline bool put4(UINT64 val) { return putN(4, val);}
-    inline bool put8(UINT64 val) { return putN(8, val);}
-
-private:
-    inline bool putN(int N, UINT64 val) {
-        for (int i = N-1; i>=0 ; i--)
-            put( (val >> (8*i)) & 0xff );
-        return m_valid;
-    };
-    void save_page();
-
-    bool   m_valid;
-    UCHAR  m_buff[ FILER_PAGE+10 ]; 
-    size_t m_cur;
-    FILE  *m_out;
-    UINT64 m_page_count; 
+    const char* m_filename;
+    bool m_init;
+    bool m_valid;
+    RCoder rcoder;
+    PowerRangerU ranger;
 };
 
 
-#endif  // COMMON_FILER_H
+class XFileSave : private XFileBase {
+    FilerSave* filer;
+    
+public:
+    XFileSave(const char* filename);
+    ~XFileSave();
+    bool put(UINT64 gap);
+};
+
+class XFileLoad : private XFileBase {
+    FilerLoad* filer;
+
+public:
+    XFileLoad(const char* filename);
+    ~XFileLoad();
+    UINT64 get();
+};
+
+
+#endif

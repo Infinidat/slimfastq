@@ -23,91 +23,61 @@
 /***********************************************************************************************************************/
 
 
-#ifndef COMMON_FILER_H
-#define COMMON_FILER_H
-
-#include "common.hpp"
-#include <stdio.h>
-#include <assert.h>
+#include "xfile.hpp"
+#include <stdlib.h>
+#include <errno.h>
 #include <string.h>
 
-#define FILER_PAGE 0x2000
+XFileBase::XFileBase(const char* filename
+                     ) : m_filename(filename),
+                         m_init(false) {}
 
-class FilerLoad {
-public:
-    FilerLoad(FILE* fh, bool *valid_ptr);
-    ~FilerLoad();
 
-    bool is_valid() const ;
-    size_t    tell() const ;
+XFileSave::XFileSave(const char* filename
+                     ) : XFileBase(filename),
+                         filer(NULL) {}
 
-    inline UCHAR get() {
-        rarely_if(m_count <= m_cur) load_page();
-        return m_valid ? m_buff[m_cur++] : 0;
+XFileSave::~XFileSave() {
+    if (filer) {
+        rcoder.done();
+        delete filer;
+        filer = NULL;
     }
+}
+XFileLoad::XFileLoad(const char* filename
+                     ) : XFileBase(filename),
+                         filer(NULL) {}
 
-    inline UINT64 get4() { return getN(4);}
-    inline UINT64 get8() { return getN(8);}
-
-private:
-    inline UINT64 getN(int N) {
-        UINT64 val = 0;
-        for (int i = N-1; i>=0; i--)
-            val |= (UINT64(get()) << (8*i));
-        return val;
+XFileLoad::~XFileLoad() {
+    if (filer) {
+        rcoder.done();
+        delete filer;
+        filer = NULL;
     }
-    void load_page();
+}
 
-    bool   m_valid;
-    UCHAR  m_buff[ FILER_PAGE+10 ]; 
-    size_t m_cur, m_count;
-    FILE  *m_in;
-    bool  *m_valid_ptr;
-    UINT64 m_page_count; 
-};
-
-class FilerSave {
-public:
-    FilerSave(FILE* fh);
-    ~FilerSave();
-    bool is_valid() const ;
-    inline bool put(UCHAR c) {
-        rarely_if(m_cur >= FILER_PAGE)
-            save_page();
-        m_buff[m_cur++] = c;
-        return m_valid;
+bool XFileSave::put(UINT64 gap) {
+    rarely_if(not m_init) {
+        m_init = true;
+        filer = new FilerSave(conf.open_w(m_filename));
+        assert(filer);
+        rcoder.init(filer);
     }
-    inline bool putS(UCHAR* str, size_t len) {
+    return ranger.put_u(&rcoder, gap);
+}
 
-        while (len) {
-            size_t wlen = len < FILER_PAGE-m_cur ? len : FILER_PAGE-m_cur;
-            memcpy(m_buff+m_cur, str, wlen);
-            len -= wlen ;
-            likely_if (len <= 0)
-                return m_valid;
-            save_page();
+
+UINT64 XFileLoad::get() {
+    rarely_if(not m_init) {
+        m_init = true;
+        FILE* fh = conf.open_r(m_filename, false);
+        if (fh) {
+            filer = new FilerLoad(fh, &m_valid);
+            assert(filer);
+            rcoder.init(filer);
         }
-        assert(0);
-        return m_valid;
+        else
+            m_valid = false;
     }
-
-    inline bool put4(UINT64 val) { return putN(4, val);}
-    inline bool put8(UINT64 val) { return putN(8, val);}
-
-private:
-    inline bool putN(int N, UINT64 val) {
-        for (int i = N-1; i>=0 ; i--)
-            put( (val >> (8*i)) & 0xff );
-        return m_valid;
-    };
-    void save_page();
-
-    bool   m_valid;
-    UCHAR  m_buff[ FILER_PAGE+10 ]; 
-    size_t m_cur;
-    FILE  *m_out;
-    UINT64 m_page_count; 
-};
-
-
-#endif  // COMMON_FILER_H
+    return m_valid ? ranger.get_u(&rcoder) : 0;
+}

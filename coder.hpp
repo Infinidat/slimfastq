@@ -44,12 +44,16 @@ public:
             code = (code<<8) | m_in->get();
     }
 
+    ~RCoder() { done(); }
     void done() {
-        if (m_out)
+        // Allow explicit 'done' in case we wish not FilerSave close before this call
+        if (m_out) {
             for (int i=0; i<8; i++) {
                 m_out->put(low >> 56);
                 low <<= 8;
             }
+            m_out = NULL;
+        }
     }
 
     ///////////////

@@ -26,9 +26,7 @@
 
 
 #include "gens.hpp"
-
 #include <assert.h>
-// ?:
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
@@ -46,7 +44,7 @@ size_t GenBase::ranger_cnt() {
 
 void GenBase::range_init() {
     // bzero(ranger, sizeof(ranger[0])* cnt);
-    // memset(ranger, 2, sizeof(ranger[0])*BRANGER_SIZE);
+    // memset(ranger, 2, sizeof(ranger[0])*BRANGER_SIZE); - how could it be slower than nantive constructor? I would expect 'memset' implementation to use pipes
 }
 
 //////////
@@ -54,11 +52,9 @@ void GenBase::range_init() {
 //////////
 
 GenSave::GenSave() {
-    // m_conf = conf;
     m_lossless = true;
     conf.set_info("gen.lossless", m_lossless);
 
-    pagerNs = pagerNn = NULL;
     BZERO(m_stats);
     BZERO(m_last);
     m_N_byte = 0;
@@ -68,33 +64,16 @@ GenSave::GenSave() {
     rcoder.init(filer);
     ranger = new Base2Ranger[ranger_cnt()];
     range_init();
+
+    x_Ns = new XFileSave("gen.Ns");
+    x_Nn = new XFileSave("gen.Nn");
 }
 
 GenSave::~GenSave() {
     rcoder.done();
     DELETE(filer);
-
-    delete pagerNs;
-    delete pagerNn;
-    // fprintf stats
-}
-
-void GenSave::putgapNs(UINT64 gap) {
-    // TODO: Convert to filer, PowerRanger
-
-    rarely_if(not pagerNs)
-        pagerNs = new PagerSave16(conf.open_w("gen.Ns"));
-
-    if (pagerNs->putgap(gap))
-        m_stats.big_gaps ++;
-}
-
-void GenSave::putgapNn(UINT64 gap) {
-    rarely_if(not pagerNn) 
-        pagerNn = new PagerSave16(conf.open_w("gen.Nn")) ;
-
-    if (pagerNn->putgap(gap))
-        m_stats.big_gaps ++;
+    DELETE(x_Ns);
+    DELETE(x_Nn);
 }
 
 inline UCHAR GenSave::normalize_gen(UCHAR gen, UCHAR &qlt) {
@@ -129,12 +108,12 @@ inline UCHAR GenSave::normalize_gen(UCHAR gen, UCHAR &qlt) {
                 croak("switched N_byte: %c", gen);
 
             if (not bad_q) {
-                putgapNs(m_last.count - m_last.Ns_index);
+                x_Ns->put(m_last.count - m_last.Ns_index);
                 m_last.Ns_index = m_last.count ;
             }
         }
         else rarely_if (bad_q) {
-                putgapNn(m_last.count - m_last.Nn_index);
+                x_Nn->put(m_last.count - m_last.Nn_index);
                 m_last.Nn_index = m_last.count;
             }
     }
@@ -160,7 +139,6 @@ inline UCHAR GenSave::normalize_gen(UCHAR gen, UCHAR &qlt) {
 
 void GenSave::save_1(const UCHAR* gen, UCHAR* qlt, size_t size) {
     UINT32 last = 0;
-    // for (size_t i = 0; i < size; i ++) {
     const UCHAR* g = gen; UCHAR* q = qlt;
     for (; g < gen + size ; g++, q++) {
         m_last.count ++;
@@ -217,38 +195,10 @@ void GenSave::save_4(const UCHAR* gen, UCHAR* qlt, size_t size) {
  // load //
  //////////
 
-UINT64 GenLoad::getgapNs() {
-    return
-        pagerNs ?
-        pagerNs -> getgap() :
-        0;
-}
-
-UINT64 GenLoad::getgapNn() {
-    return
-        pagerNn ?
-        pagerNn -> getgap() :
-        0;
-}
-
 GenLoad::GenLoad() {
     BZERO(m_last);
-    // m_conf = conf;
     m_valid = true;
-    pagerNs = pagerNn = NULL;
-    m_lossless = *conf.get_info("gen.lossless") == '0' ? false : true ;
-    if (m_lossless) {
-        FILE* fNs = conf.open_r("gen.Ns", false);
-        if (  fNs  ) {
-            pagerNs = new PagerLoad16( fNs, &m_validNs);
-            m_last.Ns_index = getgapNs();
-        }
-        FILE* fNn = conf.open_r("gen.Nn", false);
-        if (  fNn ) {
-            pagerNn = new PagerLoad16( fNn , &m_validNn);
-            m_last.Nn_index = getgapNn();
-        }
-    }
+    m_lossless = true; // *conf.get_info("gen.lossless") == '0' ? false : true ;
 
     m_N_byte          = conf.get_long("gen.N_byte", 'N') ;
     bool is_solid     = conf.get_bool("usr.solid");
@@ -266,28 +216,30 @@ GenLoad::GenLoad() {
     rcoder.init(filer);
     ranger = new Base2Ranger[ranger_cnt()];
     range_init();
+
+    x_Ns = new XFileLoad("gen.Ns");
+    x_Nn = new XFileLoad("gen.Nn");
+    m_last.Ns_index = x_Ns->get();
+    m_last.Nn_index = x_Nn->get();
 }
 
 GenLoad::~GenLoad() {
     rcoder.done();
     DELETE(filer);
-
-    delete pagerNs;
-    delete pagerNn;
+    DELETE(x_Ns);
+    DELETE(x_Nn);
 }
 
 void GenLoad::normalize_gen(UCHAR & gen, UCHAR qlt) {
     rarely_if (m_last.Nn_index and
-               m_last.Nn_index == m_last.count) {
-        m_last.Nn_index += getgapNn();
-    }
-
+               m_last.Nn_index == m_last.count)
+        m_last.Nn_index += x_Nn->get();
     else rarely_if (qlt == '!')
         gen = m_N_byte;
     else rarely_if (m_last.Ns_index and
                     m_last.Ns_index == m_last.count) {
         gen = m_N_byte;
-        m_last.Ns_index += getgapNs();
+        m_last.Ns_index += x_Ns->get();
    }
 }
 
