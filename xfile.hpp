@@ -45,25 +45,29 @@ protected:
     bool m_valid;
     RCoder rcoder;
     PowerRangerU ranger;
+    PowerRanger  ranger_str;
 };
 
 
 class XFileSave : private XFileBase {
     FilerSave* filer;
+    void init();
     
 public:
     XFileSave(const char* filename);
     ~XFileSave();
     bool put(UINT64 gap);
+    void put_str(const UCHAR* p, size_t len);
 };
 
 class XFileLoad : private XFileBase {
     FilerLoad* filer;
-
+    void init();
 public:
     XFileLoad(const char* filename);
     ~XFileLoad();
     UINT64 get();
+    UCHAR* get_str(UCHAR* p);
 };
 
 

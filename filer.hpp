@@ -77,29 +77,29 @@ public:
         m_buff[m_cur++] = c;
         return m_valid;
     }
-    inline bool putS(UCHAR* str, size_t len) {
+    // inline bool putS(UCHAR* str, size_t len) {
+    // 
+    //     while (len) {
+    //         size_t wlen = len < FILER_PAGE-m_cur ? len : FILER_PAGE-m_cur;
+    //         memcpy(m_buff+m_cur, str, wlen);
+    //         len -= wlen ;
+    //         likely_if (len <= 0)
+    //             return m_valid;
+    //         save_page();
+    //     }
+    //     assert(0);
+    //     return m_valid;
+    // }
 
-        while (len) {
-            size_t wlen = len < FILER_PAGE-m_cur ? len : FILER_PAGE-m_cur;
-            memcpy(m_buff+m_cur, str, wlen);
-            len -= wlen ;
-            likely_if (len <= 0)
-                return m_valid;
-            save_page();
-        }
-        assert(0);
-        return m_valid;
-    }
-
-    inline bool put4(UINT64 val) { return putN(4, val);}
-    inline bool put8(UINT64 val) { return putN(8, val);}
+    // inline bool put4(UINT64 val) { return putN(4, val);}
+    // inline bool put8(UINT64 val) { return putN(8, val);}
 
 private:
-    inline bool putN(int N, UINT64 val) {
-        for (int i = N-1; i>=0 ; i--)
-            put( (val >> (8*i)) & 0xff );
-        return m_valid;
-    };
+    // inline bool putN(int N, UINT64 val) {
+    //     for (int i = N-1; i>=0 ; i--)
+    //         put( (val >> (8*i)) & 0xff );
+    //     return m_valid;
+    // };
     void save_page();
 
     bool   m_valid;

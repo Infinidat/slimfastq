@@ -40,6 +40,8 @@
 #include "config.hpp"
 
 // Globals
+unsigned long long g_record_count = 0;
+
 typedef std::map<std::string, std::string> info_t;
 typedef std::map<std::string, std::string>::iterator info_itr_t;
 typedef std::pair<std::string, std::string> info_pair;

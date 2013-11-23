@@ -30,9 +30,9 @@
 #include "config.hpp"
 #include <stdio.h>
 
-#include "filer.hpp"
-#include "power_ranger.hpp"
-// #include "base2_ranger.hpp"
+// #include "filer.hpp"
+// #include "power_ranger.hpp"
+#include "xfile.hpp"
 
 class RecBase {
 protected: 
@@ -57,6 +57,7 @@ protected:
 
     struct {
         bool   initilized;
+        UINT64 index;
         // long long num[10]; - TODO: cache array of prev atoi and end pointers
     } m_last;
 
@@ -123,6 +124,7 @@ private:
     void put_str(UCHAR i, const UCHAR* p, UINT32 len);
 
     FilerSave* filer;
+    XFileSave* x_file;
 };
 
 class RecLoad : private RecBase {
@@ -144,6 +146,7 @@ private:
     UCHAR*    get_str (UCHAR i, UCHAR* p);
 
     FilerLoad* filer;
+    XFileLoad* x_file;
 };
 
 

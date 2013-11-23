@@ -56,28 +56,46 @@ XFileLoad::~XFileLoad() {
     }
 }
 
+void XFileSave::init () {
+    m_init = true;
+    filer = new FilerSave(conf.open_w(m_filename));
+    assert(filer);
+    rcoder.init(filer);
+}
+
 bool XFileSave::put(UINT64 gap) {
-    rarely_if(not m_init) {
-        m_init = true;
-        filer = new FilerSave(conf.open_w(m_filename));
-        assert(filer);
-        rcoder.init(filer);
-    }
+    rarely_if(not m_init) init();
     return ranger.put_u(&rcoder, gap);
 }
 
 
-UINT64 XFileLoad::get() {
-    rarely_if(not m_init) {
-        m_init = true;
-        FILE* fh = conf.open_r(m_filename, false);
-        if (fh) {
-            filer = new FilerLoad(fh, &m_valid);
-            assert(filer);
-            rcoder.init(filer);
-        }
-        else
-            m_valid = false;
+void XFileLoad::init() {
+    m_init = true;
+    FILE* fh = conf.open_r(m_filename, false);
+    if (fh) {
+        filer = new FilerLoad(fh, &m_valid);
+        assert(filer);
+        rcoder.init(filer);
     }
+    else
+        m_valid = false;
+}
+
+UINT64 XFileLoad::get() {
+    rarely_if(not m_init) init();
     return m_valid ? ranger.get_u(&rcoder) : 0;
+}
+
+
+void XFileSave::put_str(const UCHAR* p, size_t len) {
+    put(len);
+    for (UINT32 j = 0; j < len; j++)
+        ranger_str.put(&rcoder, p[j]);
+}
+
+UCHAR* XFileLoad::get_str(UCHAR* p) {
+    size_t len = get();
+    for (UINT32 j = 0; j < len; j++)
+        p[j] = ranger_str.get(&rcoder);
+    return p + len;
 }

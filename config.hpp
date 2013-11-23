@@ -80,5 +80,6 @@ private:
 };
 
 extern Config conf;
+extern unsigned long long g_record_count;
 
 #endif  // FQ_CONFIG_H

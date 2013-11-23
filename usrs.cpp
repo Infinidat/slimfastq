@@ -50,7 +50,7 @@ UsrSave::UsrSave() {
 
 UsrSave::~UsrSave(){
     DELETE(x_file);
-    fprintf(stderr, "::: USR read %llu fastq records\n", m_rec_total);
+    fprintf(stderr, "::: USR read %llu fastq records\n", g_record_count);
 }
 
 void UsrSave::load_page() {
@@ -87,7 +87,7 @@ void UsrSave::load_page() {
 // }
 
 void UsrSave::update(exception_t type, UCHAR dat) {
-    x_file->put(m_rec_total); // TODO: save gaps
+    x_file->put(g_record_count); // TODO: save gaps
     x_file->put((type << 8) | dat);
 
     switch (type) {
@@ -101,12 +101,12 @@ void UsrSave::update(exception_t type, UCHAR dat) {
 void UsrSave::expect(UCHAR chr) {
     likely_if (m_buff[m_cur++] == chr)
         return;
-    fprintf(stderr, "fastq file: expecting '%c', got '%c' after record %llu+%llu\n", chr, m_buff[m_cur-1], m_rec_total, m_rec_total);
+    fprintf(stderr, "fastq file: expecting '%c', got '%c' after record %llu\n", chr, m_buff[m_cur-1], g_record_count);
     exit (1);
 }
 
 bool UsrSave::mid_rec_msg() const {
-    fprintf(stderr, "fastq file: record seems truncated  after record %llu\n", m_rec_total);
+    fprintf(stderr, "fastq file: record seems truncated  after record %llu\n", g_record_count);
     exit (1);
 }
 
@@ -299,34 +299,34 @@ int UsrSave::encode() {
         switch (conf.level) {
 
         case 1:
-            while( ++ m_rec_total < sanity  and get_record() ) {
+            while( ++ g_record_count < sanity  and get_record() ) {
                 gen.save_1(mp.gen, mp.qlt, m_llen);
                 rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
                 qlt.save_1(mp.qlt, m_llen);
             } break;
         case 2: default:
-            while( ++ m_rec_total < sanity  and get_record() ) {
+            while( ++ g_record_count < sanity  and get_record() ) {
 
                 gen.save_2(mp.gen, mp.qlt, m_llen);
                 rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
                 qlt.save_2(mp.qlt, m_llen);
             } break;
         case 3:
-            while( ++ m_rec_total < sanity  and get_record() ) {
+            while( ++ g_record_count < sanity  and get_record() ) {
 
                 gen.save_3(mp.gen, mp.qlt, m_llen);
                 rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
                 qlt.save_3(mp.qlt, m_llen);
             } break;
         case 4:
-            while( ++ m_rec_total < sanity  and get_record() ) {
+            while( ++ g_record_count < sanity  and get_record() ) {
                 gen.save_4(mp.gen, mp.qlt, m_llen);
                 rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
                 qlt.save_3(mp.qlt, m_llen);
             } break;
         }
     }
-    conf.set_info("num_records", m_rec_total-1);
+    conf.set_info("num_records", g_record_count-1);
     return 0;
 }
 
@@ -369,7 +369,7 @@ UsrLoad::~UsrLoad() {
 
 void UsrLoad::update() {
     int sanity = ET_END;
-    while (m_last.index == m_rec_total) {
+    while (m_last.index == g_record_count) {
 
         if (not sanity--)
             croak("UsrLoad: illegal exception list");
@@ -469,11 +469,11 @@ int UsrLoad::decode() {
     switch (conf.level) {
     case 1:
         while (n_recs --) {
-            m_rec_total++;
+            g_record_count++;
             UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
             UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
 
-            rarely_if (m_rec_total == m_last.index) update();
+            rarely_if (g_record_count == m_last.index) update();
             m_rec_size = rec.load_2(b_rec, p_rec);
             rarely_if (not m_rec_size)
                 croak("premature EOF - %llu records left", n_recs+1);
@@ -484,10 +484,10 @@ int UsrLoad::decode() {
         } break;
     case 2: default:
         while (n_recs --) {
-            m_rec_total++;
+            g_record_count++;
             UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
             UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
-            rarely_if (m_rec_total == m_last.index) update();
+            rarely_if (g_record_count == m_last.index) update();
             m_rec_size = rec.load_2(b_rec, p_rec);
             rarely_if (not m_rec_size)
                 croak("premature EOF - %llu records left", n_recs+1);
@@ -498,10 +498,10 @@ int UsrLoad::decode() {
         } break;
     case 3:
         while (n_recs --) {
-            m_rec_total++;
+            g_record_count++;
             UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
             UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
-            rarely_if (m_rec_total == m_last.index) update();
+            rarely_if (g_record_count == m_last.index) update();
             m_rec_size = rec.load_2(b_rec, p_rec);
             rarely_if (not m_rec_size)
                 croak("premature EOF - %llu records left", n_recs+1);
@@ -512,10 +512,10 @@ int UsrLoad::decode() {
         } break;
     case 4:
         while (n_recs --) {
-            m_rec_total++;
+            g_record_count++;
             UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
             UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
-            rarely_if (m_rec_total == m_last.index) update();
+            rarely_if (g_record_count == m_last.index) update();
             m_rec_size = rec.load_2(b_rec, p_rec);
             rarely_if (not m_rec_size)
                 croak("premature EOF - %llu records left", n_recs+1);

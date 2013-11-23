@@ -50,12 +50,15 @@ RecSave::RecSave() {
     assert(filer);
     rcoder.init(filer);
 
+    x_file = new XFileSave("rec.x");
+
     smap[0].len = smap[1].len = 0;
 }
 
 RecSave::~RecSave() {
     rcoder.done();
     DELETE(filer);
+    DELETE(x_file);
     fprintf(stderr, "::: REC big int: %u | str num/sum: %u/%u | new line num/sum: %u/%u\n",
             stats.big_i, stats.str_n, stats.str_l, stats.new_n, stats.new_l );
 }
@@ -102,10 +105,14 @@ RecLoad::RecLoad() {
     rcoder.init(filer);
 
     BZERO(m_last);
+
+    x_file = new XFileLoad("rec.x");
+    m_last.index = x_file->get();
 }
 
 RecLoad::~RecLoad() {
     rcoder.done();
+    DELETE(x_file);
 }
 
 size_t RecLoad::load_first_line(UCHAR* buf) {
@@ -180,9 +187,12 @@ void RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, 
     if (smap[imap].len != smap[pmap].len or 
         memcmp(smap[imap].str, smap[pmap].str, smap[imap].len)) {
         // Too bad, new spacer
-        put_type(0, ST_LINE);
-        put_str (0, buf, end-buf);
+        // put_type(0, ST_LINE);
+        // put_str (0, buf, end-buf);
         // last_map = 0;
+        x_file->put(g_record_count);
+        x_file->put_str(buf, end-buf);
+
         stats.new_n ++ ;
         stats.new_l += end-buf;
         return;
@@ -195,7 +205,7 @@ void RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, 
             DO_SET(map, i);
 
     // if (last_map == map)
-        put_type(0, ST_SAME);
+        // put_type(0, ST_SAME);
     // else {
     //     put_type(0, ST_SMAP);
         put_num (0, map);
@@ -235,18 +245,22 @@ size_t RecLoad::load_2(UCHAR* buf, const UCHAR* prev) {
         return load_first_line(buf);
     }
 
-    UCHAR type = get_type(0);
-    if (type == ST_LINE) {
+    // if (type == ST_LINE) {
+    rarely_if(m_last.index == g_record_count) {
         // last_map = 0;
-        UCHAR* b = get_str(0, buf);
+        // UCHAR* b = get_str(0, buf);
+        UCHAR* b = x_file->get_str(buf);
+        m_last.index = x_file->get();
         return b - buf;
     }
+
     map_space(prev, 0);
     // if (type == ST_SMAP)
     //     last_map = get_num(0);
     // else
-    rarely_if (type != ST_SAME)
-        croak("REC: bad type value %d", type);
+    // UCHAR type = get_type(0);
+    // rarely_if (type != ST_SAME)
+    //     croak("REC: bad type value %d", type);
 
     UINT64 map = get_num(0);
 
@@ -255,27 +269,27 @@ size_t RecLoad::load_2(UCHAR* buf, const UCHAR* prev) {
         // if (IS_SET(last_map, i)) {
          if (IS_SET(map, i)) {
 
-            type = get_type(i+1);
-            switch ((seg_type)type) {
+             UCHAR type = get_type(i+1);
+             switch ((seg_type)type) {
 
-            case ST_GAP:
-            case ST_PAG: {
-                long long pval;
-                bool expect_num = is_number(prev + smap[0].off[i], smap[0].wln[i], pval);
-                assert(expect_num);
-                long long gap = get_num(i+1);
-                long long val = type == ST_GAP ? pval + gap : pval - gap ;
-                b += sprintf((char*)b, "%lld", val);
-            } break;
+             case ST_GAP:
+             case ST_PAG: {
+                 long long pval;
+                 bool expect_num = is_number(prev + smap[0].off[i], smap[0].wln[i], pval);
+                 assert(expect_num);
+                 long long gap = get_num(i+1);
+                 long long val = type == ST_GAP ? pval + gap : pval - gap ;
+                 b += sprintf((char*)b, "%lld", val);
+             } break;
 
-            case ST_STR: {
-                b = get_str(i+1, b);
-            } break;
+             case ST_STR: {
+                 b = get_str(i+1, b);
+             } break;
 
-            default:
-                croak("REC: bad type value %d", type);
-            }
-        }
+             default:
+                 croak("REC: bad type value %d", type);
+             }
+         }
         else {
             b = (UCHAR*)mempcpy(b, prev + smap[0].off[i], smap[0].wln[i]);
         }
