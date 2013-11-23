@@ -28,7 +28,8 @@
 #include "common.hpp"
 #include "config.hpp"
 #include <stdio.h>
-#include "pager.hpp"
+// #include "pager.hpp"
+#include "xfile.hpp"
 
 enum exception_t {
     ET_LLEN,
@@ -58,7 +59,7 @@ private:
     bool get_record();
     void load_page();
     void update(exception_t type, UCHAR dat);
-    void pager_init();
+    // void pager_init();
 
     inline void load_check();
     inline void expect(UCHAR chr);
@@ -69,19 +70,21 @@ private:
     struct {
         UCHAR solid_pf_gen;
         UCHAR solid_pf_qlt;
-        UINT64 rec_count;
+        // UINT64 rec_count;
     } m_last;
 
     bool   m_valid;
     UCHAR  m_buff[PLL_LAST+10]; 
-    size_t m_page_count, m_rec_total;
+    size_t m_page_count;
+    UINT64 m_rec_total;
     int m_cur, m_end;
     FILE  *m_in;
     bool  first_cycle;
     int   m_llen;
     bool  m_solid;
-    PagerSave16* pager_x;
+    // PagerSave16* pager_x;
     // const Config* m_conf;
+    XFileSave* x_file;
     struct {
         UCHAR* rec;
         UCHAR* rec_end;
@@ -111,10 +114,11 @@ private:
         UCHAR solid_pf_gen;
         UCHAR solid_pf_qlt;
         UINT64 index;
-        UINT64 rec_count;
+        // UINT64 rec_count;
     } m_last;
 
-    size_t m_llen, m_llen_factor, m_rec_total;
+    size_t m_llen, m_llen_factor;
+    UINT64 m_rec_total;
     bool   m_2nd_rec, m_solid;
     UINT32 m_rec_size;
 
@@ -126,8 +130,9 @@ private:
     UCHAR * m_qlt_ptr;
     UCHAR * m_gen_ptr;
 
-    PagerLoad16* pager_x;
-    bool  m_x_valid;
+    // PagerLoad16* pager_x;
+    XFileLoad *x_file;
+    // bool  m_x_valid;
     // const Config* m_conf;
 };
 

@@ -42,15 +42,17 @@ UsrSave::UsrSave() {
     m_cur = m_end = m_rec_total = m_page_count = 0;
     m_llen = 0;
     m_solid = false;
-    pager_x = NULL;
+    // pager_x = NULL;
+    x_file = new XFileSave("usr.x");
 
     m_in   = conf.file_usr();
     load_page();
 }
 
 UsrSave::~UsrSave(){
-    delete pager_x;
-    fprintf(stderr, "::: USR read %lu fastq records\n", m_rec_total);
+    // delete pager_x;
+    DELETE(x_file);
+    fprintf(stderr, "::: USR read %llu fastq records\n", m_rec_total);
 }
 
 void UsrSave::load_page() {
@@ -81,34 +83,37 @@ void UsrSave::load_page() {
         m_page_count++;
 }
 
-void UsrSave::pager_init() {
-    BZERO(m_last);
-    DELETE(pager_x);
-}
+// void UsrSave::pager_init() {
+//     BZERO(m_last);
+//     DELETE(pager_x);
+// }
 
 void UsrSave::update(exception_t type, UCHAR dat) {
-    rarely_if(pager_x == NULL)
-        pager_x = new PagerSave16(conf.open_w("usr.update"));
-    assert(pager_x);
-    pager_x->putgap(m_last.rec_count);
-    pager_x->put16( (type << 8) | dat );
+    x_file->put(m_rec_total); // TODO: save gaps
+    x_file->put((type << 8) | dat);
+
+    // rarely_if(pager_x == NULL)
+    //     pager_x = new PagerSave16(conf.open_w("usr.update"));
+    // assert(pager_x);
+    // pager_x->putgap(m_last.rec_count);
+    // pager_x->put16( (type << 8) | dat );
     switch (type) {
     case ET_LLEN     : m_llen = dat; break;
     case ET_SOLPF_GEN: m_last.solid_pf_gen = dat; break;
     case ET_SOLPF_QLT: m_last.solid_pf_qlt = dat; break;
-    case ET_END: default : assert(0);
+    default : assert(0);
     }
 }
 
 void UsrSave::expect(UCHAR chr) {
     likely_if (m_buff[m_cur++] == chr)
         return;
-    fprintf(stderr, "fastq file: expecting '%c', got '%c' after record %lu+%llu\n", chr, m_buff[m_cur-1], m_rec_total, m_last.rec_count);
+    fprintf(stderr, "fastq file: expecting '%c', got '%c' after record %llu+%llu\n", chr, m_buff[m_cur-1], m_rec_total, m_rec_total);
     exit (1);
 }
 
 bool UsrSave::mid_rec_msg() const {
-    fprintf(stderr, "fastq file: record seems truncated  after record %lu+%llu\n", m_rec_total, m_last.rec_count);
+    fprintf(stderr, "fastq file: record seems truncated  after record %llu\n", m_rec_total);
     exit (1);
 }
 
@@ -233,8 +238,6 @@ bool UsrSave::get_record() {
     likely_if (m_cur < m_end)
         expect('\n');
 
-    m_last.rec_count++;
-
     return true;
 
 #undef  CHECK_OVERFLOW
@@ -303,39 +306,34 @@ int UsrSave::encode() {
         switch (conf.level) {
 
         case 1:
-            while(get_record() and
-                  ++ m_rec_total < sanity ) {
+            while( ++ m_rec_total < sanity  and get_record() ) {
                 gen.save_1(mp.gen, mp.qlt, m_llen);
                 rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
                 qlt.save_1(mp.qlt, m_llen);
             } break;
         case 2: default:
-            while(get_record() and
-                  ++ m_rec_total < sanity ) {
+            while( ++ m_rec_total < sanity  and get_record() ) {
 
                 gen.save_2(mp.gen, mp.qlt, m_llen);
                 rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
                 qlt.save_2(mp.qlt, m_llen);
             } break;
         case 3:
-            while(get_record() and
-                  ++ m_rec_total < sanity ) {
+            while( ++ m_rec_total < sanity  and get_record() ) {
 
                 gen.save_3(mp.gen, mp.qlt, m_llen);
                 rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
                 qlt.save_3(mp.qlt, m_llen);
             } break;
         case 4:
-            while(get_record() and
-                  ++ m_rec_total < sanity ) {
-
+            while( ++ m_rec_total < sanity  and get_record() ) {
                 gen.save_4(mp.gen, mp.qlt, m_llen);
                 rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
                 qlt.save_3(mp.qlt, m_llen);
             } break;
         }
     }
-    conf.set_info("num_records", m_rec_total);
+    conf.set_info("num_records", m_rec_total-1);
     return 0;
 }
 
@@ -356,15 +354,15 @@ UsrLoad::UsrLoad() {
         m_gen[m_llen+2] = '+' ;
     }
 
-    FILE* fh = conf.open_r("usr.update", false);
-    if (  fh  ) {
-        pager_x = new PagerLoad16(fh, &m_x_valid);
-        m_last.index = pager_x->getgap();
-    }
-    else {
-        pager_x = NULL;
-        m_last.index = -1ULL;
-    }
+    // FILE* fh = conf.open_r("usr.update", false);
+    // if (  fh  ) {
+    //     pager_x = new PagerLoad16(fh, &m_x_valid);
+    //     m_last.index = pager_x->getgap();
+    // }
+    // else {
+    //     pager_x = NULL;
+    //     m_last.index = -1ULL;
+    // }
 
     if (m_solid) {
         m_gen_ptr = m_gen;
@@ -376,20 +374,25 @@ UsrLoad::UsrLoad() {
         m_qlt_ptr = m_qlt + 1;
         m_llen_factor = 0;
     }
+
+    x_file = new XFileLoad("usr.x");
+    m_last.index = x_file->get();
+    m_rec_total = 0;
 }
 
 UsrLoad::~UsrLoad() {
-    if (pager_x)
-        delete pager_x;
+    // if (pager_x)
+    //     delete pager_x;
+    DELETE(x_file);
 }
 
 void UsrLoad::update() {
     int sanity = ET_END;
-    while (m_last.index == m_last.rec_count) {
+    while (m_last.index == m_rec_total) {
 
         if (not sanity--)
             croak("UsrLoad: illegal exception list");
-        UINT16 tnd = pager_x->get16();
+        UINT16 tnd = x_file->get(); // pager_x->get16();
         UCHAR type = 0xff & (tnd >> 8);
         UCHAR data = 0xff & (tnd);
         switch (type) {
@@ -406,9 +409,9 @@ void UsrLoad::update() {
             break;
         case ET_END: default: assert(0);
         }
-        m_last.index = pager_x->getgap();
-        if (not m_x_valid)
-            m_last.index = -1ULL;
+        m_last.index = x_file->get(); // pager_x->getgap();
+        // if (not m_x_valid)
+        //     m_last.index = -1ULL;
     }    
 }
 
@@ -433,7 +436,6 @@ void UsrLoad::save() {
     SAVE(m_qlt_ptr, llen);
 #undef  SAVE
 
-    m_last.rec_count ++;
 }
 
 void UsrLoad::putline(UCHAR* buf, UINT32 size) {
@@ -445,32 +447,33 @@ void UsrLoad::putline(UCHAR* buf, UINT32 size) {
 }
 
 UINT64 UsrLoad::set_partition() {
-    if (conf.partition.param < 0) // TODO: also check orig file size
-        croak("illegal partition param %lld", conf.partition.param);
-
-    const UINT64 num = conf.partition.param; // alias
-    bool valid;
-    PagerLoad ppart(conf.open_r("part"), &valid);
-    /* UINT64 version = */ ppart.get(); 
-    for (unsigned i = 0 ; valid ; i++) {
-
-        UINT64 offs = ppart.get();
-        UINT64 nrec = ppart.get();
-        if (valid and
-            (num == i or
-             num == offs)) {
-            conf.set_part_offs(offs);
-            return nrec;
-        }
-    }
-    croak ("can't find matching partition for '%lld'", num);
+    assert(0);
+    // if (conf.partition.param < 0) // TODO: also check orig file size
+    //     croak("illegal partition param %lld", conf.partition.param);
+    // 
+    // const UINT64 num = conf.partition.param; // alias
+    // bool valid;
+    // PagerLoad ppart(conf.open_r("part"), &valid);
+    // /* UINT64 version = */ ppart.get(); 
+    // for (unsigned i = 0 ; valid ; i++) {
+    // 
+    //     UINT64 offs = ppart.get();
+    //     UINT64 nrec = ppart.get();
+    //     if (valid and
+    //         (num == i or
+    //          num == offs)) {
+    //         conf.set_part_offs(offs);
+    //         return nrec;
+    //     }
+    // }
+    // croak ("can't find matching partition for '%lld'", num);
 }
 
 int UsrLoad::decode() {
 
     size_t n_recs =
-        conf.partition.size ?
-        set_partition() :
+        // conf.partition.size ?
+        // set_partition() :
         conf.get_long("num_records");
 
     if ( ! n_recs)
@@ -487,10 +490,11 @@ int UsrLoad::decode() {
     switch (conf.level) {
     case 1:
         while (n_recs --) {
+            m_rec_total++;
             UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
             UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
 
-            rarely_if (m_last.rec_count == m_last.index) update();
+            rarely_if (m_rec_total == m_last.index) update();
             m_rec_size = rec.load_2(b_rec, p_rec);
             rarely_if (not m_rec_size)
                 croak("premature EOF - %llu records left", n_recs+1);
@@ -501,9 +505,10 @@ int UsrLoad::decode() {
         } break;
     case 2: default:
         while (n_recs --) {
+            m_rec_total++;
             UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
             UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
-            rarely_if (m_last.rec_count == m_last.index) update();
+            rarely_if (m_rec_total == m_last.index) update();
             m_rec_size = rec.load_2(b_rec, p_rec);
             rarely_if (not m_rec_size)
                 croak("premature EOF - %llu records left", n_recs+1);
@@ -514,9 +519,10 @@ int UsrLoad::decode() {
         } break;
     case 3:
         while (n_recs --) {
+            m_rec_total++;
             UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
             UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
-            rarely_if (m_last.rec_count == m_last.index) update();
+            rarely_if (m_rec_total == m_last.index) update();
             m_rec_size = rec.load_2(b_rec, p_rec);
             rarely_if (not m_rec_size)
                 croak("premature EOF - %llu records left", n_recs+1);
@@ -527,9 +533,10 @@ int UsrLoad::decode() {
         } break;
     case 4:
         while (n_recs --) {
+            m_rec_total++;
             UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
             UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
-            rarely_if (m_last.rec_count == m_last.index) update();
+            rarely_if (m_rec_total == m_last.index) update();
             m_rec_size = rec.load_2(b_rec, p_rec);
             rarely_if (not m_rec_size)
                 croak("premature EOF - %llu records left", n_recs+1);
