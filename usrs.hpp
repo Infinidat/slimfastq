@@ -28,7 +28,6 @@
 #include "common.hpp"
 #include "config.hpp"
 #include <stdio.h>
-// #include "pager.hpp"
 #include "xfile.hpp"
 
 enum exception_t {
@@ -55,11 +54,9 @@ public:
     int encode();
 
 private:
-    // bool get_record(UCHAR** rec, UCHAR** rec_end, UCHAR** gen, UCHAR** qlt);
     bool get_record();
     void load_page();
     void update(exception_t type, UCHAR dat);
-    // void pager_init();
 
     inline void load_check();
     inline void expect(UCHAR chr);
@@ -82,8 +79,6 @@ private:
     bool  first_cycle;
     int   m_llen;
     bool  m_solid;
-    // PagerSave16* pager_x;
-    // const Config* m_conf;
     XFileSave* x_file;
     struct {
         UCHAR* rec;
@@ -130,10 +125,7 @@ private:
     UCHAR * m_qlt_ptr;
     UCHAR * m_gen_ptr;
 
-    // PagerLoad16* pager_x;
     XFileLoad *x_file;
-    // bool  m_x_valid;
-    // const Config* m_conf;
 };
 
 #endif

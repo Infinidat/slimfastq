@@ -42,7 +42,6 @@ UsrSave::UsrSave() {
     m_cur = m_end = m_rec_total = m_page_count = 0;
     m_llen = 0;
     m_solid = false;
-    // pager_x = NULL;
     x_file = new XFileSave("usr.x");
 
     m_in   = conf.file_usr();
@@ -50,7 +49,6 @@ UsrSave::UsrSave() {
 }
 
 UsrSave::~UsrSave(){
-    // delete pager_x;
     DELETE(x_file);
     fprintf(stderr, "::: USR read %llu fastq records\n", m_rec_total);
 }
@@ -92,11 +90,6 @@ void UsrSave::update(exception_t type, UCHAR dat) {
     x_file->put(m_rec_total); // TODO: save gaps
     x_file->put((type << 8) | dat);
 
-    // rarely_if(pager_x == NULL)
-    //     pager_x = new PagerSave16(conf.open_w("usr.update"));
-    // assert(pager_x);
-    // pager_x->putgap(m_last.rec_count);
-    // pager_x->put16( (type << 8) | dat );
     switch (type) {
     case ET_LLEN     : m_llen = dat; break;
     case ET_SOLPF_GEN: m_last.solid_pf_gen = dat; break;
@@ -354,16 +347,6 @@ UsrLoad::UsrLoad() {
         m_gen[m_llen+2] = '+' ;
     }
 
-    // FILE* fh = conf.open_r("usr.update", false);
-    // if (  fh  ) {
-    //     pager_x = new PagerLoad16(fh, &m_x_valid);
-    //     m_last.index = pager_x->getgap();
-    // }
-    // else {
-    //     pager_x = NULL;
-    //     m_last.index = -1ULL;
-    // }
-
     if (m_solid) {
         m_gen_ptr = m_gen;
         m_qlt_ptr = m_qlt;
@@ -381,8 +364,6 @@ UsrLoad::UsrLoad() {
 }
 
 UsrLoad::~UsrLoad() {
-    // if (pager_x)
-    //     delete pager_x;
     DELETE(x_file);
 }
 
@@ -392,7 +373,7 @@ void UsrLoad::update() {
 
         if (not sanity--)
             croak("UsrLoad: illegal exception list");
-        UINT16 tnd = x_file->get(); // pager_x->get16();
+        UINT16 tnd = x_file->get(); 
         UCHAR type = 0xff & (tnd >> 8);
         UCHAR data = 0xff & (tnd);
         switch (type) {
@@ -409,9 +390,7 @@ void UsrLoad::update() {
             break;
         case ET_END: default: assert(0);
         }
-        m_last.index = x_file->get(); // pager_x->getgap();
-        // if (not m_x_valid)
-        //     m_last.index = -1ULL;
+        m_last.index = x_file->get(); 
     }    
 }
 
