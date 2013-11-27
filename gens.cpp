@@ -59,7 +59,7 @@ GenSave::GenSave() {
     BZERO(m_last);
     m_N_byte = 0;
 
-    filer = new FilerSave(conf.open_w("gen"));
+    filer = new FilerSave("gen");
     assert(filer);
     rcoder.init(filer);
     ranger = new Base2Ranger[ranger_cnt()];
@@ -100,7 +100,7 @@ inline UCHAR GenSave::normalize_gen(UCHAR gen, UCHAR &qlt) {
                 m_N_byte = gen;
                 if ('.' == gen) {
                     conf.set_info("gen.N_byte", gen);
-                    conf.save_info();
+                    // conf.save_info();
                 }
             }
             // TODO: eliminate this temp sanity
@@ -211,7 +211,7 @@ GenLoad::GenLoad() {
         "acgt" :
         "ACGT" ;
 
-    filer = new FilerLoad(conf.open_r("gen"), &m_valid);
+    filer = new FilerLoad("gen", &m_valid);
     assert(filer);
     rcoder.init(filer);
     ranger = new Base2Ranger[ranger_cnt()];

@@ -265,8 +265,8 @@ int UsrSave::encode() {
     GenSave gen;
     QltSave qlt;
 
-    if (conf.partition.size) {
-        assert(0);              // TODO
+    // if (conf.partition.size) {
+    //     assert(0);              // TODO
         // // TODO: unite cases
         // size_t recs_l = estimate_rec_limit();
         // m_conf->set_info("partition.size", m_conf->partition.size);
@@ -293,8 +293,8 @@ int UsrSave::encode() {
         //     ppart.put(offs);
         //     ppart.put(m_last.rec_count);
         // }
-    }
-    else {
+    // }
+    // else {
 
         switch (conf.level) {
 
@@ -325,7 +325,7 @@ int UsrSave::encode() {
                 qlt.save_3(mp.qlt, m_llen);
             } break;
         }
-    }
+    // }
     conf.set_info("num_records", g_record_count-1);
     return 0;
 }

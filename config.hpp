@@ -45,21 +45,21 @@ public:
     ~Config();
     void init (int argc, char **argv, int ver);
     FILE * file_usr() const { return reinterpret_cast<FILE*>(f_usr);}
-    FILE* open_w(const char* suffix) const;
-    FILE* open_r(const char* suffix, bool must=true) const;
+    // FILE* open_w(const char* suffix) const;
+    // FILE* open_r(const char* suffix, bool must=true) const;
     int   version, level;
     bool  encode, profiling;
-    struct {
-        long long size; // NOTE: this means different things during decode, encode
-        long long param;
-    } partition;
+    // struct {
+    //     long long size; // NOTE: this means different things during decode, encode
+    //     long long param;
+    // } partition;
 
 
     void load_info() const;
-    void save_info() const;
+    // void save_info() const;
     void set_info(const char* key, const char* val) const;
     void set_info(const char* key, long long num) const;
-    void set_part_offs(unsigned long long offs) const;
+    // void set_part_offs(unsigned long long offs) const;
     //    bool has_info(const char* key) const ;
     const char* get_info(const char* key) const;
     bool        has_info(const char* key) const;
@@ -68,15 +68,15 @@ public:
 
 private:
     void usage() const;
-    const char* get_filename(const char* suffix) const;
+    // const char* get_filename(const char* suffix) const;
     // void set_partition(const char* str);
-    mutable bool m_saved;
+    // mutable bool m_saved;
 
     FILE  *f_usr;
     const char* m_info_filename;
     const char* m_file;
     const char* m_wr_flags;
-    mutable char m_part[100];
+    // mutable char m_part[100];
 };
 
 extern Config conf;

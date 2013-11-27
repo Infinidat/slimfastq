@@ -46,7 +46,7 @@ RecSave::RecSave() {
     BZERO(stats);
     range_init();
 
-    filer = new FilerSave(conf.open_w("rec"));
+    filer = new FilerSave("rec");
     assert(filer);
     rcoder.init(filer);
 
@@ -75,7 +75,7 @@ void RecSave::save_first_line(const UCHAR* buf, const UCHAR* end) {
     UCHAR first[MAX_LLINE];
     sncpy(first, buf, end-buf);
     conf.set_info("rec.first", (const char*)first);
-    conf.save_info();
+    // conf.save_info();
 
     m_last.initilized = true;
 }
@@ -100,7 +100,7 @@ RecLoad::RecLoad() {
     m_valid = true;
     range_init();
 
-    filer = new FilerLoad(conf.open_r("rec"), &m_valid);
+    filer = new FilerLoad("rec", &m_valid);
     assert(filer);
     rcoder.init(filer);
 

@@ -58,7 +58,7 @@ XFileLoad::~XFileLoad() {
 
 void XFileSave::init () {
     m_init = true;
-    filer = new FilerSave(conf.open_w(m_filename));
+    filer = new FilerSave(m_filename);
     assert(filer);
     rcoder.init(filer);
 }
@@ -70,15 +70,12 @@ bool XFileSave::put(UINT64 gap) {
 
 
 void XFileLoad::init() {
-    m_init = true;
-    FILE* fh = conf.open_r(m_filename, false);
-    if (fh) {
-        filer = new FilerLoad(fh, &m_valid);
-        assert(filer);
+    // m_init = true;
+    // FILE* fh = conf.open_r(m_filename, false);
+    filer = new FilerLoad(m_filename, &m_valid);
+    assert(filer);
+    if (m_valid)
         rcoder.init(filer);
-    }
-    else
-        m_valid = false;
 }
 
 UINT64 XFileLoad::get() {

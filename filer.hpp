@@ -33,9 +33,50 @@
 
 #define FILER_PAGE 0x2000
 
-class FilerLoad {
+class FilerBase {
+protected:
+    enum {
+        maxi_nodes = FILER_PAGE / sizeof(UINT32) - 1,
+        size_nodes,
+    };
+
+    UINT64 m_page_count; 
+    bool   m_valid;
+    UCHAR  m_buff[ FILER_PAGE+10 ]; 
+    size_t m_cur, m_count;
+    bool  *m_valid_ptr;
+    UINT32 m_node[ size_nodes ];
+    uint   m_node_i;
+    UINT32 m_node_p;
+    uint   m_onef_i;
+
+};
+
+class FilerSave : private FilerBase {
 public:
-    FilerLoad(FILE* fh, bool *valid_ptr);
+    static void init(FILE* in);
+    static void finit();
+
+    FilerSave(const char* name, bool file_zero=false);
+    ~FilerSave();
+    bool is_valid() const ;
+    inline bool put(UCHAR c) {
+        rarely_if(m_cur >= FILER_PAGE)
+            save_page();
+        m_buff[m_cur++] = c;
+        return m_valid;
+    }
+
+private:
+    void save_node(UINT32 next_node);
+    void save_page();
+    uint findex;
+};
+
+class FilerLoad : private FilerBase {
+public:
+    static void init(FILE* in);
+    FilerLoad(const char* name, bool *valid_ptr, bool file_zero=false);
     ~FilerLoad();
 
     bool is_valid() const ;
@@ -46,68 +87,8 @@ public:
         return m_valid ? m_buff[m_cur++] : 0;
     }
 
-    inline UINT64 get4() { return getN(4);}
-    inline UINT64 get8() { return getN(8);}
-
 private:
-    inline UINT64 getN(int N) {
-        UINT64 val = 0;
-        for (int i = N-1; i>=0; i--)
-            val |= (UINT64(get()) << (8*i));
-        return val;
-    }
     void load_page();
-
-    bool   m_valid;
-    UCHAR  m_buff[ FILER_PAGE+10 ]; 
-    size_t m_cur, m_count;
-    FILE  *m_in;
-    bool  *m_valid_ptr;
-    UINT64 m_page_count; 
 };
-
-class FilerSave {
-public:
-    FilerSave(FILE* fh);
-    ~FilerSave();
-    bool is_valid() const ;
-    inline bool put(UCHAR c) {
-        rarely_if(m_cur >= FILER_PAGE)
-            save_page();
-        m_buff[m_cur++] = c;
-        return m_valid;
-    }
-    // inline bool putS(UCHAR* str, size_t len) {
-    // 
-    //     while (len) {
-    //         size_t wlen = len < FILER_PAGE-m_cur ? len : FILER_PAGE-m_cur;
-    //         memcpy(m_buff+m_cur, str, wlen);
-    //         len -= wlen ;
-    //         likely_if (len <= 0)
-    //             return m_valid;
-    //         save_page();
-    //     }
-    //     assert(0);
-    //     return m_valid;
-    // }
-
-    // inline bool put4(UINT64 val) { return putN(4, val);}
-    // inline bool put8(UINT64 val) { return putN(8, val);}
-
-private:
-    // inline bool putN(int N, UINT64 val) {
-    //     for (int i = N-1; i>=0 ; i--)
-    //         put( (val >> (8*i)) & 0xff );
-    //     return m_valid;
-    // };
-    void save_page();
-
-    bool   m_valid;
-    UCHAR  m_buff[ FILER_PAGE+10 ]; 
-    size_t m_cur;
-    FILE  *m_out;
-    UINT64 m_page_count; 
-};
-
 
 #endif  // COMMON_FILER_H

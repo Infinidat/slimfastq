@@ -78,34 +78,34 @@ void Config::load_info() const {
     is_f.close();
 }
 
-void Config::save_info() const {
-    FILE* f = fopen(m_info_filename, "w");
-    if (not f)
-        croak(m_info_filename);
-
-    for (info_itr_t
-         itr  = info_map.begin();
-         itr != info_map.end();
-         itr ++)
-        fprintf(f, "%s=%s\n", itr->first.c_str(), itr->second.c_str());
-
-    fclose(f);
-    /*
-    std::ofstream os_f(m_info_filename);
-    if (not os_f.is_open())
-        croak(m_info_filename);
-
-    for (info_itr_t
-         itr  = info_map.begin();
-         itr != info_map.end();
-         itr ++)
-        os_f << itr->first << "=" << itr->second << "\n";
-
-    os_f.close();
-    */
-
-    m_saved = true;
-}
+// void Config::save_info() const {
+//     FILE* f = fopen(m_info_filename, "w");
+//     if (not f)
+//         croak(m_info_filename);
+// 
+//     for (info_itr_t
+//          itr  = info_map.begin();
+//          itr != info_map.end();
+//          itr ++)
+//         fprintf(f, "%s=%s\n", itr->first.c_str(), itr->second.c_str());
+// 
+//     fclose(f);
+//     /*
+//     std::ofstream os_f(m_info_filename);
+//     if (not os_f.is_open())
+//         croak(m_info_filename);
+// 
+//     for (info_itr_t
+//          itr  = info_map.begin();
+//          itr != info_map.end();
+//          itr ++)
+//         os_f << itr->first << "=" << itr->second << "\n";
+// 
+//     os_f.close();
+//     */
+// 
+//     m_saved = true;
+// }
 
 bool Config::has_info(const char* key) const {
     const char* something = info_map[key].c_str();
@@ -141,8 +141,8 @@ void Config::set_info(const char* key, const char* val) const {
             
 
     info_map.insert(info_pair(key, val));
-    if (m_saved) // not during startup?
-        save_info();
+    // if (m_saved) // not during startup?
+    //     save_info();
 }
 
 void Config::set_info(const char* key, long long num) const {
@@ -166,12 +166,13 @@ Usage: \n\
  3: best compression, use about 250M \n\
  4: compress even more, but very costly (competition mode?) \n\
 \n\
-(DISABLED -TBD)-s size          : set partition to <size> (megabyte units) \n\
-(DISABLED -TBD)-p partition     : only open this partition (-d implied) \n\
-\n\
 -P               : profile mode (stop after ) \n\
 -v / -h          : internal version / this message \n\
 "); }                      // exit ?
+
+// (DISABLED -TBD)-s size          : set partition to <size> (megabyte units) \n\ -
+// (DISABLED -TBD)-p partition     : only open this partition (-d implied) \n\    -
+// \n\ -
 
 static void check_fh(FILE* f, std::string name, bool read=false) {
     if (f) return;
@@ -220,12 +221,12 @@ Config::Config(){
 
     version = 0;
 
-    m_part[0] = 0;
+    // m_part[0] = 0;
     encode = true;
     profiling = false;
     level = 2;
-    m_saved = false;
-    bzero(&partition, sizeof(partition));
+    // m_saved = false;
+    // bzero(&partition, sizeof(partition));
 }
 
 static int range_level(int level) {
@@ -247,7 +248,8 @@ void Config::init(int argc, char **argv, int ver) {
     bool overwrite = false;
 
     // TODO? long options 
-    const char* short_opt = "POvhd 1234 u:f:s:p:l:"; 
+    // const char* short_opt = "POvhd 1234 u:f:s:p:l:"; 
+    const char* short_opt = "POvhd 1234 u:f:l:"; 
     for ( int opt = getopt(argc, argv, short_opt);
           opt != -1;
           opt     = getopt(argc, argv, short_opt))
@@ -255,14 +257,14 @@ void Config::init(int argc, char **argv, int ver) {
         case 'u': usr = optarg ; break;
         case 'f': fil = optarg ; break;
 
-        case 's':
-            partition.size = strtoll(optarg, 0, 0) * (1<<20);
-            break;
-        case 'p': 
-            encode = false ;
-            partition.size = 1;
-            partition.param = strtoll(optarg, 0, (strlen(optarg) == 10 and optarg[0] == '0') ? 16 : 0 );
-            break;
+        // case 's':
+        //     partition.size = strtoll(optarg, 0, 0) * (1<<20);
+        //     break;
+        // case 'p': 
+        //     encode = false ;
+        //     partition.size = 1;
+        //     partition.param = strtoll(optarg, 0, (strlen(optarg) == 10 and optarg[0] == '0') ? 16 : 0 );
+        //     break;
             
         case 'l': level = strtoll(optarg, 0, 0);  break;
         case '1': case '2' : case '3': case '4':
@@ -312,37 +314,37 @@ void Config::init(int argc, char **argv, int ver) {
     }
 }
 
-const char* Config::get_filename(const char* suffix) const {
-    std::string str = m_file;
-    str += m_part;
-    str += ".";
-    str += suffix ;
-    if (encode)
-        filename_stream << str << '\n';
-    return strdup(str.c_str());
-}
+// const char* Config::get_filename(const char* suffix) const {
+//     std::string str = m_file;
+//     str += m_part;
+//     str += ".";
+//     str += suffix ;
+//     if (encode)
+//         filename_stream << str << '\n';
+//     return strdup(str.c_str());
+// }
 
-FILE* Config::open_w(const char* suffix) const {
-    const char* name = get_filename(suffix);
-    FILE* fh = fopen(name, m_wr_flags);
-    check_fh(fh, name);
+// FILE* Config::open_w(const char* suffix) const {
+//     const char* name = get_filename(suffix);
+//     FILE* fh = fopen(name, m_wr_flags);
+//     check_fh(fh, name);
+// 
+//     delete[] name;
+//     return fh;
+// }
+// 
+// FILE* Config::open_r(const char* suffix, bool must) const {
+//     const char* name = get_filename(suffix);
+//     FILE* fh = fopen(name, "rb");
+//     if (must) check_fh(fh, name, true);
+// 
+//     delete[] name ;
+//     return fh;
+// }
 
-    delete[] name;
-    return fh;
-}
-
-FILE* Config::open_r(const char* suffix, bool must) const {
-    const char* name = get_filename(suffix);
-    FILE* fh = fopen(name, "rb");
-    if (must) check_fh(fh, name, true);
-
-    delete[] name ;
-    return fh;
-}
-
-void Config::set_part_offs(unsigned long long offs) const {
-    sprintf(m_part, ".%010llx", offs);
-}
+// void Config::set_part_offs(unsigned long long offs) const {
+//     sprintf(m_part, ".%010llx", offs);
+// }
 
 Config::~Config() {
     // save_info();

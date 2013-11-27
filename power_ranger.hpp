@@ -135,7 +135,7 @@ public:
 
 class PowerRangerU {
 
-    PowerRanger p[15];
+    PowerRanger p[14];
 
 public:
     bool put_u(RCoder *rc, UINT64 num) {
@@ -158,7 +158,7 @@ public:
     }
     {
         p[1].put(rc, 0xff);
-        for (int shift=0, i=8; shift < 64; shift+=8, i++)
+        for (int shift=0, i=6; shift < 64; shift+=8, i++)
             p[i].put(rc, 0xff & (num>>shift));
         return true;
     }
@@ -183,7 +183,7 @@ UINT64 get_u(RCoder *rc) {
         }
         else {
             num = 0;
-            for (int shift=0, i=8; shift < 64; shift+=8, i++) {
+            for (int shift=0, i=6; shift < 64; shift+=8, i++) {
                 UINT64 c = p[i].get(rc);
                 num  |= (c<<shift);
             }

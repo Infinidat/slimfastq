@@ -1,7 +1,7 @@
 
 
 WALL      = -Wall -Werror
-FLAGS     = $(WALL) -g -DDO_DEBUG  -std=c++0x
+FLAGS     = $(WALL) -g -DDO_DEBUG -D_FILE_OFFSET_BITS=64 -std=c++0x
 # PROF_DIR  = PROF <=  GCC Bug 47793: relative path turns into absolute
 PROF_DIR  =
 FLAGS_FAST= -O3 -fomit-frame-pointer -fstrict-aliasing -ffast-math -msse3 -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE

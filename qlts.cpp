@@ -43,7 +43,7 @@ void QltBase::range_init() {
 }
 
 QltSave::QltSave()  {
-    filer  = new FilerSave(conf.open_w("qlt"));
+    filer  = new FilerSave("qlt");
     ranger = new Log64Ranger[ranger_cnt()];
     assert(filer);
     assert(ranger);
@@ -131,7 +131,7 @@ void QltSave::save_3(const UCHAR* buf, size_t size) {
 //////////
 
 QltLoad::QltLoad() {
-    filer = new FilerLoad(conf.open_r("qlt"), &m_valid);
+    filer = new FilerLoad("qlt", &m_valid);
     ranger = new Log64Ranger[ranger_cnt()];
 
     rcoder.init(filer);
