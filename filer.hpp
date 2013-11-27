@@ -50,6 +50,7 @@ protected:
     UINT32 m_node_p;
     uint   m_onef_i;
 
+    FilerBase();
 };
 
 class FilerSave : private FilerBase {
@@ -57,7 +58,8 @@ public:
     static void init(FILE* in);
     static void finit();
 
-    FilerSave(const char* name, bool file_zero=false);
+    FilerSave(const char* name);
+    FilerSave(int forty_two);
     ~FilerSave();
     bool is_valid() const ;
     inline bool put(UCHAR c) {
@@ -76,7 +78,8 @@ private:
 class FilerLoad : private FilerBase {
 public:
     static void init(FILE* in);
-    FilerLoad(const char* name, bool *valid_ptr, bool file_zero=false);
+    FilerLoad(const char* name, bool *valid_ptr);
+    FilerLoad(int forty_two, bool* valid_ptr);
     ~FilerLoad();
 
     bool is_valid() const ;

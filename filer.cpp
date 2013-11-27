@@ -94,11 +94,11 @@ struct OneFile {
     }
     void init_read(FILE* in) {
         next_findex = 1;
-        num_pages = 2;
         m_in  = in;
         m_out = NULL;
         read_page(1, (UCHAR*)files);
-        num_pages = files[0].node;
+        num_pages = files[0].first;
+        files[0].first = 0;
     }
     void init_write(FILE* out) {
         files[0].name = 0;
@@ -110,7 +110,7 @@ struct OneFile {
     }
     void finit_write() {
         if (m_out) {
-            files[0].node = num_pages;
+            files[0].first = num_pages;
             write_page(1, (UCHAR*)files);
             fclose(m_out);
             m_out = NULL;
@@ -140,20 +140,32 @@ static UINT64 name2u(const char* name) {
     return uname;
 }
 
-FilerSave::FilerSave(const char* name, bool file_zero) {
+FilerBase::FilerBase() {
+    m_node_i = 0;
+    m_node_p = 0;
+
+    m_valid = true;
+    m_cur = m_count = 0;
+    m_page_count = 0;
+}
+
+FilerSave::FilerSave(const char* name) {
 
     uint fi = m_onef_i = onef.get_findex();
     onef.files[fi].name = name2u(name);
     onef.files[fi].size = 0;
     onef.files[fi].node = 0;
-    onef.files[fi].first = file_zero ? 0 : onef.allocate();
+    onef.files[fi].first = onef.allocate();
+}
 
-    m_node_i = 0;
-    m_node_p = 0;
+FilerSave::FilerSave(int forty_two) {
+    assert(forty_two == 42);
 
-    m_valid = true;
-    m_cur = 0;
-    m_page_count = 0;
+    onef.files[0].name = 0;
+    onef.files[0].size = 0;
+    onef.files[0].node = 0;
+    onef.files[0].first = 0;
+    m_onef_i = 0;
 }
 
 FilerSave::~FilerSave() {
@@ -204,31 +216,28 @@ void FilerSave::save_page() {
 
 // Load
 
-FilerLoad::FilerLoad(const char* name, bool* valid_ptr, bool file_zero) {
+FilerLoad::FilerLoad(const char* name, bool* valid_ptr) {
 
-    if (file_zero)
-        m_onef_i = 0;
-    else {
-        m_onef_i = onef.get_findex(name2u(name));
-        if (not m_onef_i) {
-            *valid_ptr = m_valid = false;
-            return;
-        }
+    m_onef_i = onef.get_findex(name2u(name));
+    if (not m_onef_i) {
+        *valid_ptr = m_valid = false;
+        return;
     }
-
-    m_node_i = 0;
-    m_node_p = 0;
-
     m_valid_ptr = valid_ptr;
     * valid_ptr = m_valid = true ;
-    m_page_count = 0;
-    m_cur = m_count = 0;                // happy valgrind 
+    load_page();
+}
 
+FilerLoad::FilerLoad(int forty_two, bool* valid_ptr) {
+    m_onef_i = 0;
+    m_valid_ptr = valid_ptr;
+    * valid_ptr = m_valid = true ;
     load_page();
 }
 
 FilerLoad::~FilerLoad() {
-    *m_valid_ptr = false;
+    if ( m_valid_ptr )
+        *m_valid_ptr = false;
 }
 
 bool FilerLoad::is_valid() const { return m_valid ; }

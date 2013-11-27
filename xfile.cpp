@@ -70,7 +70,7 @@ bool XFileSave::put(UINT64 gap) {
 
 
 void XFileLoad::init() {
-    // m_init = true;
+    m_init = true;
     // FILE* fh = conf.open_r(m_filename, false);
     filer = new FilerLoad(m_filename, &m_valid);
     assert(filer);

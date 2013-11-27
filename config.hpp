@@ -26,8 +26,9 @@
 #define FQ_CONFIG_H
 
 #include <stdio.h>
-class Config;
+#include "filer.hpp"
 
+class Config;
 
 // NOTE: soon there would be new machines, providing longer lines. 
 #define MAX_REC_LEN  1000
@@ -73,10 +74,11 @@ private:
     // mutable bool m_saved;
 
     FILE  *f_usr;
-    const char* m_info_filename;
+    // const char* m_info_filename;
     const char* m_file;
-    const char* m_wr_flags;
+    // const char* m_wr_flags;
     // mutable char m_part[100];
+    FilerSave* m_info_filer;
 };
 
 extern Config conf;

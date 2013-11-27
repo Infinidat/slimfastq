@@ -44,7 +44,7 @@ typedef unsigned short     UINT16;
 typedef unsigned int       UINT32;
 typedef unsigned long long UINT64;
 
-#define BZERO(X) bzero(&X, sizeof(X))
+#define BZERO(X) bzero(&(X), sizeof(X))
 #define DELETE(X) do {if (X) delete X; X = NULL; } while (0)
 
 #define IS_CLR(exmap, offset) (0 == (exmap&(1ULL<<offset)))

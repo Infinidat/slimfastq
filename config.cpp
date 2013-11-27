@@ -46,7 +46,7 @@ typedef std::map<std::string, std::string> info_t;
 typedef std::map<std::string, std::string>::iterator info_itr_t;
 typedef std::pair<std::string, std::string> info_pair;
 info_t info_map;
-std::ofstream filename_stream;
+// std::ofstream filename_stream;
 
 void croak(const char* msg) {
     if (errno) 
@@ -64,18 +64,37 @@ void croak(const char* fmt, long long num) {
 
 void Config::load_info() const {
     // FILE* f = fopen(m_info_filename, "r");
-    std::ifstream is_f (m_info_filename);
-    if (not is_f.is_open())
-        croak(m_info_filename);
+    // std::ifstream is_f (m_info_filename);
+    // if (not is_f.is_open())
+    //     croak(m_info_filename);
 
     info_map.clear();
-    std::string line;
-    while(std::getline(is_f, line)) {
-        int pos = line.find_first_of('=');
-        if (pos > 0)
-            info_map.insert(info_pair (line.substr(0, pos), line.substr(pos+1)));
+    char line[0x200];
+    bool valid;
+    FilerLoad filer(42, &valid);
+    while (valid) {
+        for (int i = 0; i < 0x200; i++) {
+            line[i] = filer.get();
+            if (not valid or
+                line[i] == '\n')
+                line[i] = 0;
+            if (line[i] == 0)
+                break;
+        }
+        char* pos = index(line, '=');
+        if (pos) {
+            *pos = 0;
+            info_map.insert(info_pair (line, pos+1));
+        }
     }
-    is_f.close();
+
+    // std::string line;
+    // while(std::getline(is_f, line)) {
+    //     int pos = line.find_first_of('=');
+    //     if (pos > 0)
+    //         info_map.insert(info_pair (line.substr(0, pos), line.substr(pos+1)));
+    // }
+    // is_f.close();
 }
 
 // void Config::save_info() const {
@@ -115,7 +134,7 @@ bool Config::has_info(const char* key) const {
 const char* Config::get_info(const char* key) const {
     const char* something = info_map[key].c_str();
     if (0 == strlen(something)) {
-        fprintf(stderr, "%s: no value for '%s'\n", m_info_filename, key);
+        // fprintf(stderr, "%s: no value for '%s'\n", m_info_filename, key);
         exit(1);
     }
     return something;
@@ -131,15 +150,21 @@ long long Config::get_long(const char* key, long long val) const {
     return strlen(something) ? atoll(something) : val;
 }
 
-void Config::set_info(const char* key, const char* val) const {
-    for (int i = 0; val[i]; i++)
-        if (i > 0x100) {
-            // bug finder
-            fprintf(stderr, "bad set_info: %s\n", key);
-            exit(1);
-        }
-            
+void put_str(FilerSave* filer, const char* str) {
+    int sanity = 0x200;
+    while (*str and --sanity)
+        filer->put(*str++);
+    if (not sanity)
+        croak("oversize string value");
+}
 
+void Config::set_info(const char* key, const char* val) const {
+    
+    put_str(m_info_filer, key);
+    m_info_filer->put('=');
+    put_str(m_info_filer, val);
+    m_info_filer->put('\n');
+    
     info_map.insert(info_pair(key, val));
     // if (m_saved) // not during startup?
     //     save_info();
@@ -154,8 +179,8 @@ void Config::set_info(const char* key, long long num) const {
 void Config::usage() const {
     printf("\
 Usage: \n\
--u usr-filename  : (default: stdin)\n\
--f comp-basename : reuired - basename for files (TODO: onefile)\n\
+-u  usr-filename : (default: stdin)\n\
+-f comp-filename : reuired - compressed\n\
 -d               : decode (instead of encoding) \n\
 -O               : overwrite existing files\n\
 -l level         : compression level 1 to 4 (default is 2 ) \n\
@@ -187,10 +212,10 @@ static void check_op(int something, char chr) {
     exit(1);
 }
 
-const char* withsuffix(const char* name, const char* suffix) {
-    std::string str = name;
-    return strdup((str + suffix).c_str());
-}
+// const char* withsuffix(const char* name, const char* suffix) {
+//     std::string str = name;
+//     return strdup((str + suffix).c_str());
+// }
 
 // void Config::set_partition(const char* str) {
 //     m_part[0] = '.';
@@ -225,6 +250,7 @@ Config::Config(){
     encode = true;
     profiling = false;
     level = 2;
+    m_info_filer = NULL;
     // m_saved = false;
     // bzero(&partition, sizeof(partition));
 }
@@ -286,11 +312,16 @@ void Config::init(int argc, char **argv, int ver) {
     check_op(fil.length(), 'f');
     m_file = strdup(fil.c_str());
 
-    m_info_filename = withsuffix(m_file, ".info");
+    // m_info_filename = withsuffix(m_file, ".info");
 
-    m_wr_flags = overwrite ? "wb" : "wbx" ;
-
+    const char* wr_flags = overwrite ? "wb" : "wbx" ;
     if (encode) {
+        FILE* fh = fopen(fil.c_str(), wr_flags);
+        check_fh(fh, fil, false);
+        FilerSave::init(fh);
+        m_info_filer = new FilerSave(42);
+        set_info("whoami", "slimfastq");
+        set_info("version", version);
         set_info("config.level", range_level(level));
 
         if (usr.length()) {
@@ -302,14 +333,17 @@ void Config::init(int argc, char **argv, int ver) {
             f_usr = stdin ;
         }
         check_fh(f_usr, usr, true);
-        filename_stream.open(withsuffix(m_file, ".files"));
+        // filename_stream.open(withsuffix(m_file, ".files"));
     }
     else {
+        FILE* fh = fopen(fil.c_str(), "rb");
+        check_fh(fh, fil, true);
+        FilerLoad::init(fh);
         load_info();
 
         level = range_level(get_long("config.level", 2));
 
-        f_usr = usr.length() ? fopen(usr.c_str(), m_wr_flags) : stdout;
+        f_usr = usr.length() ? fopen(usr.c_str(), wr_flags) : stdout;
         check_fh(f_usr, usr);
     }
 }
@@ -347,6 +381,10 @@ void Config::init(int argc, char **argv, int ver) {
 // }
 
 Config::~Config() {
+    if (m_info_filer) {
+        delete(m_info_filer);
+        FilerSave::finit();
+    }
     // save_info();
 
 #if 0
