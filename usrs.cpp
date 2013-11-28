@@ -50,7 +50,7 @@ UsrSave::UsrSave() {
 
 UsrSave::~UsrSave(){
     DELETE(x_file);
-    fprintf(stderr, "::: USR read %llu fastq records\n", g_record_count);
+    fprintf(stderr, "::: USR read %llu fastq records\n", g_record_count-1);
 }
 
 void UsrSave::load_page() {

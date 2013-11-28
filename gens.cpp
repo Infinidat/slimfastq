@@ -139,7 +139,7 @@ inline UCHAR GenSave::normalize_gen(UCHAR gen, UCHAR &qlt) {
 // }
 
 void GenSave::save_1(const UCHAR* gen, UCHAR* qlt, size_t size) {
-    UINT32 last = 0;
+    UINT32 last = 0x007616c7;
     const UCHAR* g = gen; UCHAR* q = qlt;
     for (; g < gen + size ; g++, q++) {
         m_last.count ++;
