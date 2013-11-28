@@ -77,15 +77,18 @@ public:
     GenSave() ;
     ~GenSave();
 
-    void save_1(const UCHAR* gen, UCHAR* qlt, size_t size);
-    void save_2(const UCHAR* gen, UCHAR* qlt, size_t size);
-    void save_3(const UCHAR* gen, UCHAR* qlt, size_t size);
-    void save_4(const UCHAR* gen, UCHAR* qlt, size_t size);
+    void save_1(const UCHAR* gen, UCHAR* qlt, size_t size)
+    {    save_x(gen, qlt, size, BRANGER_MASK_1); }
+    void save_2(const UCHAR* gen, UCHAR* qlt, size_t size)
+    {    save_x(gen, qlt, size, BRANGER_MASK_2); }
+    void save_3(const UCHAR* gen, UCHAR* qlt, size_t size)
+    {    save_x(gen, qlt, size, BRANGER_MASK_3); }
+    void save_4(const UCHAR* gen, UCHAR* qlt, size_t size)
+    {    save_x(gen, qlt, size, BRANGER_MASK_4); }
 
 private:
-    inline void putgapNs(UINT64 gap);
-    inline void putgapNn(UINT64 gap);
     inline UCHAR normalize_gen(UCHAR gen, UCHAR &qlt);
+    void save_x(const UCHAR* gen, UCHAR* qlt, size_t size, const UINT64 mask);
 
     FilerSave* filer;
     XFileSave* x_Ns;
@@ -97,15 +100,17 @@ public:
     GenLoad();
     ~GenLoad();
 
-    UINT32 load_1(UCHAR* gen, const UCHAR* qlt, size_t size);
-    UINT32 load_2(UCHAR* gen, const UCHAR* qlt, size_t size);
-    UINT32 load_3(UCHAR* gen, const UCHAR* qlt, size_t size);
-    UINT32 load_4(UCHAR* gen, const UCHAR* qlt, size_t size);
+    UINT32 load_1(UCHAR* gen, const UCHAR* qlt, size_t size)
+    {return load_x(gen, qlt, size, BRANGER_MASK_1); }
+    UINT32 load_2(UCHAR* gen, const UCHAR* qlt, size_t size)
+    {return load_x(gen, qlt, size, BRANGER_MASK_2); }
+    UINT32 load_3(UCHAR* gen, const UCHAR* qlt, size_t size)
+    {return load_x(gen, qlt, size, BRANGER_MASK_3); }
+    UINT32 load_4(UCHAR* gen, const UCHAR* qlt, size_t size)
+    {return load_x(gen, qlt, size, BRANGER_MASK_4); }
 
 private:
-    UCHAR get_2();
-    UINT64 getgapNs();
-    UINT64 getgapNn();
+    UINT32 load_x(UCHAR* gen, const UCHAR* qlt, size_t size, const UINT64 mask);
     inline void normalize_gen(UCHAR &gen, UCHAR qlt);
 
     bool   m_validNs, m_validNn;
