@@ -81,11 +81,6 @@ void UsrSave::load_page() {
         m_page_count++;
 }
 
-// void UsrSave::pager_init() {
-//     BZERO(m_last);
-//     DELETE(pager_x);
-// }
-
 void UsrSave::update(exception_t type, UCHAR dat) {
     x_file->put(g_record_count); // TODO: save gaps
     x_file->put((type << 8) | dat);
@@ -425,28 +420,28 @@ void UsrLoad::putline(UCHAR* buf, UINT32 size) {
         croak("USR: Error writing output");
 }
 
-UINT64 UsrLoad::set_partition() {
-    assert(0);
-    // if (conf.partition.param < 0) // TODO: also check orig file size
-    //     croak("illegal partition param %lld", conf.partition.param);
-    // 
-    // const UINT64 num = conf.partition.param; // alias
-    // bool valid;
-    // PagerLoad ppart(conf.open_r("part"), &valid);
-    // /* UINT64 version = */ ppart.get(); 
-    // for (unsigned i = 0 ; valid ; i++) {
-    // 
-    //     UINT64 offs = ppart.get();
-    //     UINT64 nrec = ppart.get();
-    //     if (valid and
-    //         (num == i or
-    //          num == offs)) {
-    //         conf.set_part_offs(offs);
-    //         return nrec;
-    //     }
-    // }
-    // croak ("can't find matching partition for '%lld'", num);
-}
+// UINT64 UsrLoad::set_partition() {
+//     assert(0);
+//     // if (conf.partition.param < 0) // TODO: also check orig file size
+//     //     croak("illegal partition param %lld", conf.partition.param);
+//     // 
+//     // const UINT64 num = conf.partition.param; // alias
+//     // bool valid;
+//     // PagerLoad ppart(conf.open_r("part"), &valid);
+//     // /* UINT64 version = */ ppart.get(); 
+//     // for (unsigned i = 0 ; valid ; i++) {
+//     // 
+//     //     UINT64 offs = ppart.get();
+//     //     UINT64 nrec = ppart.get();
+//     //     if (valid and
+//     //         (num == i or
+//     //          num == offs)) {
+//     //         conf.set_part_offs(offs);
+//     //         return nrec;
+//     //     }
+//     // }
+//     // croak ("can't find matching partition for '%lld'", num);
+// }
 
 int UsrLoad::decode() {
 

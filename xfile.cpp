@@ -76,6 +76,8 @@ void XFileLoad::init() {
     assert(filer);
     if (m_valid)
         rcoder.init(filer);
+    else
+        DELETE(filer);
 }
 
 UINT64 XFileLoad::get() {

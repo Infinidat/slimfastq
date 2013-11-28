@@ -101,7 +101,7 @@ private:
     void save();
     void update();
     void putline(UCHAR* buf, UINT32 size);
-    UINT64 set_partition();
+    // UINT64 set_partition();
 
     FILE *m_out;
 

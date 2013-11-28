@@ -48,13 +48,13 @@ struct OneFile {
     } PACKED;
     enum {
         max_root_files = FILER_PAGE / sizeof(file_attr_t),
-        max_node_files = FILER_PAGE / 32,
+        max_node_files = FILER_PAGE / 4,
     };
     file_attr_t files[max_root_files+1]; // pad to fit one page
     uint   next_findex;                  // offset in files table
     UINT32 num_pages;                    // free alloc index
 
-    // UINT32 files_index;  - currently limitted to single root dir (341 files).
+    // UINT32 files_index;  - currently limitted to single root dir (341 files, including zero).
 
     FILE* m_out;
     FILE* m_in ;
@@ -67,7 +67,7 @@ struct OneFile {
     }
     uint get_findex(UINT64 name) {
         assert(m_in);
-        for(uint i = 1; i < num_pages; i++)
+        for(uint i = 1; i < next_findex; i++)
             if (files[i].name == name)
                 return i;
         return 0;
@@ -76,8 +76,9 @@ struct OneFile {
         return num_pages ++;
     }
     void read_page(UINT32 offset, UCHAR* page) {
+        // Note: -D_FILE_OFFSET_BITS=64 is required
         UINT64 offs = offset* FILER_PAGE;
-        fseek(m_in, offs , SEEK_SET);
+        fseek(m_in, offs , SEEK_SET); 
         UINT32 cnt = fread(page, 1, FILER_PAGE, m_in);
         if (cnt != FILER_PAGE)
             croak("Failed reading page index %d: %s", offset);
@@ -96,21 +97,23 @@ struct OneFile {
         next_findex = 1;
         m_in  = in;
         m_out = NULL;
+
         read_page(1, (UCHAR*)files);
-        num_pages = files[0].first;
+        next_findex = files[0].first;
         files[0].first = 0;
     }
     void init_write(FILE* out) {
-        files[0].name = 0;
-        files[0].first = 0;
         next_findex = 1;
-        num_pages = 2;
         m_in  = NULL;
         m_out = out;
+
+        files[0].name = 0;
+        files[0].first = 0;
+        num_pages = 2;
     }
     void finit_write() {
         if (m_out) {
-            files[0].first = num_pages;
+            files[0].first = next_findex;
             write_page(1, (UCHAR*)files);
             fclose(m_out);
             m_out = NULL;
@@ -119,19 +122,13 @@ struct OneFile {
     ~OneFile() { finit_write() ; } // call explicitly from config?
 } onef ;
 
-void FilerSave::init(FILE* out) {
-    onef.init_write(out);
-}
+// Static 
 
-void FilerSave::finit() {
-    onef.finit_write();
-}
+void FilerSave::init(FILE* out) { onef.init_write(out); }
+void FilerSave::finit()         { onef.finit_write()  ; }
+void FilerLoad::init(FILE* in)  { onef.init_read(in)  ; }
 
-void FilerLoad::init(FILE* in) {
-    onef.init_read(in);
-}
-
-// Save
+// Base
 
 static UINT64 name2u(const char* name) {
     UINT64 uname ;
@@ -149,8 +146,11 @@ FilerBase::FilerBase() {
     m_page_count = 0;
 }
 
-FilerSave::FilerSave(const char* name) {
+// Save
 
+bool FilerSave::is_valid() const { return m_valid; }
+
+FilerSave::FilerSave(const char* name) {
     uint fi = m_onef_i = onef.get_findex();
     onef.files[fi].name = name2u(name);
     onef.files[fi].size = 0;
@@ -159,12 +159,9 @@ FilerSave::FilerSave(const char* name) {
 }
 
 FilerSave::FilerSave(int forty_two) {
-    assert(forty_two == 42);
+    assert(forty_two == 42);    // Verify this version wasn't called by mistake
 
-    onef.files[0].name = 0;
-    onef.files[0].size = 0;
-    onef.files[0].node = 0;
-    onef.files[0].first = 0;
+    BZERO(onef.files[0]);
     m_onef_i = 0;
 }
 
@@ -174,8 +171,6 @@ FilerSave::~FilerSave() {
     if (m_node_p)
         save_node(0);
 }
-
-bool FilerSave::is_valid() const { return m_valid; }
 
 void FilerSave::save_node(UINT32 next_node) {
     assert(m_node_i <= maxi_nodes );
@@ -192,16 +187,12 @@ void FilerSave::save_page() {
         return ;
 
     assert(m_cur <= FILER_PAGE);
-    // size_t cnt = fwrite(m_buff, sizeof(m_buff[0]), m_cur, m_out);
-    // if (cnt != m_cur) {
-    //     fprintf(stderr, "Error saving pager: %s m_cur=%lu cnt=%lu\n", strerror(errno), m_cur, cnt);
-    //     exit(1); // remove and handle error at production
-    //     m_valid = false;
-    // }
+
     rarely_if (not m_node_p) {
         assert(m_node_i == 0);
         onef.write_page(onef.files[m_onef_i].first, m_buff);
-        onef.files[m_onef_i].node = m_node_p = (m_cur == FILER_PAGE) ? onef.allocate() : 0;
+        if (m_cur == FILER_PAGE) // Don't allocate at EOF (harmless in the rare case of exact one page file)
+            onef.files[m_onef_i].node = m_node_p =  onef.allocate();
     }
     else {
         onef.write_page(m_node[ m_node_i ++ ], m_buff);
@@ -254,16 +245,11 @@ void FilerLoad::load_page() {
     rarely_if(not m_valid)
         return;
 
-    if (tell() >= onef.files[m_onef_i].size ){
+    if (tell() >= onef.files[m_onef_i].size ) {
         *m_valid_ptr = m_valid = false;
         return;                 // EOF
     }
  
-    // size_t cnt = fread(m_buff, sizeof(m_buff[0]), FILER_PAGE, m_in);
-    // rarely_if (cnt == 0) {
-    //     *m_valid_ptr = m_valid = false;
-    //     return;
-    // }
     rarely_if (m_node_p == 0) {
         assert(m_node_i == 0);
         onef.read_page(onef.files[m_onef_i].first, m_buff);
@@ -274,8 +260,8 @@ void FilerLoad::load_page() {
     }
     else {
         rarely_if (m_node_i == maxi_nodes) { // load node page
-            m_node_p = m_node[ maxi_nodes ];
-            onef.read_page(m_node[m_node_i], (UCHAR*) m_node);
+            m_node_p = m_node[ maxi_nodes ]; // keep it for debugging
+            onef.read_page(m_node_p, (UCHAR*) m_node);
             m_node_i = 0;
         }
         onef.read_page(m_node[m_node_i ++], m_buff);
@@ -286,35 +272,3 @@ void FilerLoad::load_page() {
     m_count = size/FILER_PAGE == m_page_count ? size % FILER_PAGE : FILER_PAGE ;
     m_page_count++;
 }
-
-// UINT64 FilerLoad::getN(int N) {
-//     UINT64 val = 0;
-//     for (int i = N-1; i>=0; i--)
-//         val |= (UINT64(get()) << (8*i));
-//     return val;
-// }
-
-// bool FilerSave::putN(int N, UINT64 val) {
-//     for (int i = N-1; i>=0 ; i--)
-//         put( (val >> (8*i)) & 0xff );
-//     return m_valid;
-// }
-
-// use it later
-// UINT64 FilerLoad::getUL() {
-//     UINT64 val = get();
-//     likely_if (val < 128)
-//         return val;
-//     val <<= 8;
-//     val  |= get();
-//     likely_if (val < 0xfffe)
-//         return (val & 0x7fff);
-// 
-//     int nb = (val == 0xfffe) ? 4 : 8;
-//     val = 0;
-//     for (int i = nb ; i ; i--)
-//         val |= (get() << (i-1));
-//     return val;
-// }
-
-

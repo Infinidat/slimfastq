@@ -84,6 +84,7 @@ inline UCHAR GenSave::normalize_gen(UCHAR gen, UCHAR &qlt) {
     // switch(gen[i] | 0x20) { - support lowercase, only if we ever see it in fastq
     UCHAR n;
     switch(gen) {
+        // TODO: optimized with a char table
     case '0': case 'A': n = 0; break;
     case '1': case 'C': n = 1; break;
     case '2': case 'G': n = 2; break;
