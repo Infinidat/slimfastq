@@ -141,12 +141,11 @@ Usage: \n\
 -l level         : compression level 1 to 4 (default is 2 ) \n\
 -1, -2, -3, -4   : alias for -l 1, -l 2, etc \n\
  where levels are:\n\
- 1: worse compression, yet uses only 3.5M memory \n\
- 2: default - use (reletively) little memory, resonable compression \n\
- 3: best compression, use about 250M \n\
- 4: compress even more, but very costly (competition mode?) \n\
+ 1: worse compression, yet uses less than 4M memory \n\
+ 2: default - use about 30M memory, resonable compression \n\
+ 3: best compression, use about 80M \n\
+ 4: compress little more, but very costly (competition mode?) \n\
 \n\
--P               : profile mode (stop after ) \n\
 -v / -h          : internal version / this message \n\
 "); }                      // exit ?
 
@@ -231,6 +230,18 @@ void Config::init(int argc, char **argv, int ver) {
             croak("Ilagal args: use -h for help");
         }
 
+    for (char** files = argv+optind; *files; files++) {
+        // TODO:
+        //  if F1 exists:
+        //     if sfq file: (^whoami=fastq)
+        //        use as fil and set decode
+        //     else if fastq file (^@)
+        //        use as usr and set encode
+        //  if F2 not exists, or -O (dangerous?)
+        //     use as encode ? fil : usr
+        //   
+    }
+
     check_op(fil.length(), 'f');
     m_file = strdup(fil.c_str());
 
@@ -272,7 +283,6 @@ Config::~Config() {
         delete(m_info_filer);
         FilerSave::finit();
     }
-    // save_info();
 
 #if 0
  TODO:
