@@ -51,6 +51,8 @@ void GenBase::range_init() {
 // save //
 //////////
 
+static char gencodes[256];
+
 GenSave::GenSave() {
     m_lossless = true;
     conf.set_info("gen.lossless", m_lossless);
@@ -67,6 +69,13 @@ GenSave::GenSave() {
 
     x_Ns = new XFileSave("gen.Ns");
     x_Nn = new XFileSave("gen.Nn");
+
+   memset(gencodes, 0x10, sizeof(gencodes));
+   gencodes['0'] = gencodes['A'] = gencodes['a'] = 0;
+   gencodes['1'] = gencodes['C'] = gencodes['c'] = 1;
+   gencodes['2'] = gencodes['G'] = gencodes['g'] = 2;
+   gencodes['3'] = gencodes['T'] = gencodes['t'] = 3;
+   gencodes['.'] = gencodes['N'] = gencodes['n'] = 4;
 }
 
 GenSave::~GenSave() {
@@ -83,15 +92,24 @@ inline UCHAR GenSave::normalize_gen(UCHAR gen, UCHAR &qlt) {
     bool bad_q = qlt == '!';
 
     // switch(gen[i] | 0x20) { - support lowercase, only if we ever see it in fastq
-    UCHAR n;
-    switch(gen) {
-        // TODO: optimized with a char table
-    case '0': case 'A': n = 0; break;
-    case '1': case 'C': n = 1; break;
-    case '2': case 'G': n = 2; break;
-    case '3': case 'T': n = 3; break;
-    case '.': case 'N': n = 0; bad_n = true; break;
-    default: croak("unexpected genome char: %c", gen);
+    // UCHAR n;
+    // switch(gen) {
+    //     // TODO: optimized with a char table
+    // case '0': case 'A': n = 0; break;
+    // case '1': case 'C': n = 1; break;
+    // case '2': case 'G': n = 2; break;
+    // case '3': case 'T': n = 3; break;
+    // case '.': case 'N': n = 0; bad_n = true; break;
+    // default: croak("unexpected genome char: %c", gen);
+    // }
+    UCHAR n = gencodes[gen];
+    likely_if (n <= 3)
+        bad_n = false;
+    else {
+        bad_n = true;
+        n = 0;
+        rarely_if( n > 4)
+            croak("unexpected genome char: %c", gen);
     }
         
     // if (// m_lossless - always is
