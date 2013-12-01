@@ -44,7 +44,7 @@ class UsrSave {
 
 #define PLL_SIZE 0x4000
 #define PLL_STRT MAX_REC_LEN
-    //  PLL_STRT must always be more than record size
+    //  PLL_STRT must be more than record size
 #define PLL_LAST (PLL_SIZE + PLL_STRT)
 
 public:
@@ -67,7 +67,6 @@ private:
     struct {
         UCHAR solid_pf_gen;
         UCHAR solid_pf_qlt;
-        // UINT64 rec_count;
     } m_last;
 
     bool   m_valid;
@@ -101,7 +100,6 @@ private:
     void save();
     void update();
     void putline(UCHAR* buf, UINT32 size);
-    // UINT64 set_partition();
 
     FILE *m_out;
 
@@ -109,7 +107,6 @@ private:
         UCHAR solid_pf_gen;
         UCHAR solid_pf_qlt;
         UINT64 index;
-        // UINT64 rec_count;
     } m_last;
 
     size_t m_llen, m_llen_factor;

@@ -165,7 +165,6 @@ void UsrSave::determine_record() {
     conf.set_info("usr.2id", has_2nd_id); // TODO
 }
 
-// bool UsrSave::get_record(UCHAR** rec, UCHAR** rec_end, UCHAR** gen, UCHAR** qlt) {
 bool UsrSave::get_record() {
     
     load_check();
@@ -253,74 +252,40 @@ bool UsrSave::get_record() {
 int UsrSave::encode() {
 
     UINT32  sanity = conf.profiling ? 100000 : 1000000000;
-    // UCHAR *p_rec, *p_rec_end, *p_gen, *p_qlt;
-    // bool gentype = 0;
 
     RecSave rec;
     GenSave gen;
     QltSave qlt;
 
-    // if (conf.partition.size) {
-    //     assert(0);              // TODO
-        // // TODO: unite cases
-        // size_t recs_l = estimate_rec_limit();
-        // m_conf->set_info("partition.size", m_conf->partition.size);
-        // m_conf->set_info("partition.n_rec", recs_l);
-        // PagerSave ppart(m_conf->open_w("part"));
-        // ppart.put(0);          // version
-        // bool valid = true;
-        // assert(m_page_count);
-        // while (valid) {
-        //     UINT64 offs = ((m_page_count-1)*PLL_SIZE) + m_cur - PLL_STRT;
-        //     m_conf->set_part_offs(offs);
-        //     pager_init();
-        //     rec.pager_init();
-        //     gen.pager_init();
-        //     qlt.filer_init();
-        // 
-        //     while (m_last.rec_count < recs_l and
-        //            (valid = get_record(&p_rec, &p_rec_end, &p_gen, &p_qlt)) and
-        //             ++ m_rec_total < sanity ) {
-        //         gen.save(p_gen, p_qlt, m_llen);
-        //         rec.save(p_rec, p_rec_end);
-        //         qlt.save(p_qlt, m_llen);
-        //     }
-        //     ppart.put(offs);
-        //     ppart.put(m_last.rec_count);
-        // }
-    // }
-    // else {
+    switch (conf.level) {
 
-        switch (conf.level) {
+    case 1:
+        while( ++ g_record_count < sanity  and get_record() ) {
+            gen.save_1(mp.gen, mp.qlt, m_llen);
+            rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
+            qlt.save_1(mp.qlt, m_llen);
+        } break;
+    case 2: default:
+        while( ++ g_record_count < sanity  and get_record() ) {
 
-        case 1:
-            while( ++ g_record_count < sanity  and get_record() ) {
-                gen.save_1(mp.gen, mp.qlt, m_llen);
-                rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
-                qlt.save_1(mp.qlt, m_llen);
-            } break;
-        case 2: default:
-            while( ++ g_record_count < sanity  and get_record() ) {
+            gen.save_2(mp.gen, mp.qlt, m_llen);
+            rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
+            qlt.save_2(mp.qlt, m_llen);
+        } break;
+    case 3:
+        while( ++ g_record_count < sanity  and get_record() ) {
 
-                gen.save_2(mp.gen, mp.qlt, m_llen);
-                rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
-                qlt.save_2(mp.qlt, m_llen);
-            } break;
-        case 3:
-            while( ++ g_record_count < sanity  and get_record() ) {
-
-                gen.save_3(mp.gen, mp.qlt, m_llen);
-                rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
-                qlt.save_3(mp.qlt, m_llen);
-            } break;
-        case 4:
-            while( ++ g_record_count < sanity  and get_record() ) {
-                gen.save_4(mp.gen, mp.qlt, m_llen);
-                rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
-                qlt.save_3(mp.qlt, m_llen);
-            } break;
-        }
-    // }
+            gen.save_3(mp.gen, mp.qlt, m_llen);
+            rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
+            qlt.save_3(mp.qlt, m_llen);
+        } break;
+    case 4:
+        while( ++ g_record_count < sanity  and get_record() ) {
+            gen.save_4(mp.gen, mp.qlt, m_llen);
+            rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
+            qlt.save_3(mp.qlt, m_llen);
+        } break;
+    }
     conf.set_info("num_records", g_record_count-1);
     return 0;
 }
@@ -420,35 +385,9 @@ void UsrLoad::putline(UCHAR* buf, UINT32 size) {
         croak("USR: Error writing output");
 }
 
-// UINT64 UsrLoad::set_partition() {
-//     assert(0);
-//     // if (conf.partition.param < 0) // TODO: also check orig file size
-//     //     croak("illegal partition param %lld", conf.partition.param);
-//     // 
-//     // const UINT64 num = conf.partition.param; // alias
-//     // bool valid;
-//     // PagerLoad ppart(conf.open_r("part"), &valid);
-//     // /* UINT64 version = */ ppart.get(); 
-//     // for (unsigned i = 0 ; valid ; i++) {
-//     // 
-//     //     UINT64 offs = ppart.get();
-//     //     UINT64 nrec = ppart.get();
-//     //     if (valid and
-//     //         (num == i or
-//     //          num == offs)) {
-//     //         conf.set_part_offs(offs);
-//     //         return nrec;
-//     //     }
-//     // }
-//     // croak ("can't find matching partition for '%lld'", num);
-// }
-
 int UsrLoad::decode() {
 
-    size_t n_recs =
-        // conf.partition.size ?
-        // set_partition() :
-        conf.get_long("num_records");
+    size_t n_recs = conf.get_long("num_records");
 
     if ( ! n_recs)
         croak("Zero records, what's going on?");
@@ -459,7 +398,6 @@ int UsrLoad::decode() {
 
     UCHAR* b_qlt = m_qlt+1 ;
     UCHAR* b_gen = m_gen+1 ;
-    // bool gentype = false;
 
     switch (conf.level) {
     case 1:
