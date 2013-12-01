@@ -246,19 +246,39 @@ void Config::init(int argc, char **argv, int ver) {
         }
 
     for (char** files = argv+optind; *files; files++) {
-        // TODO:
-        //  if F1 exists:
-        //     if sfq file: (^whoami=fastq)
-        //        use as fil and set decode
-        //     else if fastq file (^@)
-        //        use as usr and set encode
-        //  if F2 not exists, or -O (dangerous?)
-        //     use as encode ? fil : usr
-        //   
+        FILE* fh = fopen(*files, "rb");
+        if (! fh) {
+            if  (not encode and not usr.length())
+                usr = *files;
+            else if (encode and not fil.length())
+                fil = *files;
+            else {
+                fprintf(stderr, "What am I suppose to do with '%s'?\n (please specify explicitly with -f/-u prefix)\n(Note: not an existing file)\n",
+                        *files);
+                exit(1);
+            }
+            continue;
+        }
+        const char* sfqstamp = "whoami=slimfastq" ;
+        char initline[20];
+        BZERO(initline);
+        fread(initline, 1, 19, fh);
+        if (not fil.length() and
+            0 == strncmp(initline, sfqstamp, strlen(sfqstamp))) {
+            fil = *files;
+            encode = !! usr.length();
+        }
+        else if (not usr.length() and
+                 initline[0] == '@') {
+            usr = *files;
+        }
+        else {
+            fprintf(stderr, "What am I suppose to do with '%s'?\n (please specify explicitly with -f/-u prefix)\n(Note: file exists!)\n", *files);
+            exit(1);
+        }
     }
 
     check_op(fil.length(), 'f');
-    // m_file = strdup(fil.c_str());
 
     const char* wr_flags = overwrite ? "wb" : "wbx" ;
     if (encode) {

@@ -62,7 +62,6 @@ private:
     void statistics_dump() const;
 
     FILE  *f_usr;
-    // const char* m_file;
     FilerSave* m_info_filer;
 };
 
