@@ -53,10 +53,7 @@ protected:
         return ( b | (last << 6) ) & RANGER_MASK_1;
     }
     inline static UINT32 calc_last_2 (UINT32 last, UCHAR b) {
-        return
-            ( b | 
-              (last << 6)
-              ) & RANGER_MASK_2;
+        return ( b | (last << 6) ) & RANGER_MASK_2;
     }
     // inline static UINT32 calc_last_3 (UINT32 last, UCHAR b) {
     //     return ( b | (last << 6) ) & RANGER_MASK_3;

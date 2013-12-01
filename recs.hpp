@@ -30,8 +30,6 @@
 #include "config.hpp"
 #include <stdio.h>
 
-// #include "filer.hpp"
-// #include "power_ranger.hpp"
 #include "xfile.hpp"
 
 class RecBase {
@@ -40,13 +38,8 @@ protected:
     RecBase()  {}
     ~RecBase() {rcoder.done();}
 
-    enum { m_range_last = 66
-    };
-
     struct ranger_t {
         PowerRanger type;
-        // PowerRanger  len;
-        // Base2Ranger type;
         PowerRanger  str;
         PowerRangerU num;
     } PACKED ;
@@ -83,18 +76,6 @@ protected:
         ST_PAG = 1,
         ST_STR = 2,
     };
-    // enum seg_type {
-    //     ST_SAME,
-    //     ST_GAP,
-    //     ST_PAG,
-    //     ST_GAPL,
-    //     ST_PAGL,
-    //     ST_END,
-    //     ST_STR,
-    //     // ST_0_F,
-    //     // ST_0_B,
-    //     ST_LAST
-    // };
 
     struct space_map {
         int   off[65];

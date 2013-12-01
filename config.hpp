@@ -61,7 +61,7 @@ private:
     void usage() const;
 
     FILE  *f_usr;
-    const char* m_file;
+    // const char* m_file;
     FilerSave* m_info_filer;
 };
 

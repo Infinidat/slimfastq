@@ -226,6 +226,7 @@ void Config::init(int argc, char **argv, int ver) {
         case 'h':
             usage();
             exit(0);
+            
         default:
             croak("Ilagal args: use -h for help");
         }
@@ -243,7 +244,7 @@ void Config::init(int argc, char **argv, int ver) {
     }
 
     check_op(fil.length(), 'f');
-    m_file = strdup(fil.c_str());
+    // m_file = strdup(fil.c_str());
 
     const char* wr_flags = overwrite ? "wb" : "wbx" ;
     if (encode) {

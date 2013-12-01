@@ -88,8 +88,8 @@ GenSave::~GenSave() {
 
 inline UCHAR GenSave::normalize_gen(UCHAR gen, UCHAR &qlt) {
         
-    bool bad_n = false;
-    bool bad_q = qlt == '!';
+    bool bad_n; //  = false;
+    const bool bad_q = qlt == '!';
 
     // switch(gen[i] | 0x20) { - support lowercase, only if we ever see it in fastq
     // UCHAR n;
@@ -106,22 +106,21 @@ inline UCHAR GenSave::normalize_gen(UCHAR gen, UCHAR &qlt) {
     likely_if (n <= 3)
         bad_n = false;
     else {
-        bad_n = true;
-        n = 0;
         rarely_if( n > 4)
             croak("unexpected genome char: %c", gen);
+        bad_n = true;
+        n = 0;
     }
         
+    m_last.count ++;
     // if (// m_lossless - always is
     //     true ) {
         rarely_if(bad_n) {
             rarely_if(not m_N_byte) {
                 // TODO: make a single m_last - exceptions file
                 m_N_byte = gen;
-                if ('.' == gen) {
+                if ('N' != gen)
                     conf.set_info("gen.N_byte", gen);
-                    // conf.save_info();
-                }
             }
             // TODO: eliminate this temp sanity
             rarely_if (gen != m_N_byte)
@@ -161,7 +160,6 @@ void GenSave::save_x(const UCHAR* gen, UCHAR* qlt, size_t size, const UINT64 mas
     UINT32 last = 0x007616c7;
     const UCHAR* g = gen; UCHAR* q = qlt;
     for (; g < gen + size ; g++, q++) {
-        m_last.count ++;
         UCHAR n = normalize_gen(*g, *q);
         last &= mask;
         PREFETCH(ranger + last);
