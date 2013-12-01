@@ -59,6 +59,7 @@ public:
 
 private:
     void usage() const;
+    void statistics_dump() const;
 
     FILE  *f_usr;
     // const char* m_file;

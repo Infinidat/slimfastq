@@ -60,6 +60,17 @@ void croak(const char* fmt, long long num) {
     exit(1);
 }
 
+void Config::statistics_dump() const {
+    fprintf(stderr, ":::: Info: \n");
+    for (std::map<std::string, std::string>::iterator it = info_map.begin();
+         it != info_map.end();
+         it ++ )
+        fprintf(stderr, "%s=%s\n", it->first.c_str(), it->second.c_str());
+    fprintf(stderr, ":::: Files: \n");
+    FilerLoad::confess();
+    exit(0);
+}
+
 void Config::load_info() const {
 
     info_map.clear();
@@ -147,6 +158,7 @@ Usage: \n\
  4: compress little more, but very costly (competition mode?) \n\
 \n\
 -v / -h          : internal version / this message \n\
+-S               : internal statistics about a compressed file (set by -f)\n\
 "); }                      // exit ?
 
 // (DISABLED -TBD)-s size          : set partition to <size> (megabyte units) \n\ -
@@ -193,10 +205,11 @@ void Config::init(int argc, char **argv, int ver) {
 
     std::string usr, fil;
     bool overwrite = false;
+    bool statistics = false;
 
     // TODO? long options 
     // const char* short_opt = "POvhd 1234 u:f:s:p:l:"; 
-    const char* short_opt = "POvhd 1234 u:f:l:"; 
+    const char* short_opt = "SPOvhd 1234 u:f:l:"; 
     for ( int opt = getopt(argc, argv, short_opt);
           opt != -1;
           opt     = getopt(argc, argv, short_opt))
@@ -226,6 +239,7 @@ void Config::init(int argc, char **argv, int ver) {
         case 'h':
             usage();
             exit(0);
+        case 'S': statistics = true; encode = false; break;
             
         default:
             croak("Ilagal args: use -h for help");
@@ -271,6 +285,8 @@ void Config::init(int argc, char **argv, int ver) {
         check_fh(fh, fil, true);
         FilerLoad::init(fh);
         load_info();
+        if (statistics)
+            statistics_dump();
 
         level = range_level(get_long("config.level", 2));
 

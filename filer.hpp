@@ -78,6 +78,7 @@ private:
 class FilerLoad : private FilerBase {
 public:
     static void init(FILE* in);
+    static void confess();
     FilerLoad(const char* name, bool *valid_ptr);
     FilerLoad(int forty_two, bool* valid_ptr);
     ~FilerLoad();

@@ -102,6 +102,17 @@ struct OneFile {
         next_findex = files[0].first;
         files[0].first = 0;
     }
+    void do_confess() const {
+        fprintf(stderr, "i: 'name'\t: size\t: first\t: node\n");
+        for (UINT32 i = 0;
+             i < next_findex;
+             i++) {
+            char name[10];
+            strncpy(name, (char*)&files[i].name, 8);
+            fprintf(stderr, "%d: '%s'\t: %lld\t: %d:\t: %d\n",
+                    i, name, files[i].size, files[i].first, files[i].node);
+        }
+    }
     void init_write(FILE* out) {
         next_findex = 1;
         m_in  = NULL;
@@ -127,6 +138,7 @@ struct OneFile {
 void FilerSave::init(FILE* out) { onef.init_write(out); }
 void FilerSave::finit()         { onef.finit_write()  ; }
 void FilerLoad::init(FILE* in)  { onef.init_read(in)  ; }
+void FilerLoad::confess()       { onef.do_confess()   ; }
 
 // Base
 
