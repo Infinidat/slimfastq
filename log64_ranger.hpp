@@ -22,7 +22,6 @@
 /* USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                                            */
 /***********************************************************************************************************************/
 
-
 // Based on James Bonfield's fqz_comp
 
 #ifndef ZP_LOG64_RANGER_H
@@ -35,14 +34,13 @@
 class Log64Ranger {
     enum {
         STEP=6,
-        NSYM=64,
+        NSYM=63,                // decrease from 64 to get better memory alignment
         MAX_FREQ=(1<<16)-64,
     };
 
-    UINT32 total;
     UINT16 freq[NSYM];
     UINT16 iend ;
-
+    UINT32 total;
     UCHAR count;
     UCHAR syms[NSYM];
 
@@ -51,7 +49,7 @@ class Log64Ranger {
             total += (freq[i] /= 2);
     }
 
-    inline UCHAR sort_of_sort(int i) {
+    inline UCHAR down_level(int i) {
 
         UCHAR c = syms[i  ];
         syms[i] = syms[i-1];
@@ -80,10 +78,13 @@ class Log64Ranger {
                        (++ count & 0xf) or
                        freq[i] <= freq[i-1] ) ?
             syms[i] :
-            sort_of_sort(i);
+            down_level(i);
     }
 
 public:
+    Log64Ranger() {
+        total = 0, iend = 0, count = 0;
+    }
 
     inline void put(RCoder *rc, UCHAR sym) {
         UINT32 sumf  = 0;
@@ -115,7 +116,7 @@ public:
               i < NSYM;
               i ++ ) {
 
-            rarely_if(i >= iend) 
+            rarely_if(iend    == i) 
                 syms[ iend++ ] = i;
         
             if (sumf +  freq[i] + 1 <= prob)

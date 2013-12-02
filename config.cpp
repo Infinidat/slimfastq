@@ -262,13 +262,15 @@ void Config::init(int argc, char **argv, int ver) {
         const char* sfqstamp = "whoami=slimfastq" ;
         char initline[20];
         BZERO(initline);
-        fread(initline, 1, 19, fh);
-        if (not fil.length() and
+        size_t cnt = fread(initline, 1, 19, fh);
+        if (cnt and
+            not fil.length() and
             0 == strncmp(initline, sfqstamp, strlen(sfqstamp))) {
             fil = *files;
             encode = !! usr.length();
         }
-        else if (not usr.length() and
+        else if (cnt and
+                 not usr.length() and
                  initline[0] == '@') {
             usr = *files;
         }

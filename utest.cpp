@@ -89,10 +89,10 @@ void test_filer() {
 }
 
 
-void fill_buf(UCHAR* buf, int start, int size) {
-    for (int i = 0; i < size ; i++)
-        buf[i] = '!' + ((i*7+start) % 63);
-}
+// void fill_buf(UCHAR* buf, int start, int size) {
+//     for (int i = 0; i < size ; i++)
+//         buf[i] = '!' + ((i*7+start) % 62);
+// }
 
 Config conf;
 /*
@@ -163,9 +163,9 @@ void test_log64_ranger() {
         Log64Ranger ranger;
         BZERO(ranger);
         for (int i = 0; i < 300; i++)
-            ranger.put(rc, i&0x3f);
+            ranger.put(rc, i%63);
         for (int i = 0; i < 1000; i+=17)
-            ranger.put(rc, i&0x3f);
+            ranger.put(rc, i%63);
         rc_finit();
     }
     {
@@ -174,11 +174,11 @@ void test_log64_ranger() {
         BZERO(ranger);
         for (int i = 0; i < 300; i++) {
             UCHAR c = ranger.get(rc);
-            assert(c == (i&0x3f));
+            assert(c == (i%63));
         }
         for (int i = 0; i < 1000; i+=17) {
             UCHAR c = ranger.get(rc);
-            assert(c == (i&0x3f));
+            assert(c == (i%63));
         }
         rc_finit();
     }

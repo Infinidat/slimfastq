@@ -49,10 +49,6 @@ class Base2Ranger {
         freq_val =
             ((freq_val & ~M_ONES) >> 1 ) |
              (freq_val &  M_ONES);
-        // (freq[0] -= (freq[0]>>1),
-        //  freq[1] -= (freq[1]>>1)),
-        // (freq[2] -= (freq[2]>>1),
-        //  freq[3] -= (freq[3]>>1));
         // freq[0] /= 2;
         // freq[1] /= 2;
         // freq[2] /= 2;
@@ -65,7 +61,6 @@ class Base2Ranger {
     }
 
     inline void update_freq(int sym , UINT16 total) {
-
         rarely_if(freq[sym] > (MAX_FREQ))
             normalize();
 
@@ -76,8 +71,6 @@ class Base2Ranger {
 public:
     Base2Ranger() {
         // BZERO made it slower
-        // for (int i = 0; i < 4; i++)
-        //     freq[i] = 2;
         // (freq[0] = freq[1] = INIT_VAL ), (freq[2] = freq[3] = INIT_VAL);
         freq_val = INIT_VAL * M_ONES;
     }

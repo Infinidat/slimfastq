@@ -64,13 +64,15 @@ bool QltSave::is_valid() {
         filer->is_valid();
 }
 
+#define LAST_QLT 62
+
 void QltSave::save_1(const UCHAR* buf, size_t size) {
     UINT32 last = 0;
     for (const UCHAR* p = buf ; p < buf + size; p++) {
         UCHAR b = UCHAR(*p-'!');
 
-        rarely_if(b >= 63) {
-            ranger[last].put(&rcoder, 63);
+        rarely_if(b >= LAST_QLT) {
+            ranger[last].put(&rcoder, LAST_QLT);
             exranger.put(&rcoder, b);
             continue;
         }
@@ -85,8 +87,8 @@ void QltSave::save_2(const UCHAR* buf, size_t size) {
     for (const UCHAR* p = buf ; p < buf + size; p++) {
         UCHAR b = UCHAR(*p-'!');
 
-        rarely_if(b >= 63) {
-            ranger[last].put(&rcoder, 63);
+        rarely_if(b >= LAST_QLT) {
+            ranger[last].put(&rcoder, LAST_QLT);
             exranger.put(&rcoder, b);
             continue;
         }
@@ -106,8 +108,8 @@ void QltSave::save_3(const UCHAR* buf, size_t size) {
     for (const UCHAR* p = buf ; p < buf + size; p++) {
         UCHAR b = UCHAR(*p-'!');
 
-        rarely_if(b >= 63) {
-            ranger[last].put(&rcoder, 63);
+        rarely_if(b >= LAST_QLT) {
+            ranger[last].put(&rcoder, LAST_QLT);
             exranger.put(&rcoder, b);
             continue;
         }
@@ -158,7 +160,7 @@ UINT32 QltLoad::load_1(UCHAR* buf, const size_t size) {
     for (UCHAR* p = buf; p < buf + size ; p++) {
         UCHAR b = ranger[last].get(&rcoder);
 
-        rarely_if(b == 63) {
+        rarely_if(b == LAST_QLT) {
             b = exranger.get(&rcoder);
             *p = UCHAR('!' + b);
             continue;
@@ -177,7 +179,7 @@ UINT32 QltLoad::load_2(UCHAR* buf, const size_t size) {
         PREFETCH(ranger + last);
         UCHAR b = ranger[last].get(&rcoder);
 
-        rarely_if(b == 63) {
+        rarely_if(b == LAST_QLT) {
             b = exranger.get(&rcoder);
             *p = UCHAR('!' + b);
             continue;
@@ -200,7 +202,7 @@ UINT32 QltLoad::load_3(UCHAR* buf, const size_t size) {
         PREFETCH(ranger + last);
         UCHAR b = ranger[last].get(&rcoder);
 
-        rarely_if(b == 63) {
+        rarely_if(b == LAST_QLT) {
             b = exranger.get(&rcoder);
             *p = UCHAR('!' + b);
             continue;

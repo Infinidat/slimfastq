@@ -22,7 +22,6 @@
 /* USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                                            */
 /***********************************************************************************************************************/
 
-
 // Based on James Bonfield's fqz_comp
 
 #ifndef ZP_POWER_RANGER
@@ -118,15 +117,14 @@ public:
               i < NSYM;
               i ++ ) {
 
-            rarely_if(i >= iend) 
+            rarely_if(iend    == i) 
                 syms[ iend++ ] = i;
-        
+
             if (sumf +  freq[i] + 1 <= prob)
                 sumf += freq[i] + 1;
             else
                 break;
         }
-
         rc->Decode(sumf, freq[i]+1, vtot);
 
         return update_freq(i);
