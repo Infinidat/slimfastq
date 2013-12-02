@@ -52,7 +52,7 @@ class PowerRanger {
             total += (freq[i] >>= 1 ); 
     }
 
-    inline UCHAR sort_of_sort(int i) {
+    inline UCHAR down_level(int i) {
 
         UCHAR t = syms[i  ];
         syms[i] = syms[i-1];
@@ -81,7 +81,7 @@ class PowerRanger {
                        (++ count & 0xf) or
                        freq[i] <= freq[i-1] ) ?
             syms[i] :
-            sort_of_sort(i);
+            down_level(i);
     }
 
 public:

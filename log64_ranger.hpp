@@ -31,12 +31,16 @@
 #include "coder.hpp"
 #endif
 
+#define LAST_QLT 63
+
 class Log64Ranger {
     enum {
         STEP=6,
-        NSYM=63,                // decrease from 64 to get better memory alignment
+        // NSYM=63,                // decrease from 64 to get better memory alignment
+        NSYM=64,
         MAX_FREQ=(1<<16)-64,
     };
+
 
     UINT16 freq[NSYM];
     UINT16 iend ;
@@ -65,7 +69,7 @@ class Log64Ranger {
     inline UCHAR update_freq(int i) {
 
         rarely_if(freq[i] > (MAX_FREQ - STEP)) {
-            if  ((freq[i] == total))
+            rarely_if((freq[i] == total))
                 return syms[i];
 
             normalize();
@@ -83,7 +87,9 @@ class Log64Ranger {
 
 public:
     Log64Ranger() {
-        total = 0, iend = 0, count = 0;
+        // *(UINT64*) iend = 0;
+        // iend = 0, total = 0, count = 0;
+        bzero(&iend, 8);
     }
 
     inline void put(RCoder *rc, UCHAR sym) {

@@ -47,7 +47,7 @@ protected:
     bool m_valid;
 
     size_t ranger_cnt();
-    void   range_init();
+    // void   range_init();
 
     inline static UINT32 calc_last_1 (UINT32 last, UCHAR b) {
         return ( b | (last << 6) ) & RANGER_MASK_1;

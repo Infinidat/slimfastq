@@ -46,9 +46,9 @@ protected:
     size_t m_cur, m_count;
     bool  *m_valid_ptr;
     UINT32 m_node[ size_nodes ];
-    uint   m_node_i;
+    UINT32 m_node_i;
     UINT32 m_node_p;
-    uint   m_onef_i;
+    UINT32 m_onef_i;
 
     FilerBase();
 };
@@ -72,7 +72,7 @@ public:
 private:
     void save_node(UINT32 next_node);
     void save_page();
-    uint findex;
+    UINT32 findex;
 };
 
 class FilerLoad : private FilerBase {

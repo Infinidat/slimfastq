@@ -45,6 +45,7 @@ public:
     Config();
     ~Config();
     void init (int argc, char **argv, int ver);
+    void finit();
     FILE * file_usr() const { return reinterpret_cast<FILE*>(f_usr);}
     int   version, level;
     bool  encode, profiling;
@@ -67,5 +68,6 @@ private:
 
 extern Config conf;
 extern unsigned long long g_record_count;
+extern unsigned long long g_genofs_count;
 
 #endif  // FQ_CONFIG_H

@@ -41,6 +41,7 @@
 
 // Globals
 unsigned long long g_record_count = 0;
+unsigned long long g_genofs_count = 0;
 
 typedef std::map<std::string, std::string> info_t;
 typedef std::pair<std::string, std::string> info_pair;
@@ -159,6 +160,13 @@ Usage: \n\
 \n\
 -v / -h          : internal version / this message \n\
 -S               : internal statistics about a compressed file (set by -f)\n\
+\n\
+Intuitive use of 'slimfastq A B' : \n\
+If A appears to be a fastq file, and:\n\
+    B does not exists (or -O option is used): compress A to B \n\
+If A appears to be a slimfastq file, and: \n\
+    B does not exist (or -O option is used): decompress A to B \n\
+    no B is specified: dcompress to stdout \n\
 "); }                      // exit ?
 
 // (DISABLED -TBD)-s size          : set partition to <size> (megabyte units) \n\ -
@@ -317,11 +325,16 @@ void Config::init(int argc, char **argv, int ver) {
     }
 }
 
-Config::~Config() {
+void Config::finit() {
     if (m_info_filer) {
         delete(m_info_filer);
         FilerSave::finit();
+        m_info_filer = NULL;
     }
+}
+
+Config::~Config() {
+    finit();
 
 #if 0
  TODO:

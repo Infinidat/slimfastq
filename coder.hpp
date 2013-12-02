@@ -18,7 +18,7 @@
 class RCoder {
 
 private:
-    enum { TOP =(1<<24) };
+    enum { TOP =(1ULL<<24) };
     UINT64 low;
     UINT64 code;
     UINT32  range;
@@ -60,14 +60,15 @@ public:
     // FASTER !  //
     ///////////////
     void Encode (UINT32 cumFreq, UINT32 freq, UINT32 totFreq) {
-        range/= totFreq ;
-        low  += cumFreq * range ;
-        range*= freq;
 
-        assert (cumFreq + freq <= totFreq);
+        range /= totFreq ;
+        low   += cumFreq * range ;
+        range *= freq;
+
+        // assert (cumFreq + freq <= totFreq);
 
         while( range<TOP ) {
-            rarely_if ( UCHAR((low^(low+range))>>56) ) 
+            rarely_if ( (low^(low+range)) & (0xffULL<<56) )
                 range = ((UINT32(low)|(TOP-1))-UINT32(low));
             m_out->put(low >> 56);
             range <<= 8;
@@ -87,9 +88,10 @@ public:
         range*= freq;
  
         while( range<TOP ) {
-            rarely_if ( UCHAR((low^(low+range))>>56) ) 
+            rarely_if ( (low^(low+range)) & (0xffULL<<56) )
                 range = ((UINT32(low)|(TOP-1))-UINT32(low));
-            code = (code<<8) | m_in->get();
+            code <<=8;
+            code |= m_in->get();
             range<<=8;
             low  <<=8;
         }

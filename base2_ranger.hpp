@@ -49,10 +49,7 @@ class Base2Ranger {
         freq_val =
             ((freq_val & ~M_ONES) >> 1 ) |
              (freq_val &  M_ONES);
-        // freq[0] /= 2;
-        // freq[1] /= 2;
-        // freq[2] /= 2;
-        // freq[3] /= 2;
+        // (freq_val & ~M_ONES) >> 1 ;
     }
 
     inline UINT16 getsum() {
@@ -71,7 +68,6 @@ class Base2Ranger {
 public:
     Base2Ranger() {
         // BZERO made it slower
-        // (freq[0] = freq[1] = INIT_VAL ), (freq[2] = freq[3] = INIT_VAL);
         freq_val = INIT_VAL * M_ONES;
     }
 

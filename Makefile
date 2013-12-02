@@ -43,7 +43,7 @@ clean: profclean
 # SOURCES = slimfastq.cpp config.cpp fq_qlts.cpp pager.cpp fq_usrs.cpp
 # HEADERS = common.hpp config.hpp fq_qlts.hpp pager.hpp fq_usrs.hpp
 
-SOURCES= $(filter-out findshun.cpp utest.cpp one.cpp molder.cpp, $(shell ls *.cpp))
+SOURCES= $(filter-out utest.cpp one.cpp molder.cpp, $(shell ls *.cpp))
 HEADERS= $(shell echo *.hpp)
 slimfastq: $(SOURCES) $(HEADERS)
 	g++ $(FLAGS) -o $@ $(SOURCES)
@@ -70,7 +70,7 @@ molder: molder.cpp pager.cpp pager.hpp
 tags:
 	etags $(SOURCES) $(HEADERS)
 
-UTSRC= $(filter-out findshun.cpp one.cpp molder.cpp main.cpp, $(shell ls *.cpp))
+UTSRC= $(filter-out one.cpp molder.cpp main.cpp, $(shell ls *.cpp))
 UTHDR= $(shell ls *.hpp)
 slimfastq.utest: $(UTSRC) $(UTHDR)
 	g++ $(FLAGS) $(UTSRC) -o $@
@@ -113,5 +113,3 @@ tost: all
 playground:
 	@ echo $(filter-out molder.cpp, $(shell echo *.cpp))
 
-findshun: findshun.cpp
-	g++ $(COFLAGS) -o $@ $<

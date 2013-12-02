@@ -38,9 +38,9 @@ size_t QltBase::ranger_cnt() {
                           RANGER_SIZE_2 ;
 }
 
-void QltBase::range_init() {
-    bzero(ranger, sizeof(ranger[0]) * ranger_cnt());
-}
+// void QltBase::range_init() {
+//     // bzero(ranger, sizeof(ranger[0]) * ranger_cnt());
+// }
 
 QltSave::QltSave()  {
     filer  = new FilerSave("qlt");
@@ -48,7 +48,7 @@ QltSave::QltSave()  {
     assert(filer);
     assert(ranger);
     rcoder.init(filer);
-    range_init();
+    // range_init();
 }
 
 QltSave::~QltSave() {
@@ -64,20 +64,18 @@ bool QltSave::is_valid() {
         filer->is_valid();
 }
 
-#define LAST_QLT 62
-
 void QltSave::save_1(const UCHAR* buf, size_t size) {
     UINT32 last = 0;
     for (const UCHAR* p = buf ; p < buf + size; p++) {
         UCHAR b = UCHAR(*p-'!');
 
-        rarely_if(b >= LAST_QLT) {
+        PREFETCH(ranger + last);
+        likely_if(b < LAST_QLT)
+            ranger[last].put(&rcoder, b);
+        else {
             ranger[last].put(&rcoder, LAST_QLT);
             exranger.put(&rcoder, b);
-            continue;
         }
-
-        ranger[last].put(&rcoder, b);
         last = calc_last_1(last, b); 
     }
 }
@@ -137,7 +135,7 @@ QltLoad::QltLoad() {
     ranger = new Log64Ranger[ranger_cnt()];
 
     rcoder.init(filer);
-    range_init();
+    // range_init();
 }
 
 QltLoad::~QltLoad() {
@@ -160,13 +158,12 @@ UINT32 QltLoad::load_1(UCHAR* buf, const size_t size) {
     for (UCHAR* p = buf; p < buf + size ; p++) {
         UCHAR b = ranger[last].get(&rcoder);
 
-        rarely_if(b == LAST_QLT) {
+        likely_if(b < LAST_QLT)
+            *p = UCHAR('!' + b);
+        else {
             b = exranger.get(&rcoder);
             *p = UCHAR('!' + b);
-            continue;
         }
-
-        *p = UCHAR('!' + b);
         last = calc_last_1(last, b);
     }
     return m_valid ? size : 0;

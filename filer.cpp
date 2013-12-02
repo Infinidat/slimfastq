@@ -51,7 +51,7 @@ struct OneFile {
         max_node_files = FILER_PAGE / 4,
     };
     file_attr_t files[max_root_files+1]; // pad to fit one page
-    uint   next_findex;                  // offset in files table
+    UINT32 next_findex;                  // offset in files table
     UINT32 num_pages;                    // free alloc index
 
     // UINT32 files_index;  - currently limitted to single root dir (341 files, including zero).
@@ -59,20 +59,20 @@ struct OneFile {
     FILE* m_out;
     FILE* m_in ;
 
-    uint get_findex() {
+    UINT32 get_findex() {
         assert(m_out);
         rarely_if(next_findex >= max_root_files)
             croak("Internal error: Too many open files: %d %s", next_findex);
         return next_findex ++;
     }
-    uint get_findex(UINT64 name) {
+    UINT32 get_findex(UINT64 name) {
         assert(m_in);
-        for(uint i = 1; i < next_findex; i++)
+        for(UINT32 i = 1; i < next_findex; i++)
             if (files[i].name == name)
                 return i;
         return 0;
     }
-    uint allocate() {
+    UINT32 allocate() {
         return num_pages ++;
     }
     void read_page(UINT32 offset, UCHAR* page) {
@@ -163,7 +163,7 @@ FilerBase::FilerBase() {
 bool FilerSave::is_valid() const { return m_valid; }
 
 FilerSave::FilerSave(const char* name) {
-    uint fi = m_onef_i = onef.get_findex();
+    UINT32 fi = m_onef_i = onef.get_findex();
     onef.files[fi].name = name2u(name);
     onef.files[fi].size = 0;
     onef.files[fi].node = 0;
@@ -257,7 +257,7 @@ void FilerLoad::load_page() {
     rarely_if(not m_valid)
         return;
 
-    if (tell() >= onef.files[m_onef_i].size ) {
+    rarely_if (tell() >= onef.files[m_onef_i].size ) {
         *m_valid_ptr = m_valid = false;
         return;                 // EOF
     }

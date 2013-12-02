@@ -56,7 +56,7 @@ protected:
     RCoder rcoder;
 
     struct {
-        UINT64 count;
+        // UINT64 count;
         UINT64 Ns_index;
         UINT64 Nn_index;
     } m_last;
