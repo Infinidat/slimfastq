@@ -61,12 +61,12 @@ void croak(const char* fmt, long long num) {
 }
 
 void Config::statistics_dump() const {
-    fprintf(stderr, ":::: Info: \n");
+    fprintf(stderr, ":::: Info ::::\n");
     for (std::map<std::string, std::string>::iterator it = info_map.begin();
          it != info_map.end();
          it ++ )
-        fprintf(stderr, "%s=%s\n", it->first.c_str(), it->second.c_str());
-    fprintf(stderr, ":::: Files: \n");
+        fprintf(stderr, "%s\t%s=\t%s\n", it->first.c_str(), it->first.length() < 9? "\t" : "", it->second.c_str());
+    fprintf(stderr, "\n:::: Files ::::\n");
     FilerLoad::confess();
     exit(0);
 }
