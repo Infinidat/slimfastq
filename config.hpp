@@ -39,6 +39,8 @@ class Config;
 void croak(const char* msg               ) __attribute__ ((noreturn, cold));
 void croak(const char* fmt, long long num) __attribute__ ((noreturn, cold));
 
+class FilerSave;
+class FilerLoad;
 class Config {
     // Singleton - croaks if already exists
 public:
@@ -49,6 +51,7 @@ public:
     FILE * file_usr() const { return reinterpret_cast<FILE*>(f_usr);}
     int   version, level;
     bool  encode, profiling;
+    unsigned long long chapter_size;
 
     void load_info() const;
     void set_info(const char* key, const char* val) const;
@@ -61,6 +64,7 @@ public:
 private:
     void usage() const;
     void statistics_dump() const;
+    void chapters_dump() const;
 
     FILE  *f_usr;
     FilerSave* m_info_filer;

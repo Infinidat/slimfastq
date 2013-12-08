@@ -30,13 +30,15 @@
 #include <stdlib.h>
 
 #include "filer.hpp"
+#include "common.hpp"
+#include "xfile.hpp"
 
-static void croak(const char* fmt, long long num) __attribute__ ((noreturn, cold));
-static void croak(const char* fmt, long long num) {
-    fprintf(stderr, fmt, num, errno ? strerror(errno) : "");
-    fprintf(stderr, "\n");
-    exit(1);
-}
+// static void croak(const char* fmt, long long num) __attribute__ ((noreturn, cold));
+// static void croak(const char* fmt, long long num) {
+//     fprintf(stderr, fmt, num, errno ? strerror(errno) : "");
+//     fprintf(stderr, "\n");
+//     exit(1);
+// }
 
 struct OneFile {
     struct file_attr_t {
@@ -141,7 +143,6 @@ void FilerLoad::init(FILE* in)  { onef.init_read(in)  ; }
 void FilerLoad::confess()       { onef.do_confess()   ; }
 
 // Base
-
 static UINT64 name2u(const char* name) {
     UINT64 uname ;
     assert(strlen(name) <=8 );
@@ -283,4 +284,17 @@ void FilerLoad::load_page() {
     UINT64 size = onef.files[m_onef_i].size;
     m_count = size/FILER_PAGE == m_page_count ? size % FILER_PAGE : FILER_PAGE ;
     m_page_count++;
+}
+
+void FilerSave::save_bookmark(BookMark & bmk) const {
+    UINT16 i = bmk.mark.nfiles ++ ;
+    bmk.file[i].onef_i = m_onef_i ;
+    bmk.file[i].node_p = m_node_p ;
+    bmk.file[i].node_i = m_node_i ;
+    bmk.file[i].page_cnt = m_page_count;
+    bmk.file[i].page_cur = m_cur ;
+}
+
+void FilerLoad::load_bookmark() {
+
 }

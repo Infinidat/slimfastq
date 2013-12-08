@@ -84,6 +84,8 @@ public:
     void save_3(const UCHAR* buf, size_t size);
     // void filer_init();
     bool is_valid();
+    void save_bookmark(BookMark & bmk) const ;
+
 private:
     FilerSave* filer;
 };

@@ -110,6 +110,14 @@ tost: all
 		done || break ; \
 	done
 
+FQ_FILE_250M=../1000/short.fastq
+oprof:
+	make run
+	sudo rm -R oprofile_data/ || true
+	sudo operf ./slimfastq.run -u $(FQ_FILE_250M) -f /tmp/r -O -1
+	opreport -o /tmp/prof -s sample -g -l slimfastq.run
+	head /tmp/prof
+
 playground:
 	@ echo $(filter-out molder.cpp, $(shell echo *.cpp))
 

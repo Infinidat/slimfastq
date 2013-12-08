@@ -34,6 +34,7 @@
 #include "filer.hpp"
 #include "base2_ranger.hpp"
 #include "xfile.hpp"
+#include "bookmark.hpp"
 
 class GenBase {
 protected:
@@ -85,6 +86,8 @@ public:
     {    save_x(gen, qlt, size, BRANGER_MASK_3); }
     void save_4(const UCHAR* gen, UCHAR* qlt, size_t size)
     {    save_x(gen, qlt, size, BRANGER_MASK_4); }
+
+    void save_bookmark(BookMark & bmk) const ;
 
 private:
     inline UCHAR normalize_gen(UCHAR gen, UCHAR &qlt);

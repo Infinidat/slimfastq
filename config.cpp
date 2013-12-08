@@ -38,6 +38,7 @@
 #include <fstream>
 
 #include "config.hpp"
+#include "usrs.hpp"
 
 // Globals
 unsigned long long g_record_count = 0;
@@ -61,6 +62,10 @@ void croak(const char* fmt, long long num) {
     exit(1);
 }
 
+void Config::chapters_dump() const {
+    UsrLoad::bookmark_dump();
+    exit(0);
+}
 void Config::statistics_dump() const {
     fprintf(stderr, ":::: Info ::::\n");
     for (std::map<std::string, std::string>::iterator it = info_map.begin();
@@ -158,8 +163,12 @@ Usage: \n\
  3: best compression, use about 80M \n\
  4: compress little more, but very costly (competition mode?) \n\
 \n\
+-M <SIZE>        : bookmark each <SIZE>MB as a chapter (default 200MB) \n\
+-I               : index chapters \n\
+-C <X>           : decopress chapter X \n\
+\n\
 -v / -h          : internal version / this message \n\
--S               : internal statistics about a compressed file (set by -f)\n\
+-S               : internal statistics about a compressed file (the value of -f)\n\
 \n\
 Intuitive use of 'slimfastq A B' : \n\
 If A appears to be a fastq file, and:\n\
@@ -167,7 +176,8 @@ If A appears to be a fastq file, and:\n\
 If A appears to be a slimfastq file, and: \n\
     B does not exist (or -O option is used): decompress A to B \n\
     no B is specified: dcompress to stdout \n\
-"); }                      // exit ?
+"); exit(0);
+}
 
 // (DISABLED -TBD)-s size          : set partition to <size> (megabyte units) \n\ -
 // (DISABLED -TBD)-p partition     : only open this partition (-d implied) \n\    -
@@ -210,14 +220,17 @@ void Config::init(int argc, char **argv, int ver) {
 
     initialized = true;
     version = ver;
+    chapter_size = 0;
 
     std::string usr, fil;
     bool overwrite = false;
     bool statistics = false;
+    bool list_chapters = false;
 
     // TODO? long options 
-    // const char* short_opt = "POvhd 1234 u:f:s:p:l:"; 
-    const char* short_opt = "SPOvhd 1234 u:f:l:"; 
+    // const char* short_opt = "POvhd 1234 u:f:s:p:l:";
+    if (argc == 1) usage();
+    const char* short_opt = "SPOvhd 1234 u:f:l: IC:M:"; 
     for ( int opt = getopt(argc, argv, short_opt);
           opt != -1;
           opt     = getopt(argc, argv, short_opt))
@@ -246,23 +259,33 @@ void Config::init(int argc, char **argv, int ver) {
             exit(0);
         case 'h':
             usage();
-            exit(0);
         case 'S': statistics = true; encode = false; break;
+
+        case 'I': // list chapters index
+            list_chapters = true;
+            break;
+        case 'C': // Decomp chapter X
+            break;
+            
+        case 'M': // mark chapters according to size
+            chapter_size = optarg ? strtoll(optarg, 0, 0) : 200 ;
+            break;
             
         default:
             croak("Ilagal args: use -h for help");
         }
 
-    for (char** files = argv+optind; *files; files++) {
-        FILE* fh = fopen(*files, "rb");
+    while (optind < argc) {
+        char *file = argv[optind ++];
+        FILE* fh = fopen(file, "rb");
         if (! fh) {
             if  (not encode and not usr.length())
-                usr = *files;
+                usr = file;
             else if (encode and not fil.length())
-                fil = *files;
+                fil = file;
             else {
                 fprintf(stderr, "What am I suppose to do with '%s'?\n (please specify explicitly with -f/-u prefix)\n(Note: not an existing file)\n",
-                        *files);
+                        file);
                 exit(1);
             }
             continue;
@@ -274,22 +297,21 @@ void Config::init(int argc, char **argv, int ver) {
         if (cnt and
             not fil.length() and
             0 == strncmp(initline, sfqstamp, strlen(sfqstamp))) {
-            fil = *files;
+            fil = file;
             encode = !! usr.length();
         }
         else if (cnt and
                  not usr.length() and
                  initline[0] == '@') {
-            usr = *files;
+            usr = file;
         }
         else {
-            fprintf(stderr, "What am I suppose to do with '%s'?\n (please specify explicitly with -f/-u prefix)\n(Note: file exists!)\n", *files);
+            fprintf(stderr, "What am I suppose to do with '%s'?\n (please specify explicitly with -f/-u prefix)\n(Note: file exists!)\n", file);
             exit(1);
         }
     }
 
     check_op(fil.length(), 'f');
-
     const char* wr_flags = overwrite ? "wb" : "wbx" ;
     if (encode) {
         FILE* fh = fopen(fil.c_str(), wr_flags);
@@ -303,12 +325,15 @@ void Config::init(int argc, char **argv, int ver) {
         if (usr.length()) {
             set_info("orig.filename", usr.c_str());
             f_usr = fopen(usr.c_str(), "rb") ;
+            check_fh(f_usr, usr, true);
+            fseek(f_usr, 0L, SEEK_END);
+            set_info("orig.size", ftell(f_usr));
+            fseek(f_usr, 0L, SEEK_SET);
         }
         else {
             set_info("orig.filename", "<< stdin >>");
             f_usr = stdin ;
         }
-        check_fh(f_usr, usr, true);
     }
     else {
         FILE* fh = fopen(fil.c_str(), "rb");
@@ -317,6 +342,8 @@ void Config::init(int argc, char **argv, int ver) {
         load_info();
         if (statistics)
             statistics_dump();
+        if (list_chapters)
+            chapters_dump();
 
         level = range_level(get_long("config.level", 2));
 

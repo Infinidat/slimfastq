@@ -33,6 +33,7 @@
 
 #include "filer.hpp"
 #include "power_ranger.hpp"     // exception list
+#include "bookmark.hpp"
 
 class XFileBase {
 
@@ -58,6 +59,9 @@ public:
     ~XFileSave();
     bool put(UINT64 gap);
     void put_str(const UCHAR* p, size_t len);
+    void put_dat(const UCHAR* p, size_t len);
+
+    void save_bookmark(BookMark & bmk) const ;
 };
 
 class XFileLoad : private XFileBase {
@@ -68,6 +72,7 @@ public:
     ~XFileLoad();
     UINT64 get();
     UCHAR* get_str(UCHAR* p);
+    void   get_dat(UCHAR* p, size_t len);
 };
 
 

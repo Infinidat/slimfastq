@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include "bookmark.hpp"
 
 #define FILER_PAGE 0x2000
 
@@ -53,6 +54,7 @@ protected:
     FilerBase();
 };
 
+// TODO: separate file structure and filer handler class.
 class FilerSave : private FilerBase {
 public:
     static void init(FILE* in);
@@ -69,6 +71,7 @@ public:
         return m_valid;
     }
 
+    void save_bookmark(BookMark& bmk) const ;
 private:
     void save_node(UINT32 next_node);
     void save_page();
@@ -91,6 +94,7 @@ public:
         return m_valid ? m_buff[m_cur++] : 0;
     }
 
+    void load_bookmark();
 private:
     void load_page();
 };

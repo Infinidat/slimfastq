@@ -96,6 +96,11 @@ void RecSave::put_type(UCHAR i, seg_type type) {
     ranger[i].type.put(&rcoder, type);
 }
 
+void RecSave::save_bookmark(BookMark & bmk) const  {
+    filer->save_bookmark(bmk);
+    x_file->save_bookmark(bmk);
+}
+
 RecLoad::RecLoad() {
     m_valid = true;
     range_init();

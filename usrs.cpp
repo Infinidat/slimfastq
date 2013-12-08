@@ -33,6 +33,60 @@
 #include "gens.hpp"
 #include "recs.hpp"
 #include "qlts.hpp"
+#include "bookmark.hpp"
+
+// Bookmark section
+void set_bookmark( XFileSave* xf,
+                   const UsrSave* usr,
+                   const RecSave* rec,
+                   const GenSave* gen,
+                   const QltSave* qlt) {
+
+    BookMark bmk;
+    bmk.mark.rec_count = g_record_count;
+    bmk.mark.gen_count = g_genofs_count;
+    bmk.mark.offset = usr->tell();
+    bmk.mark.nfiles = 0;
+    usr->save_bookmark(bmk);
+    rec->save_bookmark(bmk);
+    gen->save_bookmark(bmk);
+    qlt->save_bookmark(bmk);
+
+    xf->put_dat((const UCHAR*) &bmk.mark, sizeof(bmk.mark));
+    for (int i = 0; i < bmk.mark.nfiles; i++)
+        xf->put_dat((const UCHAR*) &bmk.file[i], sizeof(bmk.file[i]));
+}
+
+    
+bool fill_bookmark( XFileLoad* xf,
+                    BookMark& bmk) {
+
+    xf->get_dat((UCHAR*) &bmk.mark, sizeof(bmk.mark));
+    for (int i = 0; i < bmk.mark.nfiles; i++)
+        xf->get_dat((UCHAR*) &bmk.file[i], sizeof(bmk.file[i]));
+
+    return bmk.mark.rec_count > 0;
+}
+
+void UsrLoad::bookmark_dump() {
+    BookMark bmk;
+    XFileLoad* xf = new XFileLoad("bmk");
+    UINT64 prev_offs = 0;
+    UINT64 index = 0;
+    while (fill_bookmark(xf, bmk)) {
+        fprintf(stdout, "%lld:\t offs=%lld\t size=%lld\n",
+                index, prev_offs, bmk.mark.offset-prev_offs);
+        index ++;
+        prev_offs = bmk.mark.offset;
+    }
+    UINT64 total_size = conf.get_long("orig.size");
+    if (total_size)
+        fprintf(stdout, "%lld:\t offs=%lld\t size=%lld\n",
+                index, prev_offs, total_size-prev_offs);
+    else 
+        fprintf(stdout, "%lld:\t offs=%lld\t size=?\n",
+                index, prev_offs);
+}
 
 UsrSave::UsrSave() {
     BZERO(m_last);
@@ -79,6 +133,10 @@ void UsrSave::load_page() {
         m_valid = false;
     else
         m_page_count++;
+}
+
+UINT64 UsrSave::tell() const {
+    return (m_page_count * PLL_SIZE) + m_cur - PLL_STRT;
 }
 
 void UsrSave::update(exception_t type, UCHAR dat) {
@@ -230,24 +288,29 @@ bool UsrSave::get_record() {
 #undef  CHECK_OVERFLOW
 }
 
-// UINT64 UsrSave::estimate_rec_limit() {
-//     int  i, cnt;
-//     for (i = m_cur, cnt=0;
-//          i < m_end and cnt < 4;
-//          i ++ )
-//         if (m_buff[i] == '\n')
-//             cnt ++;
-//     
-//     if (cnt < 4)
-//         croak("This usr file is too small");
-// 
-//     UINT64 limit = conf.partition.size / (i-m_cur);
-//     // if (limit < 500000)
-//     if (limit < 5000) // for debuging
-//         croak("This partition partition is too small (records limit=%lld)", limit);
-// 
-//     return limit;
-// }
+UINT64 UsrSave::estimate_rec_limit(UINT64 c_size) {
+    if (c_size == 0)
+        return 0;
+
+    int  i, cnt;
+    for (i = m_cur, cnt=0;
+         i < m_end and cnt < 4;
+         i ++ )
+        if (m_buff[i] == '\n')
+            cnt ++;
+    
+    if (cnt < 4)
+        croak("This usr file is too small");
+
+    UINT64 limit = c_size / (i-m_cur);
+    // if (limit < 500000)
+    if (limit < 5000) // for debuging
+        croak("This partition partition is too small (records limit=%lld)", limit);
+
+    conf.set_info("chapter.count", limit);
+
+    return limit;
+}
 
 int UsrSave::encode() {
 
@@ -257,6 +320,10 @@ int UsrSave::encode() {
     GenSave gen;
     QltSave qlt;
 
+    UINT64 c_recs = estimate_rec_limit(conf.chapter_size * 1000000);
+    UINT64 c_cnt  = 0;
+    XFileSave * xf_bmk = c_recs ? new XFileSave("bmk") : NULL;
+
     switch (conf.level) {
 
     case 1:
@@ -264,17 +331,17 @@ int UsrSave::encode() {
             gen.save_1(mp.gen, mp.qlt, m_llen);
             rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
             qlt.save_1(mp.qlt, m_llen);
+            rarely_if(c_recs and c_cnt ++ > c_recs) 
+                c_cnt = 0, set_bookmark(xf_bmk, this, &rec, &gen, &qlt);
         } break;
     case 2: default:
         while( ++ g_record_count < sanity  and get_record() ) {
-
             gen.save_2(mp.gen, mp.qlt, m_llen);
             rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
             qlt.save_2(mp.qlt, m_llen);
         } break;
     case 3:
         while( ++ g_record_count < sanity  and get_record() ) {
-
             gen.save_3(mp.gen, mp.qlt, m_llen);
             rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
             qlt.save_3(mp.qlt, m_llen);
@@ -287,6 +354,7 @@ int UsrSave::encode() {
         } break;
     }
     conf.set_info("num_records", g_record_count-1);
+    DELETE(xf_bmk);
     return 0;
 }
 
@@ -460,4 +528,8 @@ int UsrLoad::decode() {
     }
     // sanity: verify all objects are done (by croak?)
     return 0;
+}
+
+void UsrSave::save_bookmark(BookMark & bmk) const  {
+    x_file->save_bookmark(bmk);
 }

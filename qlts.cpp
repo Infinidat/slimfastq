@@ -219,3 +219,6 @@ UINT32 QltLoad::load_3(UCHAR* buf, const size_t size) {
     return m_valid ? size : 0;
 }
 
+void QltSave::save_bookmark(BookMark & bmk) const  {
+    filer->save_bookmark(bmk);
+}

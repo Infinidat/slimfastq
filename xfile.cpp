@@ -98,3 +98,22 @@ UCHAR* XFileLoad::get_str(UCHAR* p) {
         p[j] = ranger_str.get(&rcoder);
     return p + len;
 }
+
+void XFileSave::put_dat(const UCHAR* p, size_t len) {
+    rarely_if(not m_init) init();
+    for (UINT32 j = 0; j < len; j++)
+        ranger_str.put(&rcoder, p[j]);
+}
+
+void XFileLoad::get_dat(UCHAR* p, size_t len) {
+    rarely_if(not m_init) init();
+
+    for (UINT32 j = 0; j < len; j++)
+        p[j] = ranger_str.get(&rcoder);
+}
+
+void XFileSave::save_bookmark(BookMark & bmk) const {
+    if (not m_init) return;
+    filer->save_bookmark(bmk);
+}
+

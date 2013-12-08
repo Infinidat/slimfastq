@@ -52,6 +52,8 @@ public:
     ~UsrSave();
 
     int encode();
+    UINT64 tell() const;
+    void save_bookmark(BookMark & bmk) const;
 
 private:
     bool get_record();
@@ -62,7 +64,7 @@ private:
     inline void expect(UCHAR chr);
     bool mid_rec_msg() const ;
     void determine_record();
-    UINT64 estimate_rec_limit();
+    UINT64 estimate_rec_limit(UINT64 c_size);
 
     struct {
         UCHAR solid_pf_gen;
@@ -92,6 +94,8 @@ private:
 
 class UsrLoad {
 public:
+    static void bookmark_dump();
+
     UsrLoad();
     ~UsrLoad();
     int decode();

@@ -227,3 +227,9 @@ UINT32 GenLoad::load_x(UCHAR* gen, const UCHAR* qlt, size_t size, const UINT64 m
 
     return m_valid ? size : 0;
 }
+
+void GenSave::save_bookmark(BookMark & bmk) const  {
+    filer->save_bookmark(bmk);
+    x_Ns ->save_bookmark(bmk);
+    x_Nn ->save_bookmark(bmk);
+}

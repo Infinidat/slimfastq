@@ -31,6 +31,7 @@
 #include <stdio.h>
 
 #include "xfile.hpp"
+#include "bookmark.hpp"
 
 class RecBase {
 protected: 
@@ -97,6 +98,8 @@ public:
     void save_1(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end);
     void save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end);
     void save_3(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end);
+
+    void save_bookmark(BookMark & bmk) const ;
 private:
     void save_first_line(const UCHAR* buf, const UCHAR* end);
     void put_type(UCHAR i, seg_type type, UCHAR len);
