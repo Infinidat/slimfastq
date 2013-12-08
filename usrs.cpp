@@ -339,18 +339,24 @@ int UsrSave::encode() {
             gen.save_2(mp.gen, mp.qlt, m_llen);
             rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
             qlt.save_2(mp.qlt, m_llen);
+            rarely_if(c_recs and c_cnt ++ > c_recs) 
+                c_cnt = 0, set_bookmark(xf_bmk, this, &rec, &gen, &qlt);
         } break;
     case 3:
         while( ++ g_record_count < sanity  and get_record() ) {
             gen.save_3(mp.gen, mp.qlt, m_llen);
             rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
             qlt.save_3(mp.qlt, m_llen);
+            rarely_if(c_recs and c_cnt ++ > c_recs) 
+                c_cnt = 0, set_bookmark(xf_bmk, this, &rec, &gen, &qlt);
         } break;
     case 4:
         while( ++ g_record_count < sanity  and get_record() ) {
             gen.save_4(mp.gen, mp.qlt, m_llen);
             rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
             qlt.save_3(mp.qlt, m_llen);
+            rarely_if(c_recs and c_cnt ++ > c_recs) 
+                c_cnt = 0, set_bookmark(xf_bmk, this, &rec, &gen, &qlt);
         } break;
     }
     conf.set_info("num_records", g_record_count-1);
@@ -419,7 +425,7 @@ void UsrLoad::update() {
         case ET_END: default: assert(0);
         }
         m_last.index = x_file->get(); 
-    }    
+    }
 }
 
 void UsrLoad::save() {
