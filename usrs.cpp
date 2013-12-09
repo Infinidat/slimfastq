@@ -56,7 +56,6 @@ void set_bookmark( XFileSave* xf,
     for (int i = 0; i < bmk.mark.nfiles; i++)
         xf->put_dat((const UCHAR*) &bmk.file[i], sizeof(bmk.file[i]));
 }
-
     
 bool fill_bookmark( XFileLoad* xf,
                     BookMark& bmk) {
@@ -428,7 +427,7 @@ void UsrLoad::update() {
     }
 }
 
-void UsrLoad::save() {
+void UsrLoad::publish() {
 
     size_t llen = m_llen + m_llen_factor ;
 
@@ -487,7 +486,7 @@ int UsrLoad::decode() {
 
             qlt.load_1(b_qlt, m_llen);
             gen.load_1(b_gen, b_qlt, m_llen);
-            save();
+            publish();
         } break;
     case 2: default:
         while (n_recs --) {
@@ -501,7 +500,7 @@ int UsrLoad::decode() {
 
             qlt.load_2(b_qlt, m_llen);
             gen.load_2(b_gen, b_qlt, m_llen);
-            save();
+            publish();
         } break;
     case 3:
         while (n_recs --) {
@@ -515,7 +514,7 @@ int UsrLoad::decode() {
 
             qlt.load_3(b_qlt, m_llen);
             gen.load_3(b_gen, b_qlt, m_llen);
-            save();
+            publish();
         } break;
     case 4:
         while (n_recs --) {
@@ -529,7 +528,7 @@ int UsrLoad::decode() {
 
             qlt.load_3(b_qlt, m_llen);
             gen.load_4(b_gen, b_qlt, m_llen);
-            save();
+            publish();
         } break;
     }
     // sanity: verify all objects are done (by croak?)

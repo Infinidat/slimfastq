@@ -86,11 +86,8 @@ class Log64Ranger {
     }
 
 public:
-    Log64Ranger() {
-        // *(UINT64*) iend = 0;
-        // iend = 0, total = 0, count = 0;
-        bzero(&iend, 8);
-    }
+    void reset() { bzero(&iend, 8); } // iend = 0, total = 0, count = 0;
+    Log64Ranger() { reset() ; }
 
     inline void put(RCoder *rc, UCHAR sym) {
         UINT32 sumf  = 0;

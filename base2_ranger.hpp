@@ -66,10 +66,8 @@ class Base2Ranger {
     }
 
 public:
-    Base2Ranger() {
-        // BZERO made it slower
-        freq_val = INIT_VAL * M_ONES;
-    }
+    void reset() { freq_val = INIT_VAL * M_ONES; } // BZERO made it slower
+    Base2Ranger() { reset();}
 
     inline void put(RCoder *rc, UCHAR sym) {
         UINT16 total = getsum();

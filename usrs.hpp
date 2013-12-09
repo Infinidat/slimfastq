@@ -101,7 +101,7 @@ public:
     int decode();
 
 private:
-    void save();
+    void publish();
     void update();
     void putline(UCHAR* buf, UINT32 size);
 

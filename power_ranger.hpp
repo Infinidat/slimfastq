@@ -85,9 +85,8 @@ class PowerRanger {
     }
 
 public:
-    PowerRanger() {
-        bzero(this, sizeof(*this));
-    }
+    void reset() { bzero(this, sizeof(*this)); }
+    PowerRanger() { reset(); }
 
     void put(RCoder *rc, UCHAR sym) {
         UINT32 sumf  = 0;
@@ -136,6 +135,7 @@ class PowerRangerU {
     PowerRanger p[14];
 
 public:
+    void reset() { bzero(p, 14*sizeof(p[0])); }
     bool put_u(RCoder *rc, UINT64 num) {
 
     likely_if(num <= 0x7f) {
