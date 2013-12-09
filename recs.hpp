@@ -65,7 +65,8 @@ protected:
 
     bool m_valid;
 
-    void range_init();
+    // void range_init();
+    void ranger_reset();
 
     // Division of labor
     enum seg_type {
@@ -99,7 +100,7 @@ public:
     void save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end);
     void save_3(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end);
 
-    void save_bookmark(BookMark & bmk) const ;
+    void save_bookmark(BookMark & bmk);
 private:
     void save_first_line(const UCHAR* buf, const UCHAR* end);
     void put_type(UCHAR i, seg_type type, UCHAR len);
@@ -120,6 +121,8 @@ public:
     size_t load_1(UCHAR* buf, const UCHAR* prev);
     size_t load_2(UCHAR* buf, const UCHAR* prev);
     size_t load_3(UCHAR* buf, const UCHAR* prev);
+
+    void reset_bookmark();
 
 private:
     size_t load_first_line(UCHAR* buf);

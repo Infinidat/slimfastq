@@ -104,7 +104,7 @@ tost: all
 		for f in $(TEST_FILES) ; do \
 			echo $$f $$l...   ; \
 			rm /tmp/mytst.* || true; \
-			./slimfastq -u $$f -f /tmp/mytst -O -l $$l && \
+			./slimfastq -u $$f -f /tmp/mytst -O -l $$l -M2 && \
 			./slimfastq -u /tmp/mytst.fastq -f /tmp/mytst -O -d && \
 			tools/mydiff.pl $$f /tmp/mytst.fastq || break ; \
 		done || break ; \

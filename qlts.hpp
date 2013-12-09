@@ -48,6 +48,7 @@ protected:
 
     size_t ranger_cnt();
     // void   range_init();
+    void   ranger_reset();
 
     inline static UINT32 calc_last_1 (UINT32 last, UCHAR b) {
         return ( b | (last << 6) ) & RANGER_MASK_1;
@@ -84,7 +85,7 @@ public:
     void save_3(const UCHAR* buf, size_t size);
     // void filer_init();
     bool is_valid();
-    void save_bookmark(BookMark & bmk) const ;
+    void save_bookmark(BookMark & bmk) ;
 
 private:
     FilerSave* filer;
@@ -99,6 +100,8 @@ public:
     UINT32 load_1 (UCHAR* buffer, const size_t size);
     UINT32 load_2 (UCHAR* buffer, const size_t size);
     UINT32 load_3 (UCHAR* buffer, const size_t size);
+
+    void reset_bookmark();
 private:
     FilerLoad* filer;
 };

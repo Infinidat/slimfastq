@@ -53,7 +53,7 @@ public:
 
     int encode();
     UINT64 tell() const;
-    void save_bookmark(BookMark & bmk) const;
+    void save_bookmark(BookMark & bmk);
 
 private:
     bool get_record();
@@ -99,6 +99,8 @@ public:
     UsrLoad();
     ~UsrLoad();
     int decode();
+
+    void reset_bookmark();
 
 private:
     void publish();

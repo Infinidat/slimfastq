@@ -61,7 +61,7 @@ public:
     void put_str(const UCHAR* p, size_t len);
     void put_dat(const UCHAR* p, size_t len);
 
-    void save_bookmark(BookMark & bmk) const ;
+    void save_bookmark(BookMark & bmk) ;
 };
 
 class XFileLoad : private XFileBase {
@@ -73,6 +73,8 @@ public:
     UINT64 get();
     UCHAR* get_str(UCHAR* p);
     void   get_dat(UCHAR* p, size_t len);
+
+    void reset_bookmark();
 };
 
 

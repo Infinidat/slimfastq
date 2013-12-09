@@ -36,11 +36,11 @@
 #include "bookmark.hpp"
 
 // Bookmark section
-void set_bookmark( XFileSave* xf,
-                   const UsrSave* usr,
-                   const RecSave* rec,
-                   const GenSave* gen,
-                   const QltSave* qlt) {
+void bookmark_set( XFileSave* xf,
+                   UsrSave* usr,
+                   RecSave* rec,
+                   GenSave* gen,
+                   QltSave* qlt) {
 
     BookMark bmk;
     bmk.mark.rec_count = g_record_count;
@@ -56,8 +56,18 @@ void set_bookmark( XFileSave* xf,
     for (int i = 0; i < bmk.mark.nfiles; i++)
         xf->put_dat((const UCHAR*) &bmk.file[i], sizeof(bmk.file[i]));
 }
+
+void bookmark_reset(UsrLoad* usr,
+                    RecLoad* rec,
+                    GenLoad* gen,
+                    QltLoad* qlt) {
+    usr->reset_bookmark();
+    rec->reset_bookmark();
+    gen->reset_bookmark();
+    qlt->reset_bookmark();
+}
     
-bool fill_bookmark( XFileLoad* xf,
+bool bookmark_fill( XFileLoad* xf,
                     BookMark& bmk) {
 
     xf->get_dat((UCHAR*) &bmk.mark, sizeof(bmk.mark));
@@ -72,7 +82,7 @@ void UsrLoad::bookmark_dump() {
     XFileLoad* xf = new XFileLoad("bmk");
     UINT64 prev_offs = 0;
     UINT64 index = 0;
-    while (fill_bookmark(xf, bmk)) {
+    while (bookmark_fill(xf, bmk)) {
         fprintf(stdout, "%lld:\t offs=%lld\t size=%lld\n",
                 index, prev_offs, bmk.mark.offset-prev_offs);
         index ++;
@@ -331,7 +341,7 @@ int UsrSave::encode() {
             rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
             qlt.save_1(mp.qlt, m_llen);
             rarely_if(c_recs and c_cnt ++ > c_recs) 
-                c_cnt = 0, set_bookmark(xf_bmk, this, &rec, &gen, &qlt);
+                c_cnt = 0, bookmark_set(xf_bmk, this, &rec, &gen, &qlt);
         } break;
     case 2: default:
         while( ++ g_record_count < sanity  and get_record() ) {
@@ -339,7 +349,7 @@ int UsrSave::encode() {
             rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
             qlt.save_2(mp.qlt, m_llen);
             rarely_if(c_recs and c_cnt ++ > c_recs) 
-                c_cnt = 0, set_bookmark(xf_bmk, this, &rec, &gen, &qlt);
+                c_cnt = 0, bookmark_set(xf_bmk, this, &rec, &gen, &qlt);
         } break;
     case 3:
         while( ++ g_record_count < sanity  and get_record() ) {
@@ -347,7 +357,7 @@ int UsrSave::encode() {
             rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
             qlt.save_3(mp.qlt, m_llen);
             rarely_if(c_recs and c_cnt ++ > c_recs) 
-                c_cnt = 0, set_bookmark(xf_bmk, this, &rec, &gen, &qlt);
+                c_cnt = 0, bookmark_set(xf_bmk, this, &rec, &gen, &qlt);
         } break;
     case 4:
         while( ++ g_record_count < sanity  and get_record() ) {
@@ -355,7 +365,7 @@ int UsrSave::encode() {
             rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
             qlt.save_3(mp.qlt, m_llen);
             rarely_if(c_recs and c_cnt ++ > c_recs) 
-                c_cnt = 0, set_bookmark(xf_bmk, this, &rec, &gen, &qlt);
+                c_cnt = 0, bookmark_set(xf_bmk, this, &rec, &gen, &qlt);
         } break;
     }
     conf.set_info("num_records", g_record_count-1);
@@ -472,69 +482,111 @@ int UsrLoad::decode() {
     UCHAR* b_qlt = m_qlt+1 ;
     UCHAR* b_gen = m_gen+1 ;
 
-    switch (conf.level) {
-    case 1:
-        while (n_recs --) {
-            g_record_count++;
-            UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
-            UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
+    UINT64 c_recs = conf.get_long("chapter.count");
+    UINT64 c_cnt  = 0;
 
-            rarely_if (g_record_count == m_last.index) update();
-            m_rec_size = rec.load_2(b_rec, p_rec);
-            rarely_if (not m_rec_size)
-                croak("premature EOF - %llu records left", n_recs+1);
+    const int level = conf.level;
+    while (n_recs --) {
+        g_record_count++;
+        UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
+        UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
 
+        rarely_if (g_record_count == m_last.index) update();
+        m_rec_size = rec.load_2(b_rec, p_rec);
+        rarely_if (not m_rec_size)
+            croak("premature EOF - %llu records left", n_recs+1);
+
+        switch(level) {
+        case 1:
             qlt.load_1(b_qlt, m_llen);
             gen.load_1(b_gen, b_qlt, m_llen);
-            publish();
-        } break;
-    case 2: default:
-        while (n_recs --) {
-            g_record_count++;
-            UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
-            UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
-            rarely_if (g_record_count == m_last.index) update();
-            m_rec_size = rec.load_2(b_rec, p_rec);
-            rarely_if (not m_rec_size)
-                croak("premature EOF - %llu records left", n_recs+1);
-
+            break;
+        case 2: default:
             qlt.load_2(b_qlt, m_llen);
             gen.load_2(b_gen, b_qlt, m_llen);
-            publish();
-        } break;
-    case 3:
-        while (n_recs --) {
-            g_record_count++;
-            UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
-            UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
-            rarely_if (g_record_count == m_last.index) update();
-            m_rec_size = rec.load_2(b_rec, p_rec);
-            rarely_if (not m_rec_size)
-                croak("premature EOF - %llu records left", n_recs+1);
-
+            break;
+        case 3:
             qlt.load_3(b_qlt, m_llen);
             gen.load_3(b_gen, b_qlt, m_llen);
-            publish();
-        } break;
-    case 4:
-        while (n_recs --) {
-            g_record_count++;
-            UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
-            UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
-            rarely_if (g_record_count == m_last.index) update();
-            m_rec_size = rec.load_2(b_rec, p_rec);
-            rarely_if (not m_rec_size)
-                croak("premature EOF - %llu records left", n_recs+1);
-
+            break;
+        case 4: 
             qlt.load_3(b_qlt, m_llen);
             gen.load_4(b_gen, b_qlt, m_llen);
-            publish();
-        } break;
+            break;
+        }
+        publish();
+
+        rarely_if(c_recs and c_cnt++ > c_recs)
+            c_cnt = 0, bookmark_reset(this, &rec, &gen, &qlt);
     }
+
+    // switch (conf.level) {
+    // case 1:
+    //     while (n_recs --) {
+    //         g_record_count++;
+    //         UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
+    //         UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
+    // 
+    //         rarely_if (g_record_count == m_last.index) update();
+    //         m_rec_size = rec.load_2(b_rec, p_rec);
+    //         rarely_if (not m_rec_size)
+    //             croak("premature EOF - %llu records left", n_recs+1);
+    // 
+    //         qlt.load_1(b_qlt, m_llen);
+    //         gen.load_1(b_gen, b_qlt, m_llen);
+    //         publish();
+    //     } break;
+    // case 2: default:
+    //     while (n_recs --) {
+    //         g_record_count++;
+    //         UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
+    //         UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
+    //         rarely_if (g_record_count == m_last.index) update();
+    //         m_rec_size = rec.load_2(b_rec, p_rec);
+    //         rarely_if (not m_rec_size)
+    //             croak("premature EOF - %llu records left", n_recs+1);
+    // 
+    //         qlt.load_2(b_qlt, m_llen);
+    //         gen.load_2(b_gen, b_qlt, m_llen);
+    //         publish();
+    //     } break;
+    // case 3:
+    //     while (n_recs --) {
+    //         g_record_count++;
+    //         UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
+    //         UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
+    //         rarely_if (g_record_count == m_last.index) update();
+    //         m_rec_size = rec.load_2(b_rec, p_rec);
+    //         rarely_if (not m_rec_size)
+    //             croak("premature EOF - %llu records left", n_recs+1);
+    // 
+    //         qlt.load_3(b_qlt, m_llen);
+    //         gen.load_3(b_gen, b_qlt, m_llen);
+    //         publish();
+    //     } break;
+    // case 4:
+    //     while (n_recs --) {
+    //         g_record_count++;
+    //         UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
+    //         UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
+    //         rarely_if (g_record_count == m_last.index) update();
+    //         m_rec_size = rec.load_2(b_rec, p_rec);
+    //         rarely_if (not m_rec_size)
+    //             croak("premature EOF - %llu records left", n_recs+1);
+    // 
+    //         qlt.load_3(b_qlt, m_llen);
+    //         gen.load_4(b_gen, b_qlt, m_llen);
+    //         publish();
+    //     } break;
+    // }
     // sanity: verify all objects are done (by croak?)
     return 0;
 }
 
-void UsrSave::save_bookmark(BookMark & bmk) const  {
+void UsrSave::save_bookmark(BookMark & bmk) {
     x_file->save_bookmark(bmk);
+}
+
+void UsrLoad::reset_bookmark() {
+    x_file->reset_bookmark();
 }

@@ -38,6 +38,10 @@ size_t QltBase::ranger_cnt() {
                           RANGER_SIZE_2 ;
 }
 
+void QltBase::ranger_reset() {
+    bzero(ranger, sizeof(ranger[0]) * ranger_cnt());
+}
+
 // void QltBase::range_init() {
 //     // bzero(ranger, sizeof(ranger[0]) * ranger_cnt());
 // }
@@ -219,6 +223,11 @@ UINT32 QltLoad::load_3(UCHAR* buf, const size_t size) {
     return m_valid ? size : 0;
 }
 
-void QltSave::save_bookmark(BookMark & bmk) const  {
+void QltSave::save_bookmark(BookMark & bmk) {
     filer->save_bookmark(bmk);
+    ranger_reset();
+}
+
+void QltLoad::reset_bookmark() {
+    ranger_reset();
 }

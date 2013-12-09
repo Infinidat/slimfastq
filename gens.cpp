@@ -43,10 +43,17 @@ size_t GenBase::ranger_cnt() {
     }
 }
 
-void GenBase::range_init() {
-    // bzero(ranger, sizeof(ranger[0])* cnt);
-    // memset(ranger, 2, sizeof(ranger[0])*BRANGER_SIZE); - how could it be slower than nantive constructor? I would expect 'memset' implementation to use pipes
+void GenBase::ranger_reset() {
+    Base2Ranger* r_end  = ranger + ranger_cnt();
+    for (Base2Ranger* r = ranger;
+         r < r_end ;
+         r++) r->reset();
 }
+
+// void GenBase::range_init() {
+//     // bzero(ranger, sizeof(ranger[0])* cnt);
+//     // memset(ranger, 2, sizeof(ranger[0])*BRANGER_SIZE); - how could it be slower than nantive constructor? I would expect 'memset' implementation to use pipes
+// }
 
 //////////
 // save //
@@ -66,7 +73,7 @@ GenSave::GenSave() {
     assert(filer);
     rcoder.init(filer);
     ranger = new Base2Ranger[ranger_cnt()];
-    range_init();
+    // range_init();
 
     x_Ns = new XFileSave("gen.Ns");
     x_Nn = new XFileSave("gen.Nn");
@@ -179,7 +186,7 @@ GenLoad::GenLoad() {
     assert(filer);
     rcoder.init(filer);
     ranger = new Base2Ranger[ranger_cnt()];
-    range_init();
+    // range_init();
 
     x_Ns = new XFileLoad("gen.Ns");
     x_Nn = new XFileLoad("gen.Nn");
@@ -228,8 +235,16 @@ UINT32 GenLoad::load_x(UCHAR* gen, const UCHAR* qlt, size_t size, const UINT64 m
     return m_valid ? size : 0;
 }
 
-void GenSave::save_bookmark(BookMark & bmk) const  {
+void GenSave::save_bookmark(BookMark & bmk) {
     filer->save_bookmark(bmk);
     x_Ns ->save_bookmark(bmk);
     x_Nn ->save_bookmark(bmk);
+    ranger_reset();
+}
+
+void GenLoad::reset_bookmark() {
+
+    x_Ns->reset_bookmark();
+    x_Nn->reset_bookmark();
+    ranger_reset();
 }

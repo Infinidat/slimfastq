@@ -69,8 +69,8 @@ protected:
     bool   m_lossless, m_valid;
     UCHAR  m_N_byte;
 
-    void range_init();
     size_t ranger_cnt();
+    void   ranger_reset();
 };
 
 class GenSave : private GenBase {
@@ -87,7 +87,7 @@ public:
     void save_4(const UCHAR* gen, UCHAR* qlt, size_t size)
     {    save_x(gen, qlt, size, BRANGER_MASK_4); }
 
-    void save_bookmark(BookMark & bmk) const ;
+    void save_bookmark(BookMark & bmk);
 
 private:
     inline UCHAR normalize_gen(UCHAR gen, UCHAR &qlt);
@@ -111,6 +111,8 @@ public:
     {return load_x(gen, qlt, size, BRANGER_MASK_3); }
     UINT32 load_4(UCHAR* gen, const UCHAR* qlt, size_t size)
     {return load_x(gen, qlt, size, BRANGER_MASK_4); }
+
+    void reset_bookmark();
 
 private:
     UINT32 load_x(UCHAR* gen, const UCHAR* qlt, size_t size, const UINT64 mask);

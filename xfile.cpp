@@ -112,8 +112,19 @@ void XFileLoad::get_dat(UCHAR* p, size_t len) {
         p[j] = ranger_str.get(&rcoder);
 }
 
-void XFileSave::save_bookmark(BookMark & bmk) const {
+void XFileSave::save_bookmark(BookMark & bmk) {
     if (not m_init) return;
     filer->save_bookmark(bmk);
+
+    ranger.reset();
+    ranger_str.reset();
+}
+
+void XFileLoad::reset_bookmark() {
+    if (not m_init or
+        not m_valid) return;
+
+    ranger.reset();
+    ranger_str.reset();
 }
 
