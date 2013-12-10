@@ -114,7 +114,7 @@ private:
 
 class RecLoad : private RecBase {
 public:
-     RecLoad();
+     RecLoad(BookMark* bmk=NULL);
     ~RecLoad();
 
     inline bool is_valid() {return m_valid;}

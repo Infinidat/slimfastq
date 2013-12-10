@@ -94,7 +94,7 @@ public:
         return m_valid ? m_buff[m_cur++] : 0;
     }
 
-    void load_bookmark();
+    void goto_bookmark(BookMark* bmk);
 private:
     void load_page();
 };

@@ -99,6 +99,7 @@ public:
     UsrLoad();
     ~UsrLoad();
     int decode();
+    int decode_one_chapter();
 
     void reset_bookmark();
 

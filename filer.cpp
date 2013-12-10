@@ -264,15 +264,15 @@ void FilerLoad::load_page() {
     }
  
     rarely_if (m_node_p == 0) {
-        assert(m_node_i == 0);
+        assert(m_node_i == 0);  // first page
         onef.read_page(onef.files[m_onef_i].first, m_buff);
         m_node_p = onef.files[m_onef_i].node;
-        if (m_node_p) 
+        if (m_node_p)           // first node
             onef.read_page(m_node_p, (UCHAR*) m_node);
         m_node_i = 0;
     }
     else {
-        rarely_if (m_node_i == maxi_nodes) { // load node page
+        rarely_if (m_node_i == maxi_nodes) { // next node 
             m_node_p = m_node[ maxi_nodes ]; // keep it for debugging
             onef.read_page(m_node_p, (UCHAR*) m_node);
             m_node_i = 0;
@@ -295,6 +295,21 @@ void FilerSave::save_bookmark(BookMark & bmk) const {
     bmk.file[i].page_cur = m_cur ;
 }
 
-void FilerLoad::load_bookmark() {
-
+void FilerLoad::goto_bookmark(BookMark * bmk) {
+    if (not m_valid) return;
+    int i = bmk->get_my_i(m_onef_i);
+    assert(i >= 0); 
+    m_node_p     = bmk->file[i].node_p;
+    m_node_i     = bmk->file[i].node_i;
+    m_page_count = bmk->file[i].page_cnt;
+    m_cur        = bmk->file[i].page_cur;
+    // reload node, page
+    if (m_node_p) {
+        onef.read_page(m_node_p, (UCHAR*) m_node);
+        if (m_node_i) {
+            onef.read_page(m_node[m_node_i-1], m_buff); // avoid reload?
+            UINT64 size = onef.files[m_onef_i].size;
+            m_count = size/FILER_PAGE == m_page_count ? size % FILER_PAGE : FILER_PAGE ;
+        }
+    }
 }

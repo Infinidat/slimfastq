@@ -165,7 +165,7 @@ Usage: \n\
 \n\
 -M <SIZE>        : bookmark each <SIZE>MB as a chapter (default 200MB) \n\
 -I               : index chapters \n\
--C <X>           : decopress chapter X \n\
+-C <X>           : decopress chapter X only \n\
 \n\
 -v / -h          : internal version / this message \n\
 -S               : internal statistics about a compressed file (the value of -f)\n\
@@ -230,7 +230,7 @@ void Config::init(int argc, char **argv, int ver) {
     // TODO? long options 
     // const char* short_opt = "POvhd 1234 u:f:s:p:l:";
     if (argc == 1) usage();
-    const char* short_opt = "SPOvhd 1234 u:f:l: IC:M:"; 
+    const char* short_opt = "SPOvhd 1234 I u:f:l: C:M: "; 
     for ( int opt = getopt(argc, argv, short_opt);
           opt != -1;
           opt     = getopt(argc, argv, short_opt))
@@ -265,9 +265,12 @@ void Config::init(int argc, char **argv, int ver) {
             list_chapters = true;
             break;
         case 'C': // Decomp chapter X
+            encode = false;
+            chapter_bookmark = 1 + (optarg ? strtoll(optarg, 0, 0) : 0);
             break;
             
         case 'M': // mark chapters according to size
+            encode = true;
             chapter_size = optarg ? strtoll(optarg, 0, 0) : 200 ;
             break;
             
@@ -303,6 +306,11 @@ void Config::init(int argc, char **argv, int ver) {
         else if (cnt and
                  not usr.length() and
                  initline[0] == '@') {
+            usr = file;
+        }
+        else if (not usr.length() and
+                 not encode and
+                 (not cnt or overwrite)) {
             usr = file;
         }
         else {

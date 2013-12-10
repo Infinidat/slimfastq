@@ -51,7 +51,7 @@ public:
     FILE * file_usr() const { return reinterpret_cast<FILE*>(f_usr);}
     int   version, level;
     bool  encode, profiling;
-    unsigned long long chapter_size;
+    unsigned long long chapter_size, chapter_bookmark;
 
     void load_info() const;
     void set_info(const char* key, const char* val) const;

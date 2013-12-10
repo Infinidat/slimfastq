@@ -134,8 +134,9 @@ void QltSave::save_3(const UCHAR* buf, size_t size) {
 // load //
 //////////
 
-QltLoad::QltLoad() {
+QltLoad::QltLoad(BookMark* bmk) {
     filer = new FilerLoad("qlt", &m_valid);
+    if (bmk) filer->goto_bookmark(bmk);
     ranger = new Log64Ranger[ranger_cnt()];
 
     rcoder.init(filer);

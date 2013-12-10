@@ -19,6 +19,13 @@ struct BookMark {
         UINT64 page_cnt;
         UINT64 page_cur;
     } file[MAX_BMK_FILES];
-};
+
+    int get_my_i(UINT32 onef_i) {
+        for (int i = 0; i < mark.nfiles; i++)
+            if (file[i].onef_i == onef_i)
+                return i;
+        return -1;
+    }
+} PACKED ;
 
 #endif

@@ -57,16 +57,6 @@ void bookmark_set( XFileSave* xf,
         xf->put_dat((const UCHAR*) &bmk.file[i], sizeof(bmk.file[i]));
 }
 
-void bookmark_reset(UsrLoad* usr,
-                    RecLoad* rec,
-                    GenLoad* gen,
-                    QltLoad* qlt) {
-    usr->reset_bookmark();
-    rec->reset_bookmark();
-    gen->reset_bookmark();
-    qlt->reset_bookmark();
-}
-    
 bool bookmark_fill( XFileLoad* xf,
                     BookMark& bmk) {
 
@@ -77,6 +67,16 @@ bool bookmark_fill( XFileLoad* xf,
     return bmk.mark.rec_count > 0;
 }
 
+void bookmark_reset(UsrLoad* usr,
+                    RecLoad* rec,
+                    GenLoad* gen,
+                    QltLoad* qlt) {
+    usr->reset_bookmark();
+    rec->reset_bookmark();
+    gen->reset_bookmark();
+    qlt->reset_bookmark();
+}
+    
 void UsrLoad::bookmark_dump() {
     BookMark bmk;
     XFileLoad* xf = new XFileLoad("bmk");
@@ -402,7 +402,6 @@ UsrLoad::UsrLoad() {
     }
 
     x_file = new XFileLoad("usr.x");
-    m_last.index = x_file->get();
     m_rec_total = 0;
 }
 
@@ -468,10 +467,80 @@ void UsrLoad::putline(UCHAR* buf, UINT32 size) {
         croak("USR: Error writing output");
 }
 
-int UsrLoad::decode() {
+int UsrLoad::decode_one_chapter() {
 
     size_t n_recs = conf.get_long("num_records");
+    if ( ! n_recs)
+        croak("Zero records, what's going on?");
 
+    BookMark bmk;
+    XFileLoad* xf = new XFileLoad("bmk");
+
+    UINT64 index = conf.chapter_bookmark-1;
+    if (index) {
+        for (UINT64 i = 0; i < index; i ++)
+            if (not bookmark_fill(xf, bmk))
+                croak("Can't find bookmark %lld. Please use -I for index", index);
+
+        g_record_count = bmk.mark.rec_count;
+        g_genofs_count = bmk.mark.gen_count;
+        x_file->goto_bookmark(&bmk);
+    }
+
+    RecLoad rec(index ? &bmk : NULL);
+    GenLoad gen(index ? &bmk : NULL);
+    QltLoad qlt(index ? &bmk : NULL);
+
+    UCHAR* b_qlt = m_qlt+1 ;
+    UCHAR* b_gen = m_gen+1 ;
+
+    UINT64 c_recs = conf.get_long("chapter.count");
+    const int level = conf.level;
+    n_recs =
+        c_recs < n_recs-g_record_count ?
+        c_recs : n_recs-g_record_count ;
+
+    m_last.index = x_file->get();
+
+    while (n_recs --) {
+        g_record_count++;
+        UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
+        UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
+
+        rarely_if (g_record_count == m_last.index) update();
+        m_rec_size = rec.load_2(b_rec, p_rec);
+        rarely_if (not m_rec_size)
+            croak("premature EOF - %llu records left", n_recs+1);
+
+        switch(level) {
+        case 1:
+            qlt.load_1(b_qlt, m_llen);
+            gen.load_1(b_gen, b_qlt, m_llen);
+            break;
+        case 2: default:
+            qlt.load_2(b_qlt, m_llen);
+            gen.load_2(b_gen, b_qlt, m_llen);
+            break;
+        case 3:
+            qlt.load_3(b_qlt, m_llen);
+            gen.load_3(b_gen, b_qlt, m_llen);
+            break;
+        case 4: 
+            qlt.load_3(b_qlt, m_llen);
+            gen.load_4(b_gen, b_qlt, m_llen);
+            break;
+        }
+        publish();
+    }
+    return 0;
+}
+
+int UsrLoad::decode() {
+
+    if (conf.chapter_bookmark)
+        return decode_one_chapter();
+
+    size_t n_recs = conf.get_long("num_records");
     if ( ! n_recs)
         croak("Zero records, what's going on?");
 
@@ -484,6 +553,8 @@ int UsrLoad::decode() {
 
     UINT64 c_recs = conf.get_long("chapter.count");
     UINT64 c_cnt  = 0;
+
+    m_last.index = x_file->get();
 
     const int level = conf.level;
     while (n_recs --) {
@@ -590,3 +661,4 @@ void UsrSave::save_bookmark(BookMark & bmk) {
 void UsrLoad::reset_bookmark() {
     x_file->reset_bookmark();
 }
+

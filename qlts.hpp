@@ -93,7 +93,7 @@ private:
 
 class QltLoad : private QltBase {
 public:
-    QltLoad();
+    QltLoad(BookMark* bmk=NULL);
     ~QltLoad();
 
     bool is_valid();

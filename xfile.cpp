@@ -128,3 +128,9 @@ void XFileLoad::reset_bookmark() {
     ranger_str.reset();
 }
 
+void XFileLoad::goto_bookmark(BookMark* bmk) {
+    if (not m_init or
+        not m_valid) return;
+
+    filer->goto_bookmark(bmk);
+}

@@ -75,6 +75,7 @@ public:
     void   get_dat(UCHAR* p, size_t len);
 
     void reset_bookmark();
+    void goto_bookmark(BookMark* bmk);
 };
 
 

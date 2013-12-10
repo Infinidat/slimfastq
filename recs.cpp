@@ -103,17 +103,21 @@ void RecSave::put_type(UCHAR i, seg_type type) {
     ranger[i].type.put(&rcoder, type);
 }
 
-RecLoad::RecLoad() {
+RecLoad::RecLoad(BookMark* bmk) {
     m_valid = true;
     // range_init();
 
     filer = new FilerLoad("rec", &m_valid);
     assert(filer);
+    if (bmk) filer->goto_bookmark(bmk);
+
     rcoder.init(filer);
 
     BZERO(m_last);
 
     x_file = new XFileLoad("rec.x");
+    if (bmk) x_file->goto_bookmark(bmk);
+
     m_last.index = x_file->get();
 }
 

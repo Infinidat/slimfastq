@@ -100,7 +100,7 @@ private:
 
 class GenLoad : private GenBase {
 public:
-    GenLoad();
+    GenLoad(BookMark *bmk=NULL);
     ~GenLoad();
 
     UINT32 load_1(UCHAR* gen, const UCHAR* qlt, size_t size)

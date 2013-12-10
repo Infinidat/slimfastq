@@ -167,7 +167,7 @@ void GenSave::save_x(const UCHAR* gen, UCHAR* qlt, size_t size, const UINT64 mas
  // load //
  //////////
 
-GenLoad::GenLoad() {
+GenLoad::GenLoad(BookMark *bmk) {
     BZERO(m_last);
     m_valid = true;
     m_lossless = true; // *conf.get_info("gen.lossless") == '0' ? false : true ;
@@ -184,12 +184,15 @@ GenLoad::GenLoad() {
 
     filer = new FilerLoad("gen", &m_valid);
     assert(filer);
+    if (bmk) filer->goto_bookmark(bmk);
     rcoder.init(filer);
     ranger = new Base2Ranger[ranger_cnt()];
     // range_init();
 
     x_Ns = new XFileLoad("gen.Ns");
+    if (bmk) x_Ns->goto_bookmark(bmk);
     x_Nn = new XFileLoad("gen.Nn");
+    if (bmk) x_Nn->goto_bookmark(bmk);
     m_last.Ns_index = x_Ns->get();
     m_last.Nn_index = x_Nn->get();
 }
