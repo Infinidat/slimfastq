@@ -154,20 +154,23 @@ Usage: \n\
 -1, -2, -3, -4   : alias for -l 1, -l 2, etc \n\
  where levels are:\n\
  1: worse compression, yet uses less than 4M memory \n\
- 2: use about 30M memory, resonable compression \n\
- 3: best compression, uses about 80M   <default> \n\
+ 2: uses about 30M memory, resonable compression \n\
+ 3: uses about 80M memory, best compression <default level> \n\
  4: compress little more, but very costly (competition mode?) \n\
 \n\
--v / -h          : internal version / this message \n\
--S               : internal statistics about a compressed file (set by -f)\n\
+-v               : version : internal version \n\
+-h               : help : this message \n\
+-S               : stat : information about a compressed file (set by -f)\n\
 \n\
 Intuitive use of 'slimfastq A B' : \n\
 If A appears to be a fastq file, and:\n\
-    B does not exists (or -O option is used): compress A to B \n\
+    B does not exists, or -O option is used: compress A to B \n\
 If A appears to be a slimfastq file, and: \n\
-    B does not exist (or -O option is used): decompress A to B \n\
-    no B is specified: dcompress to stdout \n\
-"); }                      // exit ?
+    B does not exist, or -O option is used: decompress A to B \n\
+    B is not specified: dcompress A to stdout \n\
+");
+    exit(0);
+}
 
 // (DISABLED -TBD)-s size          : set partition to <size> (megabyte units) \n\ -
 // (DISABLED -TBD)-p partition     : only open this partition (-d implied) \n\    -
@@ -215,6 +218,7 @@ void Config::init(int argc, char **argv, int ver) {
     bool overwrite = false;
     bool statistics = false;
 
+    if (argc == 1) usage();
     // TODO? long options 
     // const char* short_opt = "POvhd 1234 u:f:s:p:l:"; 
     const char* short_opt = "SPOvhd 1234 u:f:l:"; 
@@ -246,7 +250,6 @@ void Config::init(int argc, char **argv, int ver) {
             exit(0);
         case 'h':
             usage();
-            exit(0);
         case 'S': statistics = true; encode = false; break;
             
         default:
@@ -254,6 +257,7 @@ void Config::init(int argc, char **argv, int ver) {
         }
 
     while (optind < argc) {
+        // DWIM guessing ...
         char *file = argv[optind ++];
         FILE* fh = fopen(file, "rb");
         if (! fh) {
