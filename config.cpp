@@ -154,8 +154,8 @@ Usage: \n\
 -1, -2, -3, -4   : alias for -l 1, -l 2, etc \n\
  where levels are:\n\
  1: worse compression, yet uses less than 4M memory \n\
- 2: default - use about 30M memory, resonable compression \n\
- 3: best compression, use about 80M \n\
+ 2: use about 30M memory, resonable compression \n\
+ 3: best compression, uses about 80M   <default> \n\
  4: compress little more, but very costly (competition mode?) \n\
 \n\
 -v / -h          : internal version / this message \n\
@@ -192,7 +192,7 @@ Config::Config(){
 
     encode = true;
     profiling = false;
-    level = 2;
+    level = 3;
     m_info_filer = NULL;
 }
 
@@ -253,16 +253,17 @@ void Config::init(int argc, char **argv, int ver) {
             croak("Ilagal args: use -h for help");
         }
 
-    for (char** files = argv+optind; *files; files++) {
-        FILE* fh = fopen(*files, "rb");
+    while (optind < argc) {
+        char *file = argv[optind ++];
+        FILE* fh = fopen(file, "rb");
         if (! fh) {
             if  (not encode and not usr.length())
-                usr = *files;
+                usr = file;
             else if (encode and not fil.length())
-                fil = *files;
+                fil = file;
             else {
                 fprintf(stderr, "What am I suppose to do with '%s'?\n (please specify explicitly with -f/-u prefix)\n(Note: not an existing file)\n",
-                        *files);
+                        file);
                 exit(1);
             }
             continue;
@@ -274,20 +275,30 @@ void Config::init(int argc, char **argv, int ver) {
         if (cnt and
             not fil.length() and
             0 == strncmp(initline, sfqstamp, strlen(sfqstamp))) {
-            fil = *files;
+            fil = file;
             encode = !! usr.length();
         }
         else if (cnt and
                  not usr.length() and
                  initline[0] == '@') {
-            usr = *files;
+            usr = file;
+        }
+        else if (not usr.length() and
+                 not encode and
+                 (not cnt or overwrite)) {
+            usr = file;
+        }
+        else if (encode and
+                 usr.length() and
+                 not fil.length() and
+                 (not cnt or overwrite)) {
+            fil = file;
         }
         else {
-            fprintf(stderr, "What am I suppose to do with '%s'?\n (please specify explicitly with -f/-u prefix)\n(Note: file exists!)\n", *files);
+            fprintf(stderr, "What am I suppose to do with '%s'?\n (please specify explicitly with -f/-u prefix)\n(Note: file exists!)\n", file);
             exit(1);
         }
     }
-
     check_op(fil.length(), 'f');
 
     const char* wr_flags = overwrite ? "wb" : "wbx" ;
@@ -303,12 +314,15 @@ void Config::init(int argc, char **argv, int ver) {
         if (usr.length()) {
             set_info("orig.filename", usr.c_str());
             f_usr = fopen(usr.c_str(), "rb") ;
-        }
+            check_fh(f_usr, usr, true);
+            fseek(f_usr, 0L, SEEK_END);
+            set_info("orig.size", ftell(f_usr));
+            fseek(f_usr, 0L, SEEK_SET);
+          }
         else {
             set_info("orig.filename", "<< stdin >>");
             f_usr = stdin ;
         }
-        check_fh(f_usr, usr, true);
     }
     else {
         FILE* fh = fopen(fil.c_str(), "rb");
