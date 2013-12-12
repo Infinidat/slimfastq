@@ -69,7 +69,8 @@ class Log64Ranger {
     inline UCHAR update_freq(int i) {
 
         rarely_if(freq[i] > (MAX_FREQ - STEP)) {
-            rarely_if((freq[i] == total))
+            rarely_if( i == 0 and
+                       freq[i] + 20U > total)
                 return syms[i];
 
             normalize();
@@ -102,10 +103,8 @@ public:
                 syms[iend] = iend;
 
         for (; syms[i] != sym; sumf += freq[i++]);
-        sumf += i;
 
-        UINT32 vtot = total + NSYM;
-        rc->Encode(sumf, freq[i]+1, vtot);
+        rc->Encode(sumf+i, freq[i]+1, total + NSYM);
 
         update_freq(i);
     }

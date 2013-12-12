@@ -23,112 +23,44 @@
 /***********************************************************************************************************************/
 
 
-#ifndef FQ_RECS_H
-#define FQ_RECS_H
+#ifndef FQ_BFILE_H
+#define FQ_BFILE_H
 
+
+#include <stdio.h>
 #include "common.hpp"
 #include "config.hpp"
-#include <stdio.h>
+#include "filer.hpp"
+#include "coder.hpp"
 
-#include "xfile.hpp"
-
-class RecBase {
-protected: 
-
-    RecBase()  {}
-    ~RecBase() {rcoder.done();}
-
-    struct ranger_t {
-        PowerRanger type;
-        PowerRanger  str;
-        PowerRangerU num;
-    } PACKED ;
-
-    ranger_t ranger[66];
-
-    RCoder rcoder;
-
-    struct {
-        bool   initilized;
-        UINT64 index;
-        // long long num[10]; - TODO: cache array of prev atoi and end pointers
-    } m_last;
-
-    struct {
-        UINT32 big_i;
-        UINT32 str_n;
-        UINT32 str_l;
-        UINT32 new_n;
-        UINT32 new_l;
-    } stats;
-
-    bool m_valid;
-
-    // void range_init();
-
-    // Division of labor
-    enum seg_type {
-        ST_SAME = 0,
-        ST_SMAP = 1,
-        ST_LINE = 2,
-
-        ST_GAP = 0,
-        ST_PAG = 1,
-        ST_STR = 2,
-    };
-
-    struct space_map {
-        int   off[65];
-        int   wln[65];
-        UCHAR str[65];
-        UCHAR len;
-    };
-    space_map smap[2];
-    bool imap;
-    // UINT64 last_map;
-    void map_space(const UCHAR* p, bool index);
+class PowerRanger;
+class BFileBase {
+protected:
+    UCHAR bmap;
+    UCHAR bcnt;
+    PowerRanger* ranger;
+    RCoder rc;
+    BFileBase();
+    ~BFileBase();
 };
 
-class RecSave : private RecBase {
-public:
-     RecSave();
-    ~RecSave();
-
-    void save_1(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end);
-    void save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end);
-    void save_3(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end);
-private:
-    void save_first_line(const UCHAR* buf, const UCHAR* end);
-    void put_type(UCHAR i, seg_type type);
-    void put_num(UCHAR i, long long num);
-    void put_str(UCHAR i, const UCHAR* p, UINT32 len);
-
+class BFileSave: private BFileBase {
     FilerSave* filer;
-    XFileSave* x_file;
-};
-
-class RecLoad : private RecBase {
 public:
-     RecLoad();
-    ~RecLoad();
-
-    inline bool is_valid() {return m_valid;}
-    size_t load_1(UCHAR* buf, const UCHAR* prev);
-    size_t load_2(UCHAR* buf, const UCHAR* prev);
-    size_t load_3(UCHAR* buf, const UCHAR* prev);
-
-private:
-    size_t load_first_line(UCHAR* buf);
-
-    long long get_num (UCHAR i);
-    UCHAR     get_type(UCHAR i);
-    UCHAR     get_len (UCHAR i);
-    UCHAR*    get_str (UCHAR i, UCHAR* p);
-
-    FilerLoad* filer;
-    XFileLoad* x_file;
+    BFileSave(const char* name);
+    ~BFileSave();
+    void putb(bool bit);
 };
 
+class BFileLoad: private BFileBase {
+    FilerLoad* filer;
+    bool is_valid;
+public:
+    BFileLoad(const char* name);
+    ~BFileLoad();
+    bool getb();
+};
+    
+    
 
-
-#endif
+#endif  // FQ_BFILE_H

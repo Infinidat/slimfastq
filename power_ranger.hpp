@@ -33,6 +33,8 @@
 
 #include <string.h>
 
+class BFileSave ;
+class BFileLoad ;
 class PowerRanger {
     enum {
         STEP=14,
@@ -68,7 +70,8 @@ class PowerRanger {
     inline UCHAR update_freq(int i) {
 
         rarely_if(freq[i] > (MAX_FREQ - STEP)) {
-            if  (freq[i] + 256U > total)
+            if  (i == 0 and
+                 freq[i] + 256U > total)
                 return syms[i];
 
             normalize();
@@ -98,10 +101,8 @@ public:
                   syms[iend] = iend;
 
         for (; syms[i] != sym; sumf += freq[i++]);
-        sumf += i;
 
-        UINT32 vtot = total + NSYM;
-        rc->Encode(sumf, freq[i]+1, vtot);
+        rc->Encode(sumf+i, freq[i]+1, total + NSYM);
 
         update_freq(i);
     }

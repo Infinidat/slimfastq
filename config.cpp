@@ -153,7 +153,7 @@ Usage: \n\
 -l level         : compression level 1 to 4 (default is 2 ) \n\
 -1, -2, -3, -4   : alias for -l 1, -l 2, etc \n\
  where levels are:\n\
- 1: worse compression, yet uses less than 4M memory \n\
+ 1: uses less than 4M memory (!), yield worse compression \n\
  2: uses about 30M memory, resonable compression \n\
  3: uses about 80M memory, best compression <default level> \n\
  4: compress little more, but very costly (competition mode?) \n\
@@ -162,12 +162,12 @@ Usage: \n\
 -h               : help : this message \n\
 -S               : stat : information about a compressed file (set by -f)\n\
 \n\
-Intuitive use of 'slimfastq A B' : \n\
+Do what I mean - Intuitive use of 'slimfastq A B' : \n\
 If A appears to be a fastq file, and:\n\
     B does not exists, or -O option is used: compress A to B \n\
 If A appears to be a slimfastq file, and: \n\
     B does not exist, or -O option is used: decompress A to B \n\
-    B is not specified: dcompress A to stdout \n\
+    B is not specified: decompress A to stdout \n\
 ");
     exit(0);
 }

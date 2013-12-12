@@ -3,6 +3,9 @@
 // based on Eugene Shelwien's coders6c2.zip                                //
 //                                                                         //
 // (James admires the coder's efficiency, and so do I)                     //
+//                                                                         //
+// Also see                                                                //
+//       http://cpansearch.perl.org/src/SALVA/Compress-PPMd-0.10/Coder.hpp //
 /////////////////////////////////////////////////////////////////////////////
 
 

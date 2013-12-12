@@ -23,112 +23,56 @@
 /***********************************************************************************************************************/
 
 
-#ifndef FQ_RECS_H
-#define FQ_RECS_H
 
-#include "common.hpp"
-#include "config.hpp"
-#include <stdio.h>
+#include "bfiler.hpp"
+#include "power_ranger.hpp"
 
-#include "xfile.hpp"
+BFileBase::BFileBase() {
+    ranger = new PowerRanger();
+    assert(ranger);
+}
 
-class RecBase {
-protected: 
+BFileBase::~BFileBase() {
+    DELETE(ranger);
+}
 
-    RecBase()  {}
-    ~RecBase() {rcoder.done();}
+BFileSave::BFileSave(const char* name) {
+    filer = new FilerSave(name);
+    assert(filer);
+    rc.init(filer);
+}
 
-    struct ranger_t {
-        PowerRanger type;
-        PowerRanger  str;
-        PowerRangerU num;
-    } PACKED ;
+BFileSave::~BFileSave() {
+    if (bcnt and filer)
+        ranger->put(&rc, bmap);
+    rc.done();
+    DELETE(filer);
+}
 
-    ranger_t ranger[66];
+void BFileSave::putb(bool bit) {
+    bmap |= ((!!bit)<<bcnt++);
+    rarely_if (bcnt == 8) {
+        ranger->put(&rc, bmap);
+        bmap = bcnt = 0;
+    }
+}
 
-    RCoder rcoder;
+BFileLoad::BFileLoad(const char* name) {
+    filer = new FilerLoad(name, &is_valid);
+    assert(filer);
+    rc.init(filer);
+}
 
-    struct {
-        bool   initilized;
-        UINT64 index;
-        // long long num[10]; - TODO: cache array of prev atoi and end pointers
-    } m_last;
+BFileLoad::~BFileLoad() {
+    rc.done();
+    DELETE(filer);
+}
 
-    struct {
-        UINT32 big_i;
-        UINT32 str_n;
-        UINT32 str_l;
-        UINT32 new_n;
-        UINT32 new_l;
-    } stats;
+bool BFileLoad::getb() {
+    rarely_if(bcnt == 0) {
+        bcnt = 8;
+        bmap = ranger->get(&rc);
+    }
+    return !! (bmap & (0x100>> bcnt--));
+}
 
-    bool m_valid;
-
-    // void range_init();
-
-    // Division of labor
-    enum seg_type {
-        ST_SAME = 0,
-        ST_SMAP = 1,
-        ST_LINE = 2,
-
-        ST_GAP = 0,
-        ST_PAG = 1,
-        ST_STR = 2,
-    };
-
-    struct space_map {
-        int   off[65];
-        int   wln[65];
-        UCHAR str[65];
-        UCHAR len;
-    };
-    space_map smap[2];
-    bool imap;
-    // UINT64 last_map;
-    void map_space(const UCHAR* p, bool index);
-};
-
-class RecSave : private RecBase {
-public:
-     RecSave();
-    ~RecSave();
-
-    void save_1(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end);
-    void save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end);
-    void save_3(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end);
-private:
-    void save_first_line(const UCHAR* buf, const UCHAR* end);
-    void put_type(UCHAR i, seg_type type);
-    void put_num(UCHAR i, long long num);
-    void put_str(UCHAR i, const UCHAR* p, UINT32 len);
-
-    FilerSave* filer;
-    XFileSave* x_file;
-};
-
-class RecLoad : private RecBase {
-public:
-     RecLoad();
-    ~RecLoad();
-
-    inline bool is_valid() {return m_valid;}
-    size_t load_1(UCHAR* buf, const UCHAR* prev);
-    size_t load_2(UCHAR* buf, const UCHAR* prev);
-    size_t load_3(UCHAR* buf, const UCHAR* prev);
-
-private:
-    size_t load_first_line(UCHAR* buf);
-
-    long long get_num (UCHAR i);
-    UCHAR     get_type(UCHAR i);
-    UCHAR     get_len (UCHAR i);
-    UCHAR*    get_str (UCHAR i, UCHAR* p);
-
-    FilerLoad* filer;
-    XFileLoad* x_file;
-};
-
-
-
-#endif
