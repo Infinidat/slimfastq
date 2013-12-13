@@ -281,73 +281,57 @@ void test_power_ranger_extra() {
         { -0x7ffffff, 0x7ffffff, -100000L, 9999L,
           -1, 2994389, -2, -3
         };
+    const char* bname = "bf.tst";
     {
-        // FILE *fh = fopen(fname, "w");
-        // assert(fh);
-        // 
-        // FilerSave filer(fh) ;
-        // assert(filer.is_valid());
-
         PowerRangerU ranger;
-        // RCoder rcoder;
-        // rcoder.init(&filer);
-        // BZERO(ranger);
-        // RCoder* r = &rcoder;
         rc_init(0);
         RCoder* r = rc;
+        BFileSave bfile(bname);
+        BFileSave* bf = &bfile;
 
         for (int i = 0; i < 300; i++)
-            ranger.put_u(r, (i&0x7f));
+            ranger.put_u(r, (i&0x7f), bf);
         for (UINT64 i=0; i < 1000; i++)
-            ranger.put_u(r, i);
+            ranger.put_u(r, i, bf);
         for (UINT64 i=0xfff0; i < 0x10234; i++) 
-            ranger.put_u(r, i);
+            ranger.put_u(r, i, bf);
         for (int i = 0; i < 12; i++)
-            ranger.put_u(r, array[i]);
+            ranger.put_u(r, array[i], bf);
         for (int i = -300; i < 300; i++)
-            ranger.put_u(r, i);
+            ranger.put_u(r, i, bf);
         for (int i = 0; i < 8; i++)
-            ranger.put_u(r, 0|arrai[i]);
-        rc_finit();
+            ranger.put_u(r, 0|arrai[i], bf);
     }
+    rc_finit();
     {
-        // FILE *fh = fopen(fname, "r");
-        // assert(fh);
-        // bool valid;
-        // 
-        // FilerLoad filer(fh, &valid) ;
-        // assert(filer.is_valid());
-
         PowerRangerU ranger;
-        // RCoder rcoder;
-        // rcoder.init(&filer);
-        // BZERO(ranger);
-        // RCoder* r = &rcoder;
         rc_init(1);
         RCoder* r = rc;
+        BFileLoad bfile(bname);
+        BFileLoad* bf = &bfile ;
 
         for (int i = 0; i < 300; i++) {
-            UCHAR c = ranger.get_u(r);
+            UCHAR c = ranger.get_u(r, bf);
             assert(c == (i&0x7f));
         }
         for (UINT64 i=0; i < 1000; i++) {
-            UINT64 u = ranger.get_u(r);
+            UINT64 u = ranger.get_u(r, bf);
             assert(u == i);
         }
         for (UINT64 i=0xfff0; i < 0x10234; i++) {
-            UINT64 u = ranger.get_u(r);
+            UINT64 u = ranger.get_u(r, bf);
             assert(u == i);
         }
         for (int i = 0; i < 12; i++) {
-            UINT64 u = ranger.get_u(r);
+            UINT64 u = ranger.get_u(r, bf);
             assert(u == array[i]);
         }
         for (int i = -300; i < 300; i++) {
-            long l = ranger.get_u(r);
+            long l = ranger.get_u(r, bf);
             assert(l == i);
         }
         for (int i = 0; i < 8; i++) {
-            long u = ranger.get_u(r);
+            long u = ranger.get_u(r, bf);
             assert(u == arrai[i]);            
         }
         rc_finit();
@@ -405,13 +389,46 @@ void test_power_ranger_extra() {
 //     }
 // }
 
+void test_bfile() {
+    TITLE("bfile");
+    UINT64 dat = 0xdeadbeef00aacc11 ;
+    const char* fname = "/tmp/utest~filer";
+    const char* bname = "bf.tst";
+    FILE *fh = fopen(fname, "w");
+    assert(fh);
+    FilerSave::init(fh);
+    {
+        BFileSave bf(bname);
+        for (int i = 0 ; i < 800; i++)
+            bf.putb( !! (1&(dat >> (i % 64))));
+    }
+    FilerSave::finit();
+    fh = fopen(fname, "r");
+    assert(fh);
+    FilerLoad::init(fh);
+    {
+        BFileLoad bf(bname);
+        for (int i = 0 ; i < 800; i++) {
+            bool b = bf.getb();
+            assert(b == !! (1&(dat >> (i % 64))));
+        }
+    }
+}
+
+void test_power_ranger_bfile() {
+
+}
+
 int main(int argc, char *argv[]) {
 
     test_filer();
     test_log64_ranger();
+
     test_power_ranger();
-    // test_qlt();
+    test_bfile();
     test_power_ranger_extra();
+
+    // test_qlt();
     // test_recbase();
 
     return 0;

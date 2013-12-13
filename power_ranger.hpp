@@ -32,6 +32,7 @@
 #endif
 
 #include <string.h>
+#include "bfile.hpp"
 
 class BFileSave ;
 class BFileLoad ;
@@ -92,7 +93,7 @@ public:
         bzero(this, sizeof(*this));
     }
 
-    void put(RCoder *rc, UCHAR sym) {
+    void put(RCoder *rc, UCHAR sym, BFileSave* bf=NULL) {
         UINT32 sumf  = 0;
         UINT32 i = 0;
 
@@ -102,16 +103,34 @@ public:
 
         for (; syms[i] != sym; sumf += freq[i++]);
 
+#define ZERO_FAC 100U
+        if (bf and
+            freq[0] > ZERO_FAC and
+            freq[0] + ZERO_FAC >= total) {
+            if ( i == 0) {
+                bf->putb(true);
+                return;
+            }
+            else
+                bf->putb(false);
+        }
+
         rc->Encode(sumf+i, freq[i]+1, total + NSYM);
 
         update_freq(i);
     }
 
-    UINT16 get(RCoder *rc) {
+    UINT16 get(RCoder *rc, BFileLoad* bf=NULL) {
 
         UINT32 vtot = total + NSYM; // - iend;
         UINT32 sumf = 0;
         UINT32 i;
+
+        if (bf and iend and
+            freq[0] > ZERO_FAC and
+            freq[0] + ZERO_FAC >= total) 
+            if (bf->getb())
+                return syms[0];
 
         UINT32 prob = rc->GetFreq(vtot);
         for ( i = 0;
@@ -137,59 +156,59 @@ class PowerRangerU {
     PowerRanger p[14];
 
 public:
-    bool put_u(RCoder *rc, UINT64 num) {
+    bool put_u(RCoder *rc, UINT64 num, BFileSave* bf=NULL) {
 
-    likely_if(num <= 0x7f) {
-        p[0].put(rc, 0xff & num);
-        return false;
+        likely_if(num <= 0x7f) {
+            p[0].put(rc, 0xff & num, bf);
+            return false;
+        }
+        likely_if (num < 0x7ffe) {
+            p[0].put(rc, 0xff & (0x80 | (num>>8)), bf);
+            p[1].put(rc, 0xff & num, bf);
+            return false;
+        }
+        p[0].put(rc, 0xff, bf);
+        if (num < 1ULL<<32) {
+            p[1].put(rc, 0xfe, bf);
+            for (int shift=0, i=2; shift < 32; shift+=8, i++)
+                p[i].put(rc, 0xff & (num>>shift), bf);
+            return true;
+        }
+        {
+            p[1].put(rc, 0xff, bf);
+            for (int shift=0, i=6; shift < 64; shift+=8, i++)
+                p[i].put(rc, 0xff & (num>>shift), bf);
+            return true;
+        }
     }
-    likely_if (num < 0x7ffe) {
-        p[0].put(rc, 0xff & (0x80 | (num>>8)));
-        p[1].put(rc, 0xff & num);
-        return false;
-    }
-    p[0].put(rc, 0xff);
-    if (num < 1ULL<<32) {
-        p[1].put(rc, 0xfe);
-        for (int shift=0, i=2; shift < 32; shift+=8, i++)
-            p[i].put(rc, 0xff & (num>>shift));
-        return true;
-    }
-    {
-        p[1].put(rc, 0xff);
-        for (int shift=0, i=6; shift < 64; shift+=8, i++)
-            p[i].put(rc, 0xff & (num>>shift));
-        return true;
-    }
-}
 
-UINT64 get_u(RCoder *rc) {
+    UINT64 get_u(RCoder *rc, BFileLoad* bf=NULL) {
 
-    UINT64 num = p[0].get(rc);
-    rarely_if(num > 0x7f) {
+        UINT64 num = p[0].get(rc, bf);
+        rarely_if(num > 0x7f) {
     
-        num <<= 8;
-        num  |= p[1].get(rc);
-        likely_if(num < 0xfffe)
-            num &= 0x7fff;
+            num <<= 8;
+            num  |= p[1].get(rc, bf);
+            likely_if(num < 0xfffe)
+                num &= 0x7fff;
 
-        else likely_if (num == 0xfffe) {
-            num = 0;
-            for (int shift=0, i = 2; shift < 32; shift+=8, i++) {
-                UINT64 c = p[i].get(rc);
-                num  |= (c<<shift);
+            else likely_if (num == 0xfffe) {
+                    num = 0;
+                    for (int shift=0, i = 2; shift < 32; shift+=8, i++) {
+                        UINT64 c = p[i].get(rc, bf);
+                        num  |= (c<<shift);
+                    }
+                }
+            else {
+                num = 0;
+                for (int shift=0, i=6; shift < 64; shift+=8, i++) {
+                    UINT64 c = p[i].get(rc, bf);
+                    num  |= (c<<shift);
+                }
             }
         }
-        else {
-            num = 0;
-            for (int shift=0, i=6; shift < 64; shift+=8, i++) {
-                UINT64 c = p[i].get(rc);
-                num  |= (c<<shift);
-            }
-        }
+        return num;
     }
-    return num;
-}
 
 } PACKED;
 

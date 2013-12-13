@@ -105,6 +105,7 @@ private:
 
     FilerSave* filer;
     XFileSave* x_file;
+    BFileSave* b_file;
 };
 
 class RecLoad : private RecBase {
@@ -127,6 +128,7 @@ private:
 
     FilerLoad* filer;
     XFileLoad* x_file;
+    BFileLoad* b_file;
 };
 
 

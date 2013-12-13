@@ -23,44 +23,57 @@
 /***********************************************************************************************************************/
 
 
-#ifndef FQ_BFILE_H
-#define FQ_BFILE_H
 
+#include "bfile.hpp"
+#include "power_ranger.hpp"
 
-#include <stdio.h>
-#include "common.hpp"
-#include "config.hpp"
-#include "filer.hpp"
-#include "coder.hpp"
+BFileBase::BFileBase() {
+    ranger = new PowerRanger();
+    assert(ranger);
+    bmap = bcnt = 0;
+}
 
-class PowerRanger;
-class BFileBase {
-protected:
-    UCHAR bmap;
-    UCHAR bcnt;
-    PowerRanger* ranger;
-    RCoder rc;
-    BFileBase();
-    ~BFileBase();
-};
+BFileBase::~BFileBase() {
+    DELETE(ranger);
+}
 
-class BFileSave: private BFileBase {
-    FilerSave* filer;
-public:
-    BFileSave(const char* name);
-    ~BFileSave();
-    void putb(bool bit);
-};
+BFileSave::BFileSave(const char* name) {
+    filer = new FilerSave(name);
+    assert(filer);
+    rc.init(filer);
+}
 
-class BFileLoad: private BFileBase {
-    FilerLoad* filer;
-    bool is_valid;
-public:
-    BFileLoad(const char* name);
-    ~BFileLoad();
-    bool getb();
-};
-    
-    
+BFileSave::~BFileSave() {
+    if (bcnt and filer)
+        ranger->put(&rc, bmap);
+    rc.done();
+    DELETE(filer);
+}
 
-#endif  // FQ_BFILE_H
+void BFileSave::putb(bool bit) {
+    bmap |= ((!!bit)<<bcnt++);
+    rarely_if (bcnt == 8) {
+        ranger->put(&rc, bmap);
+        bmap = bcnt = 0;
+    }
+}
+
+BFileLoad::BFileLoad(const char* name) {
+    filer = new FilerLoad(name, &is_valid);
+    assert(filer);
+    rc.init(filer);
+}
+
+BFileLoad::~BFileLoad() {
+    rc.done();
+    DELETE(filer);
+}
+
+bool BFileLoad::getb() {
+    rarely_if(bcnt == 0) {
+        bcnt = 8;
+        bmap = ranger->get(&rc);
+    }
+    return !! (bmap & (0x100>> bcnt--));
+}
+

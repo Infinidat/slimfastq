@@ -52,6 +52,8 @@ RecSave::RecSave() {
 
     x_file = new XFileSave("rec.x");
 
+    b_file = new BFileSave("rec.b");
+
     smap[0].len = smap[1].len = 0;
 }
 
@@ -59,6 +61,7 @@ RecSave::~RecSave() {
     rcoder.done();
     DELETE(filer);
     DELETE(x_file);
+    DELETE(b_file);
     fprintf(stderr, "::: REC big int: %u | str num/sum: %u/%u | new line num/sum: %u/%u\n",
             stats.big_i, stats.str_n, stats.str_l, stats.new_n, stats.new_l );
 }
@@ -88,12 +91,12 @@ void RecSave::put_str(UCHAR i, const UCHAR* p, UINT32 len) {
 
 
 void RecSave::put_num(UCHAR i, long long num) {
-    if (ranger[i].num.put_u(&rcoder, num))
+    if (ranger[i].num.put_u(&rcoder, num, b_file))
         stats.big_i ++;
 }
 
 void RecSave::put_type(UCHAR i, seg_type type) {
-    ranger[i].type.put(&rcoder, type);
+    ranger[i].type.put(&rcoder, type, b_file);
 }
 
 RecLoad::RecLoad() {
@@ -106,13 +109,17 @@ RecLoad::RecLoad() {
 
     BZERO(m_last);
 
+    b_file = new BFileLoad("rec.b");
+
     x_file = new XFileLoad("rec.x");
     m_last.index = x_file->get();
 }
 
 RecLoad::~RecLoad() {
     rcoder.done();
+    DELETE(filer);
     DELETE(x_file);
+    DELETE(b_file);
 }
 
 size_t RecLoad::load_first_line(UCHAR* buf) {
@@ -125,11 +132,11 @@ size_t RecLoad::load_first_line(UCHAR* buf) {
 }
 
 UCHAR RecLoad::get_type(UCHAR i) {
-    return ranger[i].type.get(&rcoder);
+    return ranger[i].type.get(&rcoder, b_file);
 }
 
 long long RecLoad::get_num(UCHAR i) {
-    return ranger[i].num.get_u(&rcoder);
+    return ranger[i].num.get_u(&rcoder, b_file);
 }
 
 UCHAR* RecLoad::get_str(UCHAR i, UCHAR* p) {
