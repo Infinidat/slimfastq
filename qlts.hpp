@@ -86,6 +86,9 @@ public:
     bool is_valid();
 private:
     FilerSave* filer;
+    struct {
+        UINT32 extra_hi_qlt;
+    } m_last;
 };
 
 class QltLoad : private QltBase {

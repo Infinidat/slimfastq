@@ -149,25 +149,33 @@ Usage: \n\
 -u  usr-filename : (default: stdin)\n\
 -f comp-filename : reuired - compressed\n\
 -d               : decode (instead of encoding) \n\
--O               : overwrite existing files\n\
+-O               : silently overwrite existing files\n\
+-q               : suppress verbose messages after compression \n\
 -l level         : compression level 1 to 4 (default is 2 ) \n\
 -1, -2, -3, -4   : alias for -l 1, -l 2, etc \n\
  where levels are:\n\
- 1: uses less than 4M memory (!), yield worse compression \n\
+ 1: uses less than 4M memory (!), yield worse compression (still much better than gzip)\n\
  2: uses about 30M memory, resonable compression \n\
  3: uses about 80M memory, best compression <default level> \n\
- 4: compress little more, but very costly (competition mode?) \n\
+ 4: compress a little more, but very costly (competition mode?) \n\
 \n\
 -v               : version : internal version \n\
 -h               : help : this message \n\
--S               : stat : information about a compressed file (set by -f)\n\
+-s               : stat : information about a compressed file \n\
 \n\
 Do what I mean - Intuitive use of 'slimfastq A B' : \n\
 If A appears to be a fastq file, and:\n\
-    B does not exists, or -O option is used: compress A to B \n\
+    B does not exists, or -o option is used: compress A to B \n\
 If A appears to be a slimfastq file, and: \n\
-    B does not exist, or -O option is used: decompress A to B \n\
+    B does not exist, or -o option is used: decompress A to B \n\
     B is not specified: decompress A to stdout \n\
+Examples: \n\
+%% slimfastq *file.fastq* *new-file.sfq*   : compress *file.fastq* to *new-file.sfq* \n\
+%% slimfastq -1 *file.fastq* *new-file.sfq*: compress *file.fastq* to *new-file.sfq*, using level 1 \n\
+%% slimfastq *file.sfq*                    : decompress *file.sfq* to stdout \n\
+%% slimfastq *file.sfq* *file.fastq        : decompress *file.sfq* to *file.fastq*\n\
+%% gzip -dc *file.fastq.gz* | slimfastq -f *file.sfq* : convert from gzip to sfq format\n\
+\n\
 ");
     exit(0);
 }
@@ -193,8 +201,9 @@ Config::Config(){
 
     version = 0;
 
-    encode = true;
+    quiet = false;
     profiling = false;
+    encode = true;
     level = 3;
     m_info_filer = NULL;
 }
@@ -221,7 +230,7 @@ void Config::init(int argc, char **argv, int ver) {
     if (argc == 1) usage();
     // TODO? long options 
     // const char* short_opt = "POvhd 1234 u:f:s:p:l:"; 
-    const char* short_opt = "SPOvhd 1234 u:f:l:"; 
+    const char* short_opt = "qPsvhdO 1234 u:f:l:"; 
     for ( int opt = getopt(argc, argv, short_opt);
           opt != -1;
           opt     = getopt(argc, argv, short_opt))
@@ -229,15 +238,6 @@ void Config::init(int argc, char **argv, int ver) {
         case 'u': usr = optarg ; break;
         case 'f': fil = optarg ; break;
 
-        // case 's':
-        //     partition.size = strtoll(optarg, 0, 0) * (1<<20);
-        //     break;
-        // case 'p': 
-        //     encode = false ;
-        //     partition.size = 1;
-        //     partition.param = strtoll(optarg, 0, (strlen(optarg) == 10 and optarg[0] == '0') ? 16 : 0 );
-        //     break;
-            
         case 'l': level = strtoll(optarg, 0, 0);  break;
         case '1': case '2' : case '3': case '4':
             level = opt - '0'; break;
@@ -245,12 +245,13 @@ void Config::init(int argc, char **argv, int ver) {
         case 'd': encode     = false; break;
         case 'O': overwrite  = true ; break;
         case 'P': profiling  = true ; break;
+        case 'q': quiet      = true ; break;
         case 'v':
             printf("Version %u\n", version);
             exit(0);
         case 'h':
             usage();
-        case 'S': statistics = true; encode = false; break;
+        case 's': statistics = true; encode = false; break;
             
         default:
             croak("Ilagal args: use -h for help");

@@ -49,8 +49,9 @@ UsrSave::UsrSave() {
 }
 
 UsrSave::~UsrSave(){
+    if (not conf.quiet and x_file)
+        fprintf(stderr, "::: USR  num recs: %llu \t| EX size: %lu\n", g_record_count-1, x_file->tell());
     DELETE(x_file);
-    fprintf(stderr, "::: USR read %llu fastq records\n", g_record_count-1);
 }
 
 void UsrSave::load_page() {

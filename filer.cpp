@@ -158,6 +158,22 @@ FilerBase::FilerBase() {
     m_page_count = 0;
 }
 
+size_t FilerBase::tell() const {
+    return
+        ( m_page_count  ) ?
+        ((m_page_count-1) * FILER_PAGE) +
+        ( m_cur ) :
+        ( m_cur ) ;
+}
+
+size_t FilerSave::tell() const {
+    return FilerBase::tell();
+}
+
+size_t FilerLoad::tell() const {
+    return FilerBase::tell();
+}
+
 // Save
 
 bool FilerSave::is_valid() const { return m_valid; }
@@ -244,14 +260,6 @@ FilerLoad::~FilerLoad() {
 }
 
 bool FilerLoad::is_valid() const { return m_valid ; }
-
-size_t FilerLoad::tell() const {
-    return
-        ( m_page_count  ) ?
-        ((m_page_count-1) * FILER_PAGE) +
-        ( m_cur ) :
-        0;
-}
 
 void FilerLoad::load_page() {
     rarely_if(not m_valid)

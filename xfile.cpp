@@ -29,8 +29,8 @@
 #include <string.h>
 
 XFileBase::XFileBase(const char* filename
-                     ) : m_filename(filename),
-                         m_init(false) {}
+                     ) : m_filename(filename)
+{}
 
 
 XFileSave::XFileSave(const char* filename
@@ -57,21 +57,18 @@ XFileLoad::~XFileLoad() {
 }
 
 void XFileSave::init () {
-    m_init = true;
     filer = new FilerSave(m_filename);
     assert(filer);
     rcoder.init(filer);
 }
 
 bool XFileSave::put(UINT64 gap) {
-    rarely_if(not m_init) init();
+    rarely_if(not filer) init();
     return ranger.put_u(&rcoder, gap);
 }
 
 
 void XFileLoad::init() {
-    m_init = true;
-    // FILE* fh = conf.open_r(m_filename, false);
     filer = new FilerLoad(m_filename, &m_valid);
     assert(filer);
     if (m_valid)
@@ -81,7 +78,7 @@ void XFileLoad::init() {
 }
 
 UINT64 XFileLoad::get() {
-    rarely_if(not m_init) init();
+    rarely_if(not filer) init();
     return m_valid ? ranger.get_u(&rcoder) : 0;
 }
 
@@ -97,4 +94,8 @@ UCHAR* XFileLoad::get_str(UCHAR* p) {
     for (UINT32 j = 0; j < len; j++)
         p[j] = ranger_str.get(&rcoder);
     return p + len;
+}
+
+size_t XFileSave::tell() const {
+    return filer ? filer->tell() : 0;
 }

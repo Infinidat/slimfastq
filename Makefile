@@ -37,22 +37,19 @@ profclean:
 
 clean: profclean
 	find . -name '*.o' -delete
-	rm slimfastq slimfastq.opt slimfastq.prof || true
+	rm slimfastq slimfastq.* || true
 
-# slimfastq
-# SOURCES = slimfastq.cpp config.cpp fq_qlts.cpp pager.cpp fq_usrs.cpp
-# HEADERS = common.hpp config.hpp fq_qlts.hpp pager.hpp fq_usrs.hpp
-
+gdb: slimfastq.gdb
 SOURCES= $(filter-out utest.cpp one.cpp molder.cpp, $(shell ls *.cpp))
 HEADERS= $(shell echo *.hpp)
-slimfastq: $(SOURCES) $(HEADERS)
+slimfastq.gdb: $(SOURCES) $(HEADERS)
 	g++ $(FLAGS) -o $@ $(SOURCES)
 
-.PHONY: slimfastq.prof slimfastq.opt slimfastq.run
-run: slimfastq.run
+.PHONY: slimfastq slimfastq.gdb
 
-slimfastq.run:
+slimfastq:
 	g++ $(FLAGS_OPT2) -o $@ $(SOURCES)
+	@ echo "Done."
 
 slimfastq.opt:
 	mv PROF/*.gcda . || true
@@ -93,8 +90,8 @@ test: all
 		for f in $(TEST_FILES) ; do \
 			echo $$f $$l...   ; \
 			rm /tmp/mytst.* || true; \
-			./slimfastq -u $$f -f /tmp/mytst -O -l $$l && \
-			./slimfastq -u /tmp/mytst.fastq -f /tmp/mytst -O -d && \
+			./slimfastq -u $$f -f /tmp/mytst -o -l $$l -q && \
+			./slimfastq -u /tmp/mytst.fastq -f /tmp/mytst -o -d && \
 			tools/mydiff.pl $$f /tmp/mytst.fastq || break ; \
 		done || break ; \
 	done
@@ -104,7 +101,7 @@ tost: all
 		for f in $(TEST_FILES) ; do \
 			echo $$f $$l...   ; \
 			rm /tmp/mytst.* || true; \
-			./slimfastq -u $$f -f /tmp/mytst -O -l $$l && \
+			./slimfastq -u $$f -f /tmp/mytst -O -l $$l -q && \
 			./slimfastq -u /tmp/mytst.fastq -f /tmp/mytst -O -d && \
 			tools/mydiff.pl $$f /tmp/mytst.fastq || break ; \
 		done || break ; \

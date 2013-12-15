@@ -51,6 +51,7 @@ protected:
     UINT32 m_onef_i;
 
     FilerBase();
+    size_t tell() const ;
 };
 
 class FilerSave : private FilerBase {
@@ -61,7 +62,10 @@ public:
     FilerSave(const char* name);
     FilerSave(int forty_two);
     ~FilerSave();
+
     bool is_valid() const ;
+    size_t tell() const ;
+
     inline bool put(UCHAR c) {
         rarely_if(m_cur >= FILER_PAGE)
             save_page();
@@ -84,7 +88,7 @@ public:
     ~FilerLoad();
 
     bool is_valid() const ;
-    size_t    tell() const ;
+    size_t tell() const ;
 
     inline UCHAR get() {
         rarely_if(m_count <= m_cur) load_page();

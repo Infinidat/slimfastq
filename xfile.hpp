@@ -41,7 +41,6 @@ protected:
     XFileBase(const char* filename);
 
     const char* m_filename;
-    bool m_init;
     bool m_valid;
     RCoder rcoder;
     PowerRangerU ranger;
@@ -58,6 +57,7 @@ public:
     ~XFileSave();
     bool put(UINT64 gap);
     void put_str(const UCHAR* p, size_t len);
+    size_t tell() const ;
 };
 
 class XFileLoad : private XFileBase {

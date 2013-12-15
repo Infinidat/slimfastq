@@ -48,11 +48,15 @@ QltSave::QltSave()  {
     assert(filer);
     assert(ranger);
     rcoder.init(filer);
+    BZERO(m_last);
     // range_init();
 }
 
 QltSave::~QltSave() {
     rcoder.done();
+    if (not conf.quiet and filer)
+        fprintf(stderr, "::: QLT comp size: %lu \t| high qlt cnt: %u\n", filer->tell(), m_last.extra_hi_qlt);
+
     DELETE(filer);
     DELETE(ranger);
 }
@@ -75,6 +79,7 @@ void QltSave::save_1(const UCHAR* buf, size_t size) {
         else {
             ranger[last].put(&rcoder, LAST_QLT);
             exranger.put(&rcoder, b);
+            m_last.extra_hi_qlt ++ ;
         }
         last = calc_last_1(last, b); 
     }
@@ -91,6 +96,7 @@ void QltSave::save_2(const UCHAR* buf, size_t size) {
         else {
             ranger[last].put(&rcoder, LAST_QLT);
             exranger.put(&rcoder, b);
+            m_last.extra_hi_qlt ++ ;
         }
         last = calc_last_2(last, b); 
     }
@@ -111,6 +117,7 @@ void QltSave::save_3(const UCHAR* buf, size_t size) {
         else {
             ranger[last].put(&rcoder, LAST_QLT);
             exranger.put(&rcoder, b);
+            m_last.extra_hi_qlt ++ ;
         }
 
         if (++ di & 1) {
