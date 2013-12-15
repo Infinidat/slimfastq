@@ -85,14 +85,13 @@ void QltSave::save_2(const UCHAR* buf, size_t size) {
     for (const UCHAR* p = buf ; p < buf + size; p++) {
         UCHAR b = UCHAR(*p-'!');
 
-        rarely_if(b >= LAST_QLT) {
+        PREFETCH(ranger + last);
+        likely_if(b < LAST_QLT)
+            ranger[last].put(&rcoder, b);
+        else {
             ranger[last].put(&rcoder, LAST_QLT);
             exranger.put(&rcoder, b);
-            continue;
         }
-
-        PREFETCH(ranger + last);
-        ranger[last].put(&rcoder, b);
         last = calc_last_2(last, b); 
     }
 }
@@ -106,14 +105,13 @@ void QltSave::save_3(const UCHAR* buf, size_t size) {
     for (const UCHAR* p = buf ; p < buf + size; p++) {
         UCHAR b = UCHAR(*p-'!');
 
-        rarely_if(b >= LAST_QLT) {
+        PREFETCH(ranger + last);
+        likely_if(b < LAST_QLT)
+            ranger[last].put(&rcoder, b);
+        else {
             ranger[last].put(&rcoder, LAST_QLT);
             exranger.put(&rcoder, b);
-            continue;
         }
-
-        PREFETCH(ranger + last);
-        ranger[last].put(&rcoder, b);
 
         if (++ di & 1) {
             last = calc_last_delta(delta, b, q1, q2);
@@ -176,13 +174,12 @@ UINT32 QltLoad::load_2(UCHAR* buf, const size_t size) {
         PREFETCH(ranger + last);
         UCHAR b = ranger[last].get(&rcoder);
 
-        rarely_if(b == LAST_QLT) {
+        likely_if(b < LAST_QLT)
+            *p = UCHAR('!' + b);
+        else {
             b = exranger.get(&rcoder);
             *p = UCHAR('!' + b);
-            continue;
         }
-
-        *p = UCHAR('!' + b);
         last = calc_last_2(last, b);
     }
     return m_valid ? size : 0;
@@ -199,12 +196,12 @@ UINT32 QltLoad::load_3(UCHAR* buf, const size_t size) {
         PREFETCH(ranger + last);
         UCHAR b = ranger[last].get(&rcoder);
 
-        rarely_if(b == LAST_QLT) {
+        likely_if(b < LAST_QLT)
+            *p = UCHAR('!' + b);
+        else {
             b = exranger.get(&rcoder);
             *p = UCHAR('!' + b);
-            continue;
         }
-
         *p = UCHAR('!' + b);
 
         if (++di & 1) {

@@ -24,7 +24,7 @@ private:
     enum { TOP =(1ULL<<24) };
     UINT64 low;
     UINT64 code;
-    UINT32  range;
+    UINT32 range;
 
     FilerLoad* m_in;
     FilerSave* m_out;
