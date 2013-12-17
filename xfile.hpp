@@ -59,6 +59,7 @@ public:
     void put_chr(UCHAR chr);
     void put_str(const UCHAR* p, size_t len);
     size_t tell() const ;
+    bool has_file() const { return !! filer ; }
 };
 
 class XFileLoad : private XFileBase {

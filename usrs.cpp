@@ -51,7 +51,13 @@ UsrSave::UsrSave() {
 UsrSave::~UsrSave(){
     if (not conf.quiet and x_file)
         fprintf(stderr, "::: USR  num recs: %llu \t| EX size: %lu\n", g_record_count-1, x_file->tell());
-    DELETE(x_file);
+    if (x_file) {
+        if (x_file->has_file()) {
+            x_file->put(10);
+            x_file->put_chr(ET_END);
+        }
+        delete(x_file);
+    }
 }
 
 void UsrSave::load_page() {
@@ -358,7 +364,10 @@ void UsrLoad::update() {
         case ET_SOLPF_QLT:
             m_qlt[0] = m_last.solid_pf_qlt = data;
             break;
-        case ET_END: default: assert(0);
+        case ET_END:
+            return ;
+
+        default: assert(0);
         }
         m_last.index += x_file->get(); 
     }    
