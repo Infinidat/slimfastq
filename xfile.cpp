@@ -39,6 +39,7 @@ XFileSave::XFileSave(const char* filename
 
 XFileSave::~XFileSave() {
     if (filer) {
+        put(0);                 // no more exceptions
         rcoder.done();
         delete filer;
         filer = NULL;
