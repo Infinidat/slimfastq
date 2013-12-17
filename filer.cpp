@@ -110,7 +110,7 @@ struct OneFile {
             char name[10];
             strncpy(name, (char*)&files[i].name, 8);
             fprintf(stderr, "%d: '%s'\t: %lld\t: %d:\t: %d\n",
-                    i, name, files[i].size, files[i].first, files[i].node);
+                    i, (i? name : "<info>"), files[i].size, files[i].first, files[i].node);
         }
     }
     void init_write(FILE* out) {

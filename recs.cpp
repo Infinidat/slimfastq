@@ -166,6 +166,8 @@ void RecBase::map_space(const UCHAR* p, bool index) {
 }
 
 static bool is_number(const UCHAR* p, int len, long long &num) {
+    rarely_if (*p == '0')
+        return false;
     num = 0;
     for (int i = 0 ; i < len; i ++)
         if (isdigit(p[i]))
