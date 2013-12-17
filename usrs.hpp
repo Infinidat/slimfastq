@@ -39,10 +39,8 @@ enum exception_t {
 } ;
 
 class UsrSave {
-    // to read fastq file
-    // NOTE: Line limitted to 400 bytes
 
-#define PLL_SIZE 0x4000
+#define PLL_SIZE 0x8000
 #define PLL_STRT MAX_REC_LEN
     //  PLL_STRT must be more than record size
 #define PLL_LAST (PLL_SIZE + PLL_STRT)
@@ -56,7 +54,7 @@ public:
 private:
     bool get_record();
     void load_page();
-    void update(exception_t type, UCHAR dat);
+    void update(exception_t type, UINT16 dat);
 
     inline void load_check();
     inline void expect(UCHAR chr);
@@ -65,6 +63,7 @@ private:
     UINT64 estimate_rec_limit();
 
     struct {
+        UINT64 index;
         UCHAR solid_pf_gen;
         UCHAR solid_pf_qlt;
     } m_last;

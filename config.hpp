@@ -31,10 +31,9 @@
 class Config;
 
 // NOTE: soon there would be new machines, providing longer lines. 
-#define MAX_REC_LEN  1000
-#define MAX_ID_LLEN  250
-#define MAX_GN_LLEN  250
-#define MIN_GN_LLEN   50
+#define MAX_ID_LLEN  600
+#define MAX_GN_LLEN  600
+#define MAX_REC_LEN  MAX_GN_LLEN * 4
 
 void croak(const char* msg               ) __attribute__ ((noreturn, cold));
 void croak(const char* fmt, long long num) __attribute__ ((noreturn, cold));

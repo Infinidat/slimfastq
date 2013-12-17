@@ -68,6 +68,15 @@ bool XFileSave::put(UINT64 gap) {
     return ranger.put_u(&rcoder, gap);
 }
 
+void XFileSave::put_chr(UCHAR chr) {
+    rarely_if(not filer) init();
+    ranger_str.put(&rcoder, chr);
+}
+
+UCHAR XFileLoad::get_chr() {
+    rarely_if(not filer) init(); // assert(filer) ?
+    return ranger_str.get(&rcoder);
+}
 
 void XFileLoad::init() {
     filer = new FilerLoad(m_filename, &m_valid);
@@ -82,7 +91,6 @@ UINT64 XFileLoad::get() {
     rarely_if(not filer) init();
     return m_valid ? ranger.get_u(&rcoder) : 0;
 }
-
 
 void XFileSave::put_str(const UCHAR* p, size_t len) {
     put(len);

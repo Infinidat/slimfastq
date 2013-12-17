@@ -56,6 +56,7 @@ public:
     XFileSave(const char* filename);
     ~XFileSave();
     bool put(UINT64 gap);
+    void put_chr(UCHAR chr);
     void put_str(const UCHAR* p, size_t len);
     size_t tell() const ;
 };
@@ -67,7 +68,9 @@ public:
     XFileLoad(const char* filename);
     ~XFileLoad();
     UINT64 get();
+    UCHAR  get_chr();
     UCHAR* get_str(UCHAR* p);
+    bool is_valid() const { return m_valid; }
 };
 
 

@@ -82,9 +82,11 @@ void UsrSave::load_page() {
         m_page_count++;
 }
 
-void UsrSave::update(exception_t type, UCHAR dat) {
-    x_file->put(g_record_count); // TODO: save gaps
-    x_file->put((type << 8) | dat);
+void UsrSave::update(exception_t type, UINT16 dat) {
+    x_file->put(g_record_count - m_last.index);
+    x_file->put_chr(type);
+    x_file->put(dat);
+    m_last.index = g_record_count;
 
     switch (type) {
     case ET_LLEN     : m_llen = dat; break;
@@ -177,13 +179,14 @@ bool UsrSave::get_record() {
     mp.prev_rec = mp.rec;
     mp.prev_rec_end = mp.rec_end;
     mp.rec = &(m_buff[m_cur]);
-    for (int sanity = MAX_ID_LLEN;
-         --  sanity and m_buff[m_cur] != '\n';
-         m_cur ++ );
+    int sanity = MAX_ID_LLEN;
+    while (--  sanity and m_buff[m_cur] != '\n')
+        m_cur ++ ;
+    rarely_if( not sanity)
+        croak("record %llu: rec line too long", g_record_count);
+
     mp.rec_end = &(m_buff[m_cur]);
-
     CHECK_OVERFLOW ;
-
     expect('\n');
 
     rarely_if (not m_llen)      // TODO: call from constructor 
@@ -198,8 +201,13 @@ bool UsrSave::get_record() {
 
     mp.gen = &(m_buff[m_cur]);
     const int gi = m_cur ;
-    while (m_buff[m_cur] != '\n' and (m_cur-gi) < MAX_GN_LLEN)
+    sanity = MAX_GN_LLEN;
+    while (-- sanity and m_buff[m_cur] != '\n')
         m_cur ++;
+
+    rarely_if( not sanity)
+        croak("recrod %llu: gen line too long", g_record_count);
+
     CHECK_OVERFLOW;
     rarely_if(m_llen != m_cur-gi)
         update(ET_LLEN, m_cur-gi);
@@ -334,9 +342,10 @@ void UsrLoad::update() {
 
         if (not sanity--)
             croak("UsrLoad: illegal exception list");
-        UINT16 tnd = x_file->get(); 
-        UCHAR type = 0xff & (tnd >> 8);
-        UCHAR data = 0xff & (tnd);
+        UCHAR type = x_file->get_chr(); 
+        UINT16 data = x_file->get();
+        rarely_if ( not data and
+                    not x_file->is_valid()) break;
         switch (type) {
         case ET_LLEN:
             m_llen = data;
@@ -351,7 +360,7 @@ void UsrLoad::update() {
             break;
         case ET_END: default: assert(0);
         }
-        m_last.index = x_file->get(); 
+        m_last.index += x_file->get(); 
     }    
 }
 
