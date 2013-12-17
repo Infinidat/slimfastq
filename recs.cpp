@@ -195,7 +195,8 @@ void RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, 
         // put_type(0, ST_LINE);
         // put_str (0, buf, end-buf);
         // last_map = 0;
-        x_file->put(g_record_count);
+        x_file->put(g_record_count - m_last.index);
+        m_last.index = g_record_count;
         x_file->put_str(buf, end-buf);
 
         stats.new_n ++ ;
@@ -255,7 +256,7 @@ size_t RecLoad::load_2(UCHAR* buf, const UCHAR* prev) {
         // last_map = 0;
         // UCHAR* b = get_str(0, buf);
         UCHAR* b = x_file->get_str(buf);
-        m_last.index = x_file->get();
+        m_last.index += x_file->get();
         return b - buf;
     }
 

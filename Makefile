@@ -90,8 +90,8 @@ test: all
 		for f in $(TEST_FILES) ; do \
 			echo $$f $$l...   ; \
 			rm /tmp/mytst.* || true; \
-			./slimfastq -u $$f -f /tmp/mytst -o -l $$l -q && \
-			./slimfastq -u /tmp/mytst.fastq -f /tmp/mytst -o -d && \
+			./slimfastq -u $$f -f /tmp/mytst -O -l $$l -q && \
+			./slimfastq -u /tmp/mytst.fastq -f /tmp/mytst -O -d && \
 			tools/mydiff.pl $$f /tmp/mytst.fastq || break ; \
 		done || break ; \
 	done
