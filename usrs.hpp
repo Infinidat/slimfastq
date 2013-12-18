@@ -30,6 +30,8 @@
 #include <stdio.h>
 #include "xfile.hpp"
 
+class UsrSave {
+
 enum exception_t {
     ET_LLEN,
     ET_SOLPF_GEN,
@@ -38,9 +40,7 @@ enum exception_t {
     ET_END
 } ;
 
-class UsrSave {
-
-#define PLL_SIZE 0x8000
+#define PLL_SIZE 0x10000
 #define PLL_STRT MAX_REC_LEN
     //  PLL_STRT must be more than record size
 #define PLL_LAST (PLL_SIZE + PLL_STRT)
@@ -63,7 +63,9 @@ private:
     UINT64 estimate_rec_limit();
 
     struct {
-        UINT64 index;
+        UINT64 i_llen;
+        UINT64 i_sgen;
+        UINT64 i_sqlt;
         UCHAR solid_pf_gen;
         UCHAR solid_pf_qlt;
     } m_last;
@@ -71,13 +73,14 @@ private:
     bool   m_valid;
     UCHAR  m_buff[PLL_LAST+10]; 
     size_t m_page_count;
-    UINT64 m_rec_total;
     int m_cur, m_end;
     FILE  *m_in;
     bool  first_cycle;
     int   m_llen;
     bool  m_solid;
-    XFileSave* x_file;
+    XFileSave* x_llen;
+    XFileSave* x_sgen;
+    XFileSave* x_sqlt;
     struct {
         UCHAR* rec;
         UCHAR* rec_end;
@@ -103,9 +106,11 @@ private:
     FILE *m_out;
 
     struct {
+        UINT64 i_llen;
+        UINT64 i_sgen;
+        UINT64 i_sqlt;
         UCHAR solid_pf_gen;
         UCHAR solid_pf_qlt;
-        UINT64 index;
     } m_last;
 
     size_t m_llen, m_llen_factor;
@@ -121,7 +126,9 @@ private:
     UCHAR * m_qlt_ptr;
     UCHAR * m_gen_ptr;
 
-    XFileLoad *x_file;
+    XFileLoad* x_llen;
+    XFileLoad* x_sgen;
+    XFileLoad* x_sqlt;
 };
 
 #endif

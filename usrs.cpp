@@ -39,25 +39,24 @@ UsrSave::UsrSave() {
     BZERO(mp);
 
     m_valid  = true ;
-    m_cur = m_end = m_rec_total = m_page_count = 0;
+    m_cur = m_end = m_page_count = 0;
     m_llen = 0;
     m_solid = false;
-    x_file = new XFileSave("usr.x");
+    x_llen = new XFileSave("usr.x");
+    x_sgen = new XFileSave("usr.pfg");
+    x_sqlt = new XFileSave("usr.pfq");
 
     m_in   = conf.file_usr();
     load_page();
 }
 
 UsrSave::~UsrSave(){
-    if (not conf.quiet and x_file)
-        fprintf(stderr, "::: USR  num recs: %llu \t| EX size: %lu\n", g_record_count-1, x_file->tell());
-    if (x_file) {
-        if (x_file->has_file()) {
-            x_file->put(10);
-            x_file->put_chr(ET_END);
-        }
-        delete(x_file);
-    }
+    if (not conf.quiet)
+        fprintf(stderr, "::: USR  num recs: %llu \t| EX size len/sgen/sqlt: %lu/%lu/%lu\n", g_record_count-1,
+                x_llen->tell(), x_sgen->tell(), x_sqlt->tell());
+    DELETE(x_llen);
+    DELETE(x_sgen);
+    DELETE(x_sqlt);
 }
 
 void UsrSave::load_page() {
@@ -89,15 +88,28 @@ void UsrSave::load_page() {
 }
 
 void UsrSave::update(exception_t type, UINT16 dat) {
-    x_file->put(g_record_count - m_last.index);
-    x_file->put_chr(type);
-    x_file->put(dat);
-    m_last.index = g_record_count;
-
     switch (type) {
-    case ET_LLEN     : m_llen = dat; break;
-    case ET_SOLPF_GEN: m_last.solid_pf_gen = dat; break;
-    case ET_SOLPF_QLT: m_last.solid_pf_qlt = dat; break;
+    case ET_LLEN:
+        x_llen -> put ( g_record_count - m_last.i_llen );
+        x_llen -> put ( dat );
+        m_last.i_llen = g_record_count;
+        m_llen = dat;
+        break;
+
+    case ET_SOLPF_GEN:
+        x_sgen->put( g_record_count - m_last.i_sgen);
+        x_sgen->put_chr( dat );
+        m_last.i_sgen = g_record_count;
+        m_last.solid_pf_gen = dat;
+        break;
+
+    case ET_SOLPF_QLT:
+        x_sqlt->put( g_record_count - m_last.i_sqlt);
+        x_sqlt->put_chr( dat );
+        m_last.i_sqlt = g_record_count;
+        m_last.solid_pf_qlt = dat;
+        break;
+
     default : assert(0);
     }
 }
@@ -333,44 +345,39 @@ UsrLoad::UsrLoad() {
         m_llen_factor = 0;
     }
 
-    x_file = new XFileLoad("usr.x");
-    m_last.index = x_file->get();
-    m_rec_total = 0;
+    x_llen = new XFileLoad("usr.x");
+    x_sgen = new XFileLoad("usr.pfg");
+    x_sqlt = new XFileLoad("usr.pfq");
+
+    m_last.i_llen = x_llen->get();
+    m_last.i_sgen = x_sgen->get();
+    m_last.i_sqlt = x_sqlt->get();
 }
 
 UsrLoad::~UsrLoad() {
-    DELETE(x_file);
+    DELETE(x_llen);
+    DELETE(x_sgen);
+    DELETE(x_sqlt);
 }
 
 void UsrLoad::update() {
-    int sanity = ET_END;
-    while (m_last.index == g_record_count) {
 
-        if (not sanity--)
-            croak("UsrLoad: illegal exception list");
-        UCHAR type = x_file->get_chr(); 
-        UINT16 data = x_file->get();
-        rarely_if ( not data and
-                    not x_file->is_valid()) break;
-        switch (type) {
-        case ET_LLEN:
-            m_llen = data;
-            m_gen[m_llen+1] = '\n';
-            m_gen[m_llen+2] = '+';
-            break;
-        case ET_SOLPF_GEN:
-            m_gen[0] = m_last.solid_pf_gen = data;
-            break;
-        case ET_SOLPF_QLT:
-            m_qlt[0] = m_last.solid_pf_qlt = data;
-            break;
-        case ET_END:
-            return ;
-
-        default: assert(0);
-        }
-        m_last.index += x_file->get(); 
-    }    
+    rarely_if(m_last.i_llen == g_record_count) {
+        m_llen = x_llen -> get();
+        m_last.i_llen += x_llen->get();
+        m_gen[m_llen+1] = '\n';
+        m_gen[m_llen+2] = '+';
+    }
+    rarely_if(m_solid and
+              m_last.i_sgen == g_record_count) {
+        m_last.solid_pf_gen = m_gen[0] = x_sgen->get_chr();
+        m_last.i_sgen += x_sgen->get();
+    }
+    rarely_if(m_solid and
+              m_last.i_sqlt == g_record_count) {
+        m_last.solid_pf_qlt = m_qlt[0] = x_sqlt->get_chr();
+        m_last.i_sqlt += x_sqlt->get();
+    }
 }
 
 void UsrLoad::save() {
@@ -425,7 +432,7 @@ int UsrLoad::decode() {
             UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
             UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
 
-            rarely_if (g_record_count == m_last.index) update();
+            update();
             m_rec_size = rec.load_2(b_rec, p_rec);
             rarely_if (not m_rec_size)
                 croak("premature EOF - %llu records left", n_recs+1);
@@ -439,7 +446,7 @@ int UsrLoad::decode() {
             g_record_count++;
             UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
             UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
-            rarely_if (g_record_count == m_last.index) update();
+            update();
             m_rec_size = rec.load_2(b_rec, p_rec);
             rarely_if (not m_rec_size)
                 croak("premature EOF - %llu records left", n_recs+1);
@@ -453,7 +460,7 @@ int UsrLoad::decode() {
             g_record_count++;
             UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
             UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
-            rarely_if (g_record_count == m_last.index) update();
+            update();
             m_rec_size = rec.load_2(b_rec, p_rec);
             rarely_if (not m_rec_size)
                 croak("premature EOF - %llu records left", n_recs+1);
@@ -467,7 +474,7 @@ int UsrLoad::decode() {
             g_record_count++;
             UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
             UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
-            rarely_if (g_record_count == m_last.index) update();
+            update();
             m_rec_size = rec.load_2(b_rec, p_rec);
             rarely_if (not m_rec_size)
                 croak("premature EOF - %llu records left", n_recs+1);
