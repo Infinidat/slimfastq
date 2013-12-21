@@ -48,6 +48,8 @@ UsrSave::UsrSave() {
 
     m_in   = conf.file_usr();
     load_page();
+    if (m_valid)
+        determine_record();
 }
 
 UsrSave::~UsrSave(){
@@ -137,20 +139,35 @@ void UsrSave::load_check() {
 }
 
 void UsrSave::determine_record() {
+
+    int q = m_cur;
+
+    if(m_buff[q++] != '@')
+        croak("first record: Missing prefix '@', is it really a fastq format?");
+
+    int sanity = MAX_ID_LLEN;
+    while (--  sanity and m_buff[q] != '\n')
+        q ++ ;
+    rarely_if( not sanity)
+        croak("first record: REC is too long");
+
+    if (m_buff[q++] != '\n')
+        croak("first record: Expected newline, got '%c'", m_buff[q-1]);
+
+    int qg = q;
     // LLEN
     for (int i = 1;
          i < MAX_GN_LLEN and not m_llen;
          i++)
-        if (m_buff[m_cur + i] == '\n')
+        if (m_buff[q + i] == '\n')
             m_llen = i;
 
     if (not m_llen)
-        croak("1st id line is too long");
+        croak("first record: GEN is too long");
 
-    int q = m_cur + m_llen + 1;
-
+    q += m_llen + 1;
     if (m_buff[q] != '+')
-        croak("Missing '+', is it really a fastq format?");
+        croak("first record: Missing 2nd prefix '+', is it really a fastq format?");
 
     // 2ND ID
     bool has_2nd_id = false;
@@ -163,7 +180,7 @@ void UsrSave::determine_record() {
     for (int i = 1;
          i < m_llen and not d_solid and not m_solid;
          i ++ )
-        switch (m_buff[m_cur + i] | 0x20) {
+        switch (m_buff[qg + i] | 0x20) {
         case '0': case '1': case '2': case '3':
             m_solid = true;
             break;
@@ -206,9 +223,6 @@ bool UsrSave::get_record() {
     mp.rec_end = &(m_buff[m_cur]);
     CHECK_OVERFLOW ;
     expect('\n');
-
-    rarely_if (not m_llen)      // TODO: call from constructor 
-        determine_record();
 
     if (m_solid) {
         rarely_if (m_last.solid_pf_gen != m_buff[m_cur])
