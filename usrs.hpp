@@ -74,7 +74,7 @@ public:
 
 private:
     bool get_record();
-    bool get_oversized_record(int cur);
+    bool get_oversized_record(int cur, bool from_get=true);
     void load_page();
     void update(exception_t type, UINT16 dat);
 

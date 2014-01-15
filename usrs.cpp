@@ -165,7 +165,7 @@ void UsrSave::determine_record() {
     rarely_if( not sanity) {
         // croak("first record: REC is too long");
         g_record_count++;
-        get_oversized_record(m_cur);
+        get_oversized_record(m_cur, false);
         return determine_record();
     }
 
@@ -183,7 +183,7 @@ void UsrSave::determine_record() {
     if (not m_llen) {
         // croak("first record: GEN is too long");
         g_record_count++;
-        get_oversized_record(m_cur);
+        get_oversized_record(m_cur, false);
         return determine_record();
     }
 
@@ -225,7 +225,7 @@ void UsrSave::determine_record() {
     conf.set_info("usr.2id", has_2nd_id); // TODO
 }
 
-bool UsrSave::get_oversized_record(int cur) {
+bool UsrSave::get_oversized_record(int cur, bool from_get) {
     // collect this record
     x_lrec->put( g_record_count - m_last.i_long);
     m_last.i_long = g_record_count ;
@@ -252,8 +252,11 @@ bool UsrSave::get_oversized_record(int cur) {
 
 #undef PUT_LINE
 #undef CHK_VALID
-    g_record_count ++ ;
-    return get_record();
+    if (from_get) {
+        g_record_count ++ ;
+        return get_record();
+    }
+    return true;
 }
 
 bool UsrSave::get_record() {
