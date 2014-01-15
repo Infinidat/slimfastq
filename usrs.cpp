@@ -57,9 +57,14 @@ UsrSave::UsrSave() {
 }
 
 UsrSave::~UsrSave(){
-    if (not conf.quiet)
+    if (not conf.quiet) {
         fprintf(stderr, "::: USR  num recs: %llu \t| EX size len/sgen/sqlt: %lu/%lu/%lu\n", g_record_count-1,
                 x_llen->tell(), x_sgen->tell(), x_sqlt->tell());
+        if (x_lrec and
+            x_lrec->tell())
+            fprintf(stderr, "::: USR  oversized records: rec/gen/qlt %lu/%lu/%lu\n",
+                    x_lrec->tell(), x_lgen->tell(), x_lqlt->tell());
+    }
     DELETE(x_llen);
     DELETE(x_sgen);
     DELETE(x_sqlt);
