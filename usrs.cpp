@@ -46,6 +46,10 @@ UsrSave::UsrSave() {
     x_sgen = new XFileSave("usr.pfg");
     x_sqlt = new XFileSave("usr.pfq");
 
+    x_lgen = new XFileSave("usr.lgen");
+    x_lqlt = new XFileSave("usr.lqlt");
+    x_lrec = new XFileSave("usr.lrec");
+
     m_in   = conf.file_usr();
     load_page();
     if (m_valid)
@@ -59,6 +63,10 @@ UsrSave::~UsrSave(){
     DELETE(x_llen);
     DELETE(x_sgen);
     DELETE(x_sqlt);
+
+    DELETE(x_lrec);
+    DELETE(x_lgen);
+    DELETE(x_lqlt);
 }
 
 void UsrSave::load_page() {
@@ -138,6 +146,12 @@ void UsrSave::load_check() {
     load_page();
 }
 
+UCHAR UsrSave::load_char() {
+    if (m_cur >= m_end)
+        load_page();
+    return m_buff[m_cur++];
+}
+
 void UsrSave::determine_record() {
 
     int q = m_cur;
@@ -148,8 +162,12 @@ void UsrSave::determine_record() {
     int sanity = MAX_ID_LLEN;
     while (--  sanity and m_buff[q] != '\n')
         q ++ ;
-    rarely_if( not sanity)
-        croak("first record: REC is too long");
+    rarely_if( not sanity) {
+        // croak("first record: REC is too long");
+        g_record_count++;
+        get_oversized_record(m_cur);
+        return determine_record();
+    }
 
     if (m_buff[q++] != '\n')
         croak("first record: Expected newline, got '%c'", m_buff[q-1]);
@@ -162,8 +180,12 @@ void UsrSave::determine_record() {
         if (m_buff[q + i] == '\n')
             m_llen = i;
 
-    if (not m_llen)
-        croak("first record: GEN is too long");
+    if (not m_llen) {
+        // croak("first record: GEN is too long");
+        g_record_count++;
+        get_oversized_record(m_cur);
+        return determine_record();
+    }
 
     q += m_llen + 1;
     if (m_buff[q] != '+')
@@ -203,6 +225,37 @@ void UsrSave::determine_record() {
     conf.set_info("usr.2id", has_2nd_id); // TODO
 }
 
+bool UsrSave::get_oversized_record(int cur) {
+    // collect this record
+    x_lrec->put( g_record_count - m_last.i_long);
+    m_last.i_long = g_record_count ;
+
+    m_cur = cur ;               // zap back
+    UCHAR c = load_char();
+    if ('@' != c)
+        croak("record %llu: bad (long) record", g_record_count);
+
+#define CHK_VALID if (!m_valid) croak("record %llu: seems truncated", g_record_count)
+#define PUT_LINE(X) do { c = load_char(); X->put_chr(c); } while (c != '\n' and m_valid)
+ 
+    PUT_LINE(x_lrec);
+    CHK_VALID;
+
+    PUT_LINE(x_lgen);
+    CHK_VALID;
+
+    PUT_LINE(x_lrec);           // 2nd rec
+    CHK_VALID;
+
+    PUT_LINE(x_lqlt);
+    CHK_VALID;
+
+#undef PUT_LINE
+#undef CHK_VALID
+    g_record_count ++ ;
+    return get_record();
+}
+
 bool UsrSave::get_record() {
     
     load_check();
@@ -210,24 +263,24 @@ bool UsrSave::get_record() {
 #define CHECK_OVERFLOW rarely_if (m_cur >= m_end) return mid_rec_msg()
 
     if (m_cur >= m_end) return m_valid = false;
+
+    int currec = m_cur;
     expect('@');
-    mp.prev_rec = mp.rec;
-    mp.prev_rec_end = mp.rec_end;
-    mp.rec = &(m_buff[m_cur]);
     int sanity = MAX_ID_LLEN;
     while (--  sanity and m_buff[m_cur] != '\n')
         m_cur ++ ;
     rarely_if( not sanity)
-        croak("record %llu: rec line too long", g_record_count);
+        // croak("record %llu: rec line too long", g_record_count);
+        return get_oversized_record(currec);
 
     mp.rec_end = &(m_buff[m_cur]);
     CHECK_OVERFLOW ;
     expect('\n');
 
+    UCHAR update_solid_pf = 0;
     if (m_solid) {
         rarely_if (m_last.solid_pf_gen != m_buff[m_cur])
-            update(ET_SOLPF_GEN, m_buff[m_cur]);
-
+            update_solid_pf = m_buff[m_cur];
         m_cur++;
     }
 
@@ -238,7 +291,11 @@ bool UsrSave::get_record() {
         m_cur ++;
 
     rarely_if( not sanity)
-        croak("recrod %llu: gen line too long", g_record_count);
+        // croak("recrod %llu: gen line too long", g_record_count);
+        return get_oversized_record(currec);
+
+    rarely_if(update_solid_pf)  // update only after last potential get_oversized_record
+        update(ET_SOLPF_GEN, update_solid_pf);
 
     CHECK_OVERFLOW;
     rarely_if(m_llen != m_cur-gi)
@@ -265,6 +322,10 @@ bool UsrSave::get_record() {
 
     likely_if (m_cur < m_end)
         expect('\n');
+
+    mp.prev_rec = mp.rec;
+    mp.prev_rec_end = mp.rec_end;
+    mp.rec = &(m_buff[currec+1]);
 
     return true;
 
@@ -298,34 +359,10 @@ int UsrSave::encode() {
     GenSave gen;
     QltSave qlt;
 
-    switch (conf.level) {
-
-    case 1:
-        while( ++ g_record_count < sanity  and get_record() ) {
-            gen.save_1(mp.gen, mp.qlt, m_llen);
-            rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
-            qlt.save_1(mp.qlt, m_llen);
-        } break;
-    case 2: default:
-        while( ++ g_record_count < sanity  and get_record() ) {
-
-            gen.save_2(mp.gen, mp.qlt, m_llen);
-            rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
-            qlt.save_2(mp.qlt, m_llen);
-        } break;
-    case 3:
-        while( ++ g_record_count < sanity  and get_record() ) {
-
-            gen.save_3(mp.gen, mp.qlt, m_llen);
-            rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
-            qlt.save_3(mp.qlt, m_llen);
-        } break;
-    case 4:
-        while( ++ g_record_count < sanity  and get_record() ) {
-            gen.save_4(mp.gen, mp.qlt, m_llen);
-            rec.save_2(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
-            qlt.save_3(mp.qlt, m_llen);
-        } break;
+    while( ++ g_record_count < sanity  and get_record() ) {
+        gen.save(mp.gen, mp.qlt, m_llen);
+        rec.save(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
+        qlt.save(mp.qlt, m_llen);
     }
     conf.set_info("num_records", g_record_count-1);
     return 0;
@@ -366,16 +403,44 @@ UsrLoad::UsrLoad() {
     m_last.i_llen = x_llen->get();
     m_last.i_sgen = x_sgen->get();
     m_last.i_sqlt = x_sqlt->get();
+
+    x_lrec = new XFileLoad("usr.lrec");
+    m_last.i_long = x_lrec->get();
+    if (m_last.i_long) {
+        x_lgen = new XFileLoad("usr.lgen");
+        x_lqlt = new XFileLoad("usr.lqlt");
+    }
+    else {
+        DELETE(x_lrec);
+        x_lgen = x_lqlt = NULL;
+    }
 }
 
 UsrLoad::~UsrLoad() {
     DELETE(x_llen);
     DELETE(x_sgen);
     DELETE(x_sqlt);
+
+    DELETE(x_lgen);
+    DELETE(x_lqlt);
+    DELETE(x_lrec);
 }
 
 void UsrLoad::update() {
 
+    rarely_if(m_last.i_long == g_record_count) {
+        UCHAR c = '@';
+        fputc(c, m_out);
+#define PUT_LINE(X) do { c = X->get_chr(); fputc(c, m_out); } while (c != '\n')
+        PUT_LINE(x_lrec);
+        PUT_LINE(x_lgen);
+        PUT_LINE(x_lrec);
+        PUT_LINE(x_lqlt);
+#undef PUT_LINE
+        m_last.i_long += x_lrec->get();
+        g_record_count++;
+        return update();
+    }
     rarely_if(m_last.i_llen == g_record_count) {
         m_llen = x_llen -> get();
         m_last.i_llen += x_llen->get();
@@ -439,64 +504,22 @@ int UsrLoad::decode() {
     UCHAR* b_qlt = m_qlt+1 ;
     UCHAR* b_gen = m_gen+1 ;
 
-    switch (conf.level) {
-    case 1:
-        while (n_recs --) {
-            g_record_count++;
-            UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
-            UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
+    while (1) {
+        g_record_count++;
+        update();
+        if (g_record_count > n_recs)
+            break;
+ 
+        UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
+        UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
 
-            update();
-            m_rec_size = rec.load_2(b_rec, p_rec);
-            rarely_if (not m_rec_size)
-                croak("premature EOF - %llu records left", n_recs+1);
+        m_rec_size = rec.load(b_rec, p_rec);
+        rarely_if (not m_rec_size)
+            croak("premature EOF - %llu records left", n_recs+1);
 
-            qlt.load_1(b_qlt, m_llen);
-            gen.load_1(b_gen, b_qlt, m_llen);
-            save();
-        } break;
-    case 2: default:
-        while (n_recs --) {
-            g_record_count++;
-            UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
-            UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
-            update();
-            m_rec_size = rec.load_2(b_rec, p_rec);
-            rarely_if (not m_rec_size)
-                croak("premature EOF - %llu records left", n_recs+1);
-
-            qlt.load_2(b_qlt, m_llen);
-            gen.load_2(b_gen, b_qlt, m_llen);
-            save();
-        } break;
-    case 3:
-        while (n_recs --) {
-            g_record_count++;
-            UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
-            UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
-            update();
-            m_rec_size = rec.load_2(b_rec, p_rec);
-            rarely_if (not m_rec_size)
-                croak("premature EOF - %llu records left", n_recs+1);
-
-            qlt.load_3(b_qlt, m_llen);
-            gen.load_3(b_gen, b_qlt, m_llen);
-            save();
-        } break;
-    case 4:
-        while (n_recs --) {
-            g_record_count++;
-            UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
-            UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
-            update();
-            m_rec_size = rec.load_2(b_rec, p_rec);
-            rarely_if (not m_rec_size)
-                croak("premature EOF - %llu records left", n_recs+1);
-
-            qlt.load_3(b_qlt, m_llen);
-            gen.load_4(b_gen, b_qlt, m_llen);
-            save();
-        } break;
+        qlt.load(b_qlt, m_llen);
+        gen.load(b_gen, b_qlt, m_llen);
+        save();
     }
     // sanity: verify all objects are done (by croak?)
     return 0;

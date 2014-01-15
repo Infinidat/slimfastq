@@ -79,12 +79,21 @@ public:
     QltSave();
     ~QltSave();
 
-    void save_1(const UCHAR* buf, size_t size);
-    void save_2(const UCHAR* buf, size_t size);
-    void save_3(const UCHAR* buf, size_t size);
+    inline void save(const UCHAR* buf, size_t size) {
+        switch(conf.level) {
+        default:
+        case 1: return save_1(buf, size);
+        case 2: return save_2(buf, size);
+        case 3:
+        case 4: return save_3(buf, size);
+        }
+    }
     // void filer_init();
     bool is_valid();
 private:
+    void save_1(const UCHAR* buf, size_t size);
+    void save_2(const UCHAR* buf, size_t size);
+    void save_3(const UCHAR* buf, size_t size);
     FilerSave* filer;
     struct {
         UINT32 extra_hi_qlt;
@@ -96,11 +105,21 @@ public:
     QltLoad();
     ~QltLoad();
 
+    inline UINT32 load(UCHAR* buffer, const size_t size) {
+        switch(conf.level) {
+        default:
+        case 1: return load_1(buffer, size);
+        case 2: return load_2(buffer, size);
+        case 3:
+        case 4: return load_3(buffer, size);
+        }
+    }
     bool is_valid();
+private:
     UINT32 load_1 (UCHAR* buffer, const size_t size);
     UINT32 load_2 (UCHAR* buffer, const size_t size);
     UINT32 load_3 (UCHAR* buffer, const size_t size);
-private:
+
     FilerLoad* filer;
 };
 

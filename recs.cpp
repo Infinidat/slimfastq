@@ -177,7 +177,7 @@ static bool is_number(const UCHAR* p, int len, long long &num) {
     return true;
 }
 
-void RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end) {
+void RecSave::save(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end) {
     rarely_if(not m_last.initilized) {
         save_first_line(buf, end);
         map_space(buf, 0);
@@ -244,7 +244,7 @@ void RecSave::save_2(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, 
     }
 }
 
-size_t RecLoad::load_2(UCHAR* buf, const UCHAR* prev) {
+size_t RecLoad::load(UCHAR* buf, const UCHAR* prev) {
 
     rarely_if(not m_last.initilized) {
         // last_map = 0;

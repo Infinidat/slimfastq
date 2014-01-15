@@ -30,8 +30,14 @@
 #include <stdio.h>
 #include "xfile.hpp"
 
-class UsrSave {
+// NOTE: soon there would be new machines, providing longer lines. 
+#define MAX_ID_LLEN  600
+#define MAX_GN_LLEN  1000
+#define MAX_REC_LEN  (2*(MAX_GN_LLEN + MAX_ID_LLEN))
 
+class UsrBase {
+
+public:
 enum exception_t {
     ET_LLEN,
     ET_SOLPF_GEN,
@@ -45,6 +51,21 @@ enum exception_t {
     //  PLL_STRT must be more than record size
 #define PLL_LAST (PLL_SIZE + PLL_STRT)
 
+    struct {
+        UINT64 i_llen;
+        UINT64 i_sgen;
+        UINT64 i_sqlt;
+
+        UINT64 i_long;
+
+        UCHAR solid_pf_gen;
+        UCHAR solid_pf_qlt;
+    } m_last;
+};
+
+class UsrSave : public UsrBase {
+
+
 public:
     UsrSave();
     ~UsrSave();
@@ -53,22 +74,16 @@ public:
 
 private:
     bool get_record();
+    bool get_oversized_record(int cur);
     void load_page();
     void update(exception_t type, UINT16 dat);
 
     inline void load_check();
+    inline UCHAR load_char();
     inline void expect(UCHAR chr);
     bool mid_rec_msg() const ;
     void determine_record();
     UINT64 estimate_rec_limit();
-
-    struct {
-        UINT64 i_llen;
-        UINT64 i_sgen;
-        UINT64 i_sqlt;
-        UCHAR solid_pf_gen;
-        UCHAR solid_pf_qlt;
-    } m_last;
 
     bool   m_valid;
     UCHAR  m_buff[PLL_LAST+10]; 
@@ -81,6 +96,9 @@ private:
     XFileSave* x_llen;
     XFileSave* x_sgen;
     XFileSave* x_sqlt;
+    XFileSave* x_lgen;
+    XFileSave* x_lqlt;
+    XFileSave* x_lrec;
     struct {
         UCHAR* rec;
         UCHAR* rec_end;
@@ -92,7 +110,7 @@ private:
     UCHAR mp_last[MAX_REC_LEN];
 };
 
-class UsrLoad {
+class UsrLoad : public UsrBase {
 public:
     UsrLoad();
     ~UsrLoad();
@@ -104,14 +122,6 @@ private:
     void putline(UCHAR* buf, UINT32 size);
 
     FILE *m_out;
-
-    struct {
-        UINT64 i_llen;
-        UINT64 i_sgen;
-        UINT64 i_sqlt;
-        UCHAR solid_pf_gen;
-        UCHAR solid_pf_qlt;
-    } m_last;
 
     size_t m_llen, m_llen_factor;
     UINT64 m_rec_total;
@@ -129,6 +139,9 @@ private:
     XFileLoad* x_llen;
     XFileLoad* x_sgen;
     XFileLoad* x_sqlt;
+    XFileLoad* x_lgen;
+    XFileLoad* x_lqlt;
+    XFileLoad* x_lrec;
 };
 
 #endif
