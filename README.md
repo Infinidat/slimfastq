@@ -28,13 +28,21 @@ Usage
 </pre>
 
 
+Install
+-------
+Compile via 'make', copy the executable "slimfastq" to any location.
+(If compilation fails, please let me know)
+
 License
 -------
-
 The BSD 3-Clause
 
 Platform
 --------
-
 slimfastq was developed and optimized for x86_64 GNU/Linux. For other system's support requests, please contact Josef Ezra. 
+
+Contact
+-------
+Josef Ezra - <jezra at infinidat.com>, <jezra at cpan.org>
+
 
