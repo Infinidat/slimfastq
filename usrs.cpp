@@ -161,7 +161,17 @@ void UsrSave::determine_record() {
 
     int q = m_cur;
 
-    if(m_buff[q++] != '@')
+    rarely_if(m_cur >= m_end) {
+        if (not conf.quiet) {
+            if (x_lrec->tell())
+                fprintf(stderr, "::: HEY all records were oversized\n");
+            else
+                fprintf(stderr, "::: HEY no records were found");
+        }
+        return;
+    }
+
+    rarely_if(m_buff[q++] != '@')
         croak("first record: Missing prefix '@', is it really a fastq format?");
 
     int sanity = MAX_ID_LLEN;
@@ -502,7 +512,7 @@ int UsrLoad::decode() {
 
     size_t n_recs = conf.get_long("num_records");
 
-    if ( ! n_recs)
+    rarely_if( ! n_recs and not m_last.i_long)
         croak("Zero records, what's going on?");
 
     RecLoad rec;
