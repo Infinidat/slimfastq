@@ -40,12 +40,12 @@ clean: profclean
 	rm slimfastq slimfastq.* || true
 
 gdb: slimfastq.gdb
-SOURCES= $(filter-out utest.cpp one.cpp molder.cpp, $(shell ls *.cpp))
+SOURCES= $(filter-out utest.cpp one.cpp molder.cpp filer.tst.cpp, $(shell ls *.cpp))
 HEADERS= $(shell echo *.hpp)
 slimfastq.gdb: $(SOURCES) $(HEADERS)
 	g++ $(FLAGS) -o $@ $(SOURCES)
 
-.PHONY: slimfastq slimfastq.gdb
+.PHONY: slimfastq slimfastq.gdb test-filer
 
 slimfastq:
 	g++ $(FLAGS_OPT2) -o $@ $(SOURCES)
@@ -106,6 +106,10 @@ tost: all
 			tools/mydiff.pl $$f /tmp/mytst.fastq || break ; \
 		done || break ; \
 	done
+
+test-filer:
+	g++ $(FLAGS) -o $@ -g filer.tst.cpp
+	@ ./$@ && echo "Pass!" || echo "Fail"
 
 playground:
 	@ echo $(filter-out molder.cpp, $(shell echo *.cpp))

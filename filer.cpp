@@ -51,8 +51,8 @@ struct OneFile {
         max_node_files = FILER_PAGE / 4,
     };
     file_attr_t files[max_root_files+1]; // pad to fit one page
-    UINT32 next_findex;                  // offset in files table
-    UINT32 num_pages;                    // free alloc index
+    UINT64 next_findex;                  // offset in files table
+    UINT64 num_pages;                    // free alloc index
 
     // UINT32 files_index;  - currently limitted to single root dir (341 files, including zero).
 
@@ -77,14 +77,16 @@ struct OneFile {
     }
     void read_page(UINT32 offset, UCHAR* page) {
         // Note: -D_FILE_OFFSET_BITS=64 is required
-        UINT64 offs = offset* FILER_PAGE;
+        UINT64 offs = offset;
+        offs *= FILER_PAGE;
         fseek(m_in, offs , SEEK_SET); 
         UINT32 cnt = fread(page, 1, FILER_PAGE, m_in);
         if (cnt != FILER_PAGE)
             croak("Failed reading page index %d: %s", offset);
     }
     void write_page(UINT32 offset, UCHAR* page) {
-        UINT64 offs = offset* FILER_PAGE;
+        UINT64 offs = offset;
+        offs *= FILER_PAGE;
         fseek(m_out, offs, SEEK_SET);
         UINT32 cnt = fwrite(page, 1, FILER_PAGE, m_out);
         if (cnt != FILER_PAGE)
