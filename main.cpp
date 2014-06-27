@@ -29,7 +29,7 @@
 #include <errno.h>
 #include <stdlib.h>
 
-static const int version = 3;   // inernal version
+static const int version = 4;   // inernal version
 
 #include "common.hpp"
 #include "config.hpp"

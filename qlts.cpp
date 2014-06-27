@@ -57,8 +57,8 @@ QltSave::~QltSave() {
     if (not conf.quiet and filer)
         fprintf(stderr, "::: QLT comp size: %lu \t| high qlt cnt: %u\n", filer->tell(), m_last.extra_hi_qlt);
 
-    DELETE(filer);
     DELETE(ranger);
+    DELETE(filer);
 }
 
 bool QltSave::is_valid() {

@@ -130,6 +130,9 @@ struct OneFile {
             m_out = NULL;
         }
     }
+    UINT64 finit_size() {
+        return num_pages * FILER_PAGE;
+    }
     ~OneFile() { finit_write() ; } // call explicitly from config?
 } onef ;
 
@@ -139,6 +142,7 @@ void FilerSave::init(FILE* out) { onef.init_write(out); }
 void FilerSave::finit()         { onef.finit_write()  ; }
 void FilerLoad::init(FILE* in)  { onef.init_read(in)  ; }
 void FilerLoad::confess()       { onef.do_confess()   ; }
+UINT64 FilerSave::finit_size()  { return onef.finit_size(); }
 
 // Base
 
@@ -187,14 +191,14 @@ FilerSave::FilerSave(const char* name) {
 }
 
 FilerSave::FilerSave(int forty_two) {
-    assert(forty_two == 42);    // Verify this version wasn't called by mistake
+    assert(forty_two == 42);    // Verify this constructor wasn't called by mistake
 
     BZERO(onef.files[0]);
     m_onef_i = 0;
 }
 
 FilerSave::~FilerSave() {
-    save_page();
+    save_page(true);
     m_valid = false;
     if (m_node_p)
         save_node(0);
@@ -209,7 +213,7 @@ void FilerSave::save_node(UINT32 next_node) {
     m_node_i = 0;
 }
 
-void FilerSave::save_page() {
+void FilerSave::save_page(bool finit) {
     if (not m_valid or
         not m_cur)
         return ;
@@ -219,14 +223,15 @@ void FilerSave::save_page() {
     rarely_if (not m_node_p) {
         assert(m_node_i == 0);
         onef.write_page(onef.files[m_onef_i].first, m_buff);
-        if (m_cur == FILER_PAGE) // Don't allocate at EOF (harmless in the rare case of exact one page file)
+        if (not finit) // (m_cur == FILER_PAGE) // Don't allocate at EOF (harmless in the rare case of exact one page file)
             onef.files[m_onef_i].node = m_node_p =  onef.allocate();
     }
     else {
         onef.write_page(m_node[ m_node_i ++ ], m_buff);
-        rarely_if (m_node_i == maxi_nodes)
+        rarely_if (m_node_i == maxi_nodes and not finit)
             save_node(onef.allocate());
     }
+    if (not finit)
     m_node[ m_node_i ] = onef.allocate(); 
     onef.files[m_onef_i].size += m_cur;
     m_cur = 0;
@@ -248,6 +253,7 @@ FilerLoad::FilerLoad(const char* name, bool* valid_ptr) {
 }
 
 FilerLoad::FilerLoad(int forty_two, bool* valid_ptr) {
+    assert(forty_two == 42);    // Verify this constructor wasn't called by mistake
     m_onef_i = 0;
     m_valid_ptr = valid_ptr;
     * valid_ptr = m_valid = true ;

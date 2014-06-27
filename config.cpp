@@ -332,6 +332,10 @@ void Config::init(int argc, char **argv, int ver) {
     else {
         FILE* fh = fopen(fil.c_str(), "rb");
         check_fh(fh, fil, true);
+        fseek(fh, 0L, SEEK_END);
+        UINT64 file_size = ftell(fh);
+        fseek(fh, 0L, SEEK_SET);
+
         FilerLoad::init(fh);
         load_info();
         if (statistics)
@@ -341,11 +345,18 @@ void Config::init(int argc, char **argv, int ver) {
 
         f_usr = usr.length() ? fopen(usr.c_str(), wr_flags) : stdout;
         check_fh(f_usr, usr);
+
+        UINT64 comp_size = get_long("comp.size", 0);
+        if (comp_size > 0 and
+            comp_size != file_size) 
+            croak("expected compressed file size to be %lld", comp_size);
     }
 }
 
 void Config::finit() {
     if (m_info_filer) {
+        UINT64 size = FilerSave::finit_size();
+        set_info("comp.size", size);
         delete(m_info_filer);
         FilerSave::finit();
         m_info_filer = NULL;

@@ -73,25 +73,13 @@ public:
 
     inline void put(RCoder *rc, UCHAR sym) {
         UINT16 total = getsum();
+        UINT16 offs = 0;
         switch(sym) {
-        case 0: rc->Encode( 0,
-                            freq[0], total); break;
-        case 1: rc->Encode( freq[0],
-                            freq[1], total); break;
-        case 2: rc->Encode( freq[0] + freq[1] , 
-                            freq[2], total); break;
-        case 3: rc->Encode( freq[0] + (freq[1] + freq[2]),
-                            freq[3], total); break;
-        // case 0: rc->Encode( 0,
-        //                     1+ freq[0], total); break;
-        // case 1: rc->Encode( 1+ freq[0],
-        //                     1+ freq[1], total); break;
-        // case 2: rc->Encode( 2+ freq[0] + freq[1] , 
-        //                     1+ freq[2], total); break;
-        // case 3: rc->Encode( 3+ freq[0] + (freq[1] + freq[2]),
-        //                     1+ freq[3], total); break;
+        case 3: offs += freq[2];
+        case 2: offs += freq[1];
+        case 1: offs += freq[0];
         }
-
+        rc->Encode( offs, freq[sym], total);
         update_freq(sym, total);
     }
 
@@ -103,15 +91,12 @@ public:
         UINT32 sumf = 0;
         int i;
         for (i = 0; i < 4; i++) {
-            // if (sumf +  freq[i] + 1 <= prob)
-            //     sumf += freq[i] + 1;
             if (sumf +  freq[i] <= prob)
                 sumf += freq[i];
             else
                 break;
         }
         assert(i<4);
-        // rc->Decode(sumf, freq[i] +1, total);
         rc->Decode(sumf, freq[i], total);
 
         update_freq(i, total);

@@ -58,6 +58,7 @@ class FilerSave : private FilerBase {
 public:
     static void init(FILE* in);
     static void finit();
+    static UINT64 finit_size();
 
     FilerSave(const char* name);
     FilerSave(int forty_two);
@@ -75,7 +76,7 @@ public:
 
 private:
     void save_node(UINT32 next_node);
-    void save_page();
+    void save_page(bool finit=false);
     UINT32 findex;
 };
 
