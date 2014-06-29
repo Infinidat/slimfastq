@@ -165,9 +165,9 @@ Usage: \n\
 \n\
 Do what I mean - Intuitive use of 'slimfastq A B' : \n\
 If A appears to be a fastq file, and:\n\
-    B does not exists, or -o option is used: compress A to B \n\
+    B does not exists, or -O option is used: compress A to B \n\
 If A appears to be a slimfastq file, and: \n\
-    B does not exist, or -o option is used: decompress A to B \n\
+    B does not exist, or -O option is used: decompress A to B \n\
     B is not specified: decompress A to stdout \n\
 Examples: \n\
 %% slimfastq *file.fastq* *new-file.sfq*   : compress *file.fastq* to *new-file.sfq* \n\
