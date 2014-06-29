@@ -151,7 +151,7 @@ Usage: \n\
 -d               : decode (instead of encoding) \n\
 -O               : silently overwrite existing files\n\
 -q               : suppress verbose messages after compression \n\
--l level         : compression level 1 to 4 (default is 2 ) \n\
+-l level         : compression level 1 to 4 (default is 3 ) \n\
 -1, -2, -3, -4   : alias for -l 1, -l 2, etc \n\
  where levels are:\n\
  1: uses less than 4M memory (!), yield worse compression (still much better than gzip)\n\
