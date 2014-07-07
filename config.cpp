@@ -147,17 +147,17 @@ void Config::usage() const {
     printf("\
 Usage: \n\
 -u  usr-filename : (default: stdin)\n\
--f comp-filename : reuired - compressed\n\
+-f comp-filename : required - compressed\n\
 -d               : decode (instead of encoding) \n\
 -O               : silently overwrite existing files\n\
 -q               : suppress verbose messages after compression \n\
 -l level         : compression level 1 to 4 (default is 3 ) \n\
 -1, -2, -3, -4   : alias for -l 1, -l 2, etc \n\
- where levels are:\n\
- 1: uses less than 4M memory (!), yield worse compression (still much better than gzip)\n\
- 2: uses about 30M memory, resonable compression \n\
- 3: uses about 80M memory, best compression <default level> \n\
- 4: compress a little more, but very costly (competition mode?) \n\
+ Where levels are:\n\
+ 1: Uses less than 4M memory (!), yields the worse compression (still much better than gzip)\n\
+ 2: Uses about 30M memory, resonable compression \n\
+ 3: Uses about 80M memory, best compression <default level> \n\
+ 4: Compress a little more, but very costly (competition mode?) \n\
 \n\
 -v               : version : internal version \n\
 -h               : help : this message \n\
