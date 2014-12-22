@@ -110,7 +110,7 @@ private:
     UINT32 load_x(UCHAR* gen, const UCHAR* qlt, size_t size, const UINT64 mask);
     inline void normalize_gen(UCHAR &gen, UCHAR qlt);
 
-    bool   m_validNs, m_validNn;
+    // bool   m_validNs, m_validNn;
     const char* m_gencode;
 
     FilerLoad* filer;

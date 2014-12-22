@@ -297,7 +297,11 @@ size_t RecLoad::load(UCHAR* buf, const UCHAR* prev) {
              }
          }
         else {
-            b = (UCHAR*)mempcpy(b, prev + smap[0].off[i], smap[0].wln[i]);
+            // b = (UCHAR*)mempcpy(b, prev + smap[0].off[i], smap[0].wln[i]);
+            // mempcpy is not compatible with Mac OS, must do it the hard way ..
+            UINT32 count = smap[0].wln[i] ;
+            memcpy(b, prev + smap[0].off[i], count );
+            b += count;
         }
         *b ++ = smap[0].str[i];
     }

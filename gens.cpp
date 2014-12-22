@@ -72,11 +72,11 @@ GenSave::GenSave() {
     x_Nn = new XFileSave("gen.Nn");
 
    memset(gencodes, 0x10, sizeof(gencodes));
-   gencodes['0'] = gencodes['A'] = gencodes['a'] = 0;
-   gencodes['1'] = gencodes['C'] = gencodes['c'] = 1;
-   gencodes['2'] = gencodes['G'] = gencodes['g'] = 2;
-   gencodes['3'] = gencodes['T'] = gencodes['t'] = 3;
-   gencodes['.'] = gencodes['N'] = gencodes['n'] = 4;
+   gencodes[(UINT8)'0'] = gencodes[(UINT8)'A'] = gencodes[(UINT8)'a'] = 0;
+   gencodes[(UINT8)'1'] = gencodes[(UINT8)'C'] = gencodes[(UINT8)'c'] = 1;
+   gencodes[(UINT8)'2'] = gencodes[(UINT8)'G'] = gencodes[(UINT8)'g'] = 2;
+   gencodes[(UINT8)'3'] = gencodes[(UINT8)'T'] = gencodes[(UINT8)'t'] = 3;
+   gencodes[(UINT8)'.'] = gencodes[(UINT8)'N'] = gencodes[(UINT8)'n'] = 4;
 }
 
 GenSave::~GenSave() {

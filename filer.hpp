@@ -77,7 +77,7 @@ public:
 private:
     void save_node(UINT32 next_node);
     void save_page(bool finit=false);
-    UINT32 findex;
+    // UINT32 findex;
 };
 
 class FilerLoad : private FilerBase {

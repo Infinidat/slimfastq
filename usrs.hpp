@@ -124,7 +124,7 @@ private:
     FILE *m_out;
 
     size_t m_llen, m_llen_factor;
-    UINT64 m_rec_total;
+    // UINT64 m_rec_total;
     bool   m_2nd_rec, m_solid;
     UINT32 m_rec_size;
 
