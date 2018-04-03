@@ -167,7 +167,7 @@ UINT64 get_u(RCoder *rc) {
 
     UINT64 num = p[0].get(rc);
     rarely_if(num > 0x7f) {
-    
+
         num <<= 8;
         num  |= p[1].get(rc);
         likely_if(num < 0xfffe)
@@ -223,7 +223,7 @@ public:
             p[0].put(rc, 0x82);
             for (int shift = 0, i=7; shift < 64; shift+=8, i++)
                 p[i].put(rc, 0xff&(num>>shift));
-        
+
             return true;
         }
     }
@@ -259,4 +259,4 @@ public:
 
 } PACKED ;
 
-#endif 
+#endif

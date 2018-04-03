@@ -48,9 +48,9 @@ typedef std::pair<std::string, std::string> info_pair;
 info_t info_map;
 
 void croak(const char* msg) {
-    if (errno) 
+    if (errno)
         fprintf(stderr, "error: %s: %s\n", msg, strerror(errno));
-    else 
+    else
         fprintf(stderr, "error: %s\n", msg);
     exit(1);
 }
@@ -228,9 +228,9 @@ void Config::init(int argc, char **argv, int ver) {
     bool statistics = false;
 
     if (argc == 1) usage();
-    // TODO? long options 
-    // const char* short_opt = "POvhd 1234 u:f:s:p:l:"; 
-    const char* short_opt = "qPsvhdO 1234 u:f:l:"; 
+    // TODO? long options
+    // const char* short_opt = "POvhd 1234 u:f:s:p:l:";
+    const char* short_opt = "qPsvhdO 1234 u:f:l:";
     for ( int opt = getopt(argc, argv, short_opt);
           opt != -1;
           opt     = getopt(argc, argv, short_opt))
@@ -252,7 +252,7 @@ void Config::init(int argc, char **argv, int ver) {
         case 'h':
             usage();
         case 's': statistics = true; encode = false; break;
-            
+
         default:
             croak("Ilagal args: use -h for help");
         }

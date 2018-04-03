@@ -60,7 +60,5 @@ public:
     ~BFileLoad();
     bool getb();
 };
-    
-    
 
 #endif  // FQ_BFILE_H

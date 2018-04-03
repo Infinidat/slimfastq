@@ -91,7 +91,7 @@ void UsrSave::load_page() {
         *pl++ = '\n';           // Just in case
         *pl   = 0;              // clean debug
     }
-    
+
     size_t cnt = fread(&m_buff[PLL_STRT], 1, PLL_SIZE, m_in);
     m_cur  = start;
     m_end = PLL_STRT + cnt  ;
@@ -275,7 +275,7 @@ bool UsrSave::get_oversized_record(int cur, bool from_get) {
 }
 
 bool UsrSave::get_record() {
-    
+
     load_check();
 
 #define CHECK_OVERFLOW rarely_if (m_cur >= m_end) return mid_rec_msg()
@@ -357,21 +357,21 @@ bool UsrSave::get_record() {
 //          i ++ )
 //         if (m_buff[i] == '\n')
 //             cnt ++;
-//     
+//
 //     if (cnt < 4)
 //         croak("This usr file is too small");
-// 
+//
 //     UINT64 limit = conf.partition.size / (i-m_cur);
 //     // if (limit < 500000)
 //     if (limit < 5000) // for debuging
 //         croak("This partition partition is too small (records limit=%lld)", limit);
-// 
+//
 //     return limit;
 // }
 
 int UsrSave::encode() {
 
-    UINT32  sanity = conf.profiling ? 100000 : 1000000000;
+    UINT32  sanity = conf.profiling ? 100000 : 3000000000;
 
     RecSave rec;
     GenSave gen;

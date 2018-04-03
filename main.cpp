@@ -39,7 +39,7 @@ Config conf;
 int main(int argc, char** argv) {
 
     conf.init(argc, argv, version);
-    int ret = 
+    int ret =
         conf.encode ?
         UsrSave () . encode() :
         UsrLoad () . decode() ;

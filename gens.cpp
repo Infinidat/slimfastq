@@ -91,7 +91,7 @@ GenSave::~GenSave() {
 }
 
 inline UCHAR GenSave::normalize_gen(UCHAR gen, UCHAR &qlt) {
-        
+
     bool bad_n; //  = false;
     const bool bad_q = qlt == '!';
 
@@ -115,7 +115,7 @@ inline UCHAR GenSave::normalize_gen(UCHAR gen, UCHAR &qlt) {
         bad_n = true;
         n = 0;
     }
-        
+
     g_genofs_count ++;
     // if (// m_lossless - always is
     //     true ) {

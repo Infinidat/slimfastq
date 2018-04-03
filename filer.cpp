@@ -138,7 +138,7 @@ struct OneFile {
     ~OneFile() { finit_write() ; } // call explicitly from config?
 } onef ;
 
-// Static 
+// Static
 
 void FilerSave::init(FILE* out) { onef.init_write(out); }
 void FilerSave::finit()         { onef.finit_write()  ; }
@@ -234,7 +234,7 @@ void FilerSave::save_page(bool finit) {
             save_node(onef.allocate());
     }
     if (not finit)
-    m_node[ m_node_i ] = onef.allocate(); 
+    m_node[ m_node_i ] = onef.allocate();
     onef.files[m_onef_i].size += m_cur;
     m_cur = 0;
     m_page_count++;
@@ -277,7 +277,7 @@ void FilerLoad::load_page() {
         *m_valid_ptr = m_valid = false;
         return;                 // EOF
     }
- 
+
     rarely_if (m_node_p == 0) {
         assert(m_node_i == 0);
         onef.read_page(onef.files[m_onef_i].first, m_buff);

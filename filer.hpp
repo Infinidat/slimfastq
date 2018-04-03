@@ -40,9 +40,9 @@ protected:
         size_nodes,
     };
 
-    UINT64 m_page_count; 
+    UINT64 m_page_count;
     bool   m_valid;
-    UCHAR  m_buff[ FILER_PAGE+10 ]; 
+    UCHAR  m_buff[ FILER_PAGE+10 ];
     size_t m_cur, m_count;
     bool  *m_valid_ptr;
     UINT32 m_node[ size_nodes ];

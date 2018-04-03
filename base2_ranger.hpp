@@ -39,7 +39,7 @@ class Base2Ranger {
            INIT_VAL=3,
            M_ONES = 0x01010101,
     };
-    
+
     union {
         UCHAR  freq[4];
         UINT32 freq_val;

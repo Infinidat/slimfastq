@@ -58,7 +58,7 @@ typedef unsigned long long UINT64;
 #define DEBUG 1
 #else
 #define DEBUG 0
-#endif 
+#endif
 
 #ifdef __SSE__
 #   include <xmmintrin.h>
