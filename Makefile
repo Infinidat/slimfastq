@@ -37,7 +37,7 @@ profclean:
 
 clean: profclean
 	find . -name '*.o' -delete
-	rm slimfastq slimfastq.* || true
+	rm slimfastq slimfastq.* test-filer || true
 
 gdb: slimfastq.gdb
 SOURCES= $(filter-out utest.cpp one.cpp molder.cpp filer.tst.cpp, $(shell ls *.cpp))
@@ -67,13 +67,13 @@ molder: molder.cpp pager.cpp pager.hpp
 tags:
 	etags $(SOURCES) $(HEADERS)
 
-UTSRC= $(filter-out one.cpp molder.cpp main.cpp, $(shell ls *.cpp))
-UTHDR= $(shell ls *.hpp)
-slimfastq.utest: $(UTSRC) $(UTHDR)
-	g++ $(FLAGS) $(UTSRC) -o $@
-
-utest: slimfastq.utest
-	./slimfastq.utest
+# UTSRC= $(filter-out one.cpp molder.cpp main.cpp, $(shell ls *.cpp))
+# UTHDR= $(shell ls *.hpp)
+# slimfastq.utest: $(UTSRC) $(UTHDR)
+# 	g++ $(FLAGS) $(UTSRC) -o $@
+# 
+# utest: slimfastq.utest
+# 	./slimfastq.utest
 
 # small: all
 # 	./slimfastq -f ../data/small.fq -u ../data/small.fq -O
