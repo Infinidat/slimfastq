@@ -31,8 +31,8 @@
 #include "xfile.hpp"
 
 // NOTE: soon there would be new machines, providing longer lines.
-#define MAX_ID_LLEN  600
-#define MAX_GN_LLEN  1000
+#define MAX_ID_LLEN  6000
+#define MAX_GN_LLEN  10000
 #define MAX_REC_LEN  (2*(MAX_GN_LLEN + MAX_ID_LLEN))
 
 class UsrBase {
