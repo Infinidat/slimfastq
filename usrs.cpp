@@ -222,7 +222,7 @@ void UsrSave::determine_record() {
             m_solid = true;
             break;
 
-        case 'A': case 'C' : case 'G' : case 'T':
+        case 'a': case 'c' : case 'g' : case 't':
             d_solid = true;
             break;
 
