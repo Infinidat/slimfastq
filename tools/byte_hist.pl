@@ -1,6 +1,9 @@
 # -*- cperl -*-
 
-eval 'exec /home/jezra/Perl/bin/perl $0 $*'
+# find longest line, etc:
+# perl -lne 'if(length>$m){$m=length};END{print"$m"}' filename
+
+eval 'exec perl $0 $*'
     if 0 ;
 
 use 5.6.0 ;

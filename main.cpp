@@ -22,6 +22,19 @@
 /* USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                                            */
 /***********************************************************************************************************************/
 
+// Manifest:
+// update by jezra Sep, 2019
+
+//  This project was written in a "simplified" c++ to support any old compiler out there. The structure is:
+//  During save (encoding)
+//    UsrSave  - handling fastq files, detecting records and providing them to:
+//      RecSave - saving the header lines (break to word tockens and save diffs)
+//      GenSave - saves the genomic data (optimized for 4 values)
+//      QltSave - saves the quality measure (optimized for 64 values)
+//  During load (decode)
+//    UsrLoad - reads record fragments from RecLoad, GenLoad, QltLoad and prints in order
+// under the hood, use WORM file system to implement multiple range coders streams. Note that the
+// file's first block is metadata + info.
 
 
 #include <stdio.h>
@@ -29,7 +42,7 @@
 #include <errno.h>
 #include <stdlib.h>
 
-static const int version = 4;   // inernal version
+static const int version = 5;   // inernal version
 
 #include "common.hpp"
 #include "config.hpp"

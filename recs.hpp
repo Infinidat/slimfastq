@@ -33,7 +33,8 @@
 #include "xfile.hpp"
 
 class RecBase {
-protected: 
+
+protected:
 
     RecBase()  {}
     ~RecBase() {rcoder.done();}
@@ -66,25 +67,17 @@ protected:
 
     // void range_init();
 
-    // Division of labor
-    enum seg_type {
-        ST_SAME = 0,
-        ST_SMAP = 1,
-        ST_LINE = 2,
-
-        ST_GAP = 0,
-        ST_PAG = 1,
-        ST_STR = 2,
-    };
-
     struct space_map {
         int   off[65];
         int   wln[65];
         UCHAR str[65];
         UCHAR len;
     };
-    space_map smap[2];
+    space_map smap [2];
+    UCHAR     ctype[2][65];     // 0=? 1=deci, 2=hexa
+    long long cnumb[2][65];     // cache the number (if relevant)
     bool imap;
+
     // UINT64 last_map;
     void map_space(const UCHAR* p, bool index);
 };
@@ -97,7 +90,7 @@ public:
     void save(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end);
 private:
     void save_first_line(const UCHAR* buf, const UCHAR* end);
-    void put_type(UCHAR i, seg_type type);
+    void put_type(UCHAR i, UCHAR type);
     void put_num(UCHAR i, long long num);
     void put_str(UCHAR i, const UCHAR* p, UINT32 len);
 
@@ -112,6 +105,7 @@ public:
 
     inline bool is_valid() {return m_valid;}
     size_t load(UCHAR* buf, const UCHAR* prev);
+    size_t load_pre5(UCHAR* buf, const UCHAR* prev);
 
 private:
     size_t load_first_line(UCHAR* buf);
@@ -120,6 +114,8 @@ private:
     UCHAR     get_type(UCHAR i);
     UCHAR     get_len (UCHAR i);
     UCHAR*    get_str (UCHAR i, UCHAR* p);
+
+    long cache_version;
 
     FilerLoad* filer;
     XFileLoad* x_file;
