@@ -75,7 +75,7 @@ protected:
     };
     space_map smap [2];
     UCHAR     ctype[2][65];     // 0=? 1=deci, 2=hexa
-    long long cnumb[2][65];     // cache the number (if relevant)
+    UINT64    cnumb[2][65];     // cache the number (if relevant)
     bool imap;
 
     // UINT64 last_map;
