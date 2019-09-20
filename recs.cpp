@@ -274,12 +274,11 @@ static bool is_number(const UCHAR* p, int len, long long &num) {
 void RecSave::save(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, const UCHAR* prev_end) {
 
     rarely_if(not m_last.initilized) {
+        imap = 0;
         save_first_line(buf, end);
-        map_space(buf, 0);
+        map_space(buf, imap);
         bzero(ctype[0], sizeof(ctype[0])); // clear cache
         bzero(ctype[1], sizeof(ctype[1])); // clear cache
-        imap = 0;
-        // last_map = 0;
         return;
     }
     bool pmap = imap;
@@ -312,8 +311,8 @@ void RecSave::save(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, co
     for (int i = 0; i < smap[0].len; i++) {
         if (IS_SET(map, i)) {
 
-            int i = BFIRST(map)-1;
-            DO_CLR(map, i);
+            // int i = BFIRST(map)-1;
+            // DO_CLR(map, i);
             const UCHAR* b = buf + smap[imap].off[i];
             // const UCHAR* p = prev_buf + smap[pmap].off[i];
             UINT64 bnum;
@@ -324,7 +323,7 @@ void RecSave::save(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, co
                 put_str (i+1, b, smap[imap].wln[i]);
                 stats.str_n ++ ;
                 stats.str_l += smap[imap].wln[i];
-                ctype[pmap][i] = 0; // str
+                ctype[imap][i] = 0; // NAN
                 continue;
             }
             // HERE: this is a number
@@ -332,6 +331,8 @@ void RecSave::save(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, co
             UINT64 gap ;
 
             ctype[imap][i] = (type < ST_STR or type >= ST_DGT_Z) ? 1 : 2;
+            cnumb[imap][i] = bnum;
+
             if (bnum < pnum) {
                 gap  = pnum - bnum;
                 type ++ ;
@@ -360,8 +361,10 @@ void RecSave::save(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, co
             //         stats.str_l += smap[imap].wln[i];
             //     }
         }
-        else
+        else {
             ctype[imap][i] = ctype[pmap][i];
+            cnumb[imap][i] = cnumb[pmap][i];
+        }
     }
 }
 
@@ -396,53 +399,55 @@ size_t RecLoad::load(UCHAR* buf, const UCHAR* prev) {
 
     for (int i = 0; i < smap[0].len; i++) {
         // if (IS_SET(last_map, i)) {
-         if (not IS_SET(map, i)) {
-             // b = (UCHAR*)mempcpy(b, prev + smap[0].off[i], smap[0].wln[i]);
-             // mempcpy is not compatible with Mac OS, must do it the hard way ..
-             UINT32 count = smap[0].wln[i] ;
-             memcpy(b, prev + smap[0].off[i], count );
-             b += count;
-             *b ++ = smap[0].str[i];
-             continue;
-         }
+        if (not IS_SET(map, i)) {
+            // b = (UCHAR*)mempcpy(b, prev + smap[0].off[i], smap[0].wln[i]);
+            // mempcpy is not compatible with Mac OS, must do it the hard way ..
+            UINT32 count = smap[0].wln[i] ;
+            memcpy(b, prev + smap[0].off[i], count );
+            b += count;
+            *b ++ = smap[0].str[i];
+            ctype[imap][i] = ctype[pmap][i];
+            cnumb[imap][i] = cnumb[pmap][i];
+            continue;
+        }
 
-         UCHAR type = get_type(i+1);
+        UCHAR type = get_type(i+1);
 
-         if ( type == ST_STR ) {
-             b = get_str(i+1, b);
-             ctype[imap][i] = 0;
-             *b ++ = smap[0].str[i];
-             continue;
-         }
+        if ( type == ST_STR ) {
+            b = get_str(i+1, b);
+            ctype[imap][i] = 0;
+            *b ++ = smap[0].str[i];
+            continue;
+        }
 
-         UINT64 pval = ctype[pmap][i] == 0 ? 0 : cnumb[pmap][i];
-         UINT64 gap = get_num(i+1);
-         UINT64 val ;
-         const char* fmt;
+        UINT64 pval = ctype[pmap][i] == 0 ? 0 : cnumb[pmap][i];
+        UINT64 gap = get_num(i+1);
+        UINT64 val ;
+        const char* fmt;
 #define ITEM(A, B) fmt=A; val=B; break
-         switch ((seg_type)type) {
+        switch ((seg_type)type) {
 
-         case ST_DGT    : ITEM("%lld", pval + gap);
-         case ST_DLT    : ITEM("%lld", pval - gap);
-         case ST_STR    :   croak("WTF"); break;
-         case ST_HGT    : ITEM("%llx", pval + gap);
-         case ST_HLT    : ITEM("%llx", pval - gap);
-         case ST_HGT_Z  : ITEM("0%llx", pval + gap);
-         case ST_HLT_Z  : ITEM("0%llx", pval - gap);
-         case ST_HGTC   : ITEM("%llX", pval + gap);
-         case ST_HLTC   : ITEM("%llX", pval - gap);
-         case ST_HGTC_Z : ITEM("0%llX", pval + gap);
-         case ST_HLTC_Z : ITEM("0%llX", pval - gap);
-         case ST_DGT_Z  : ITEM("0%lld", pval + gap);
-         case ST_DLT_Z  : ITEM("0%lld", pval - gap);
+        case ST_DGT    : ITEM("%lld", pval + gap);
+        case ST_DLT    : ITEM("%lld", pval - gap);
+        case ST_STR    :   croak("WTF"); break;
+        case ST_HGT    : ITEM("%llx", pval + gap);
+        case ST_HLT    : ITEM("%llx", pval - gap);
+        case ST_HGT_Z  : ITEM("0%llx", pval + gap);
+        case ST_HLT_Z  : ITEM("0%llx", pval - gap);
+        case ST_HGTC   : ITEM("%llX", pval + gap);
+        case ST_HLTC   : ITEM("%llX", pval - gap);
+        case ST_HGTC_Z : ITEM("0%llX", pval + gap);
+        case ST_HLTC_Z : ITEM("0%llX", pval - gap);
+        case ST_DGT_Z  : ITEM("0%lld", pval + gap);
+        case ST_DLT_Z  : ITEM("0%lld", pval - gap);
 
-         default:
-             croak("REC: bad type value %d", type);
-         }
+        default:
+            croak("REC: bad type value %d", type);
+        }
 #undef ITEM
-         ctype[imap][i] = (type < ST_STR or type >= ST_DGT_Z) ? 1 : 2;
-         cnumb[imap][i] = val;
-         b += sprintf((char*)b, fmt, val);
+        ctype[imap][i] = (type < ST_STR or type >= ST_DGT_Z) ? 1 : 2;
+        cnumb[imap][i] = val;
+        b += sprintf((char*)b, fmt, val);
         *b ++ = smap[0].str[i];
     }
     return b-buf-1;
