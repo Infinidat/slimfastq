@@ -212,13 +212,15 @@ static UCHAR numberwang(const UCHAR* p, int len, UINT64 &num, UCHAR pctype)
             return has_z ? ST_DGT_Z : ST_DGT ;
 
         if (isdigit(p[i])) {
-            num = (num<<3) + (num<<1) + (p[i++]) - '0';
+            UINT64 tnum = (num<<3) + (num<<1) + (p[i++]) - '0';
+            if (tnum < num) return ST_STR;  // too big
+            num = tnum;
             continue;
         }
         // Here: not a deci
 
         if ((p[i]|0x20) < 'a' or
-            (p[i]|0x20) > 'f') 
+            (p[i]|0x20) > 'f')
             return ST_STR;
 
         // reset and try as hex
@@ -227,6 +229,9 @@ static UCHAR numberwang(const UCHAR* p, int len, UINT64 &num, UCHAR pctype)
         num = 0;
         break;
     }
+
+    if (len > 16)
+        return ST_STR;
 
     for (; i < len; i ++) {
        int nibel;
