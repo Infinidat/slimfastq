@@ -32,7 +32,7 @@
 
 // NOTE: soon there would be new machines, providing longer lines.
 #define MAX_ID_LLEN  0x2000
-#define MAX_GN_LLEN  0x8000
+#define MAX_GN_LLEN  0x10000
 #define MAX_REC_LEN  (2*(MAX_GN_LLEN + MAX_ID_LLEN))
 
 class UsrBase {
@@ -46,7 +46,7 @@ enum exception_t {
     ET_END
 } ;
 
-#define PLL_SIZE 0x10000
+#define PLL_SIZE 0x100000
 #define PLL_STRT MAX_REC_LEN
     //  PLL_STRT must be more than record size
 #define PLL_LAST (PLL_SIZE + PLL_STRT)
