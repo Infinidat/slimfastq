@@ -105,13 +105,14 @@ struct OneFile {
         files[0].first = 0;
     }
     void do_confess() const {
-        fprintf(stderr, "i: 'name'\t: size\t: first\t: node\n");
+        // i: 'name'       : size  : first : node
+        fprintf(stderr, " i: name      : NODES count    : 1st    : 2nd\n");
         for (UINT32 i = 0;
              i < next_findex;
              i++) {
             char name[10];
             strncpy(name, (char*)&files[i].name, 8);
-            fprintf(stderr, "%d: '%s'\t: %lld\t: %d:\t: %d\n",
+            fprintf(stderr, "%2d: %-10s: %-15lld: %d:\t: %d\n",
                     i, (i? name : "<info>"), files[i].size, files[i].first, files[i].node);
         }
     }

@@ -66,8 +66,8 @@ void Config::statistics_dump() const {
     for (std::map<std::string, std::string>::iterator it = info_map.begin();
          it != info_map.end();
          it ++ )
-        fprintf(stderr, "%s\t%s=\t%s\n", it->first.c_str(), it->first.length() < 9? "\t" : "", it->second.c_str());
-    fprintf(stderr, "\n:::: Files ::::\n");
+        fprintf(stderr, "%-16s = %s\n", it->first.c_str(), it->second.c_str());
+    fprintf(stderr, "\n:::: Files stream ::::\n");
     FilerLoad::confess();
     exit(0);
 }
@@ -128,12 +128,12 @@ void put_str(FilerSave* filer, const char* str) {
 }
 
 void Config::set_info(const char* key, const char* val) const {
-    
+
     put_str(m_info_filer, key);
     m_info_filer->put('=');
     put_str(m_info_filer, val);
     m_info_filer->put('\n');
-    
+
     info_map.insert(info_pair(key, val));
 }
 
