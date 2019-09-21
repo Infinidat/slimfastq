@@ -14,7 +14,7 @@ Usage
 
 <pre>
 
-% slimfastq *file.fastq* *new-file.sfq*   : compress *file.fastq* to *new-file.sfq* 
+% slimfastq *file.fastq* *new-file.sfq*   : compress *file.fastq* to *new-file.sfq*
 % slimfastq -1 *file.fastq* *new-file.sfq*: compress *file.fastq* to *new-file.sfq*, using little cpu/memory resources
                                            (-1 to -4 are levels of compression/resources tradeoffs, -3 is default)
 
@@ -39,7 +39,7 @@ The BSD 3-Clause
 
 Platform
 --------
-slimfastq was developed and optimized for x86_64 GNU/Linux. For other system's support requests, please contact Josef Ezra. 
+slimfastq was developed and optimized for x86_64 GNU/Linux. For other system's support requests, please contact Josef Ezra.
 
 Contact
 -------

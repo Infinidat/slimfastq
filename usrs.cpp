@@ -96,7 +96,7 @@ void UsrSave::load_page() {
     m_cur  = start;
     m_end = PLL_STRT + cnt  ;
 
-    if (m_cur == m_end) 
+    if (m_cur == m_end)
         m_valid = false;
     else
         m_page_count++;
@@ -252,7 +252,7 @@ bool UsrSave::get_oversized_record(int cur, bool from_get) {
 
 #define CHK_VALID if (!m_valid) croak("record %llu: seems truncated", g_record_count)
 #define PUT_LINE(X) do { c = load_char(); X->put_chr(c); } while (c != '\n' and m_valid)
- 
+
     PUT_LINE(x_lrec);
     CHK_VALID;
 
@@ -333,7 +333,7 @@ bool UsrSave::get_record() {
 
         m_cur++;
     }
- 
+
     mp.qlt = &(m_buff[m_cur]);
     m_cur += m_llen;
     CHECK_OVERFLOW;
@@ -527,7 +527,7 @@ int UsrLoad::decode() {
         update();
         if (g_record_count > n_recs)
             break;
- 
+
         UCHAR* b_rec = (flip ? m_rep : m_rec)+1 ;
         UCHAR* p_rec = (flip ? m_rec : m_rep)+1 ;
 

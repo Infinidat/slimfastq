@@ -348,7 +348,7 @@ void Config::init(int argc, char **argv, int ver) {
 
         UINT64 comp_size = get_long("comp.size", 0);
         if (comp_size > 0 and
-            comp_size != file_size) 
+            comp_size != file_size)
             croak("expected compressed file size to be %lld", comp_size);
     }
 }

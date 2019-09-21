@@ -49,7 +49,7 @@
 
 void test_filer() {
     TITLE("filer");
-    const char* fname = "/tmp/utest~filer"; 
+    const char* fname = "/tmp/utest~filer";
     {
         FILE *fh = fopen(fname, "w");
         assert(fh);
@@ -139,7 +139,7 @@ void rc_init(bool load=0) {
         assert(fh);
         FilerLoad::init(fh);
         rc->init(filer_l = new FilerLoad("utest", &_valid));
-    } 
+    }
     else  {
         FILE* fh = fopen(fname, "w");
         assert(fh);
@@ -284,7 +284,7 @@ void test_power_ranger_extra() {
     {
         // FILE *fh = fopen(fname, "w");
         // assert(fh);
-        // 
+        //
         // FilerSave filer(fh) ;
         // assert(filer.is_valid());
 
@@ -300,7 +300,7 @@ void test_power_ranger_extra() {
             ranger.put_u(r, (i&0x7f));
         for (UINT64 i=0; i < 1000; i++)
             ranger.put_u(r, i);
-        for (UINT64 i=0xfff0; i < 0x10234; i++) 
+        for (UINT64 i=0xfff0; i < 0x10234; i++)
             ranger.put_u(r, i);
         for (int i = 0; i < 12; i++)
             ranger.put_u(r, array[i]);
@@ -314,7 +314,7 @@ void test_power_ranger_extra() {
         // FILE *fh = fopen(fname, "r");
         // assert(fh);
         // bool valid;
-        // 
+        //
         // FilerLoad filer(fh, &valid) ;
         // assert(filer.is_valid());
 
@@ -348,60 +348,60 @@ void test_power_ranger_extra() {
         }
         for (int i = 0; i < 8; i++) {
             long u = ranger.get_u(r);
-            assert(u == arrai[i]);            
+            assert(u == arrai[i]);
         }
         rc_finit();
     }
 }
 
 // void test_recbase() {
-// 
+//
 //     TITLE("test RecBase");
 //     // const UCHAR* mystr = (const UCHAR*)"welcome to Amsterdam had have a )*(&^(*4758*^&%)) +++~ time!";
 //     // int mystr_len = strlen((const char*)mystr);
 //     {
 //         FILE *fh = fopen(fname, "w");
 //         assert(fh);
-// 
+//
 //         FilerSave filer(fh) ;
 //         assert(filer.is_valid());
-// 
+//
 //         RecBase base ;
 //         BZERO(base);
 //         base.range_init();
 //         base.rcoder.init(&filer);
-// 
+//
 //         // base.put_str(0, mystr, mystr_len);
-// 
+//
 //         // for (int i = -1000; i < 2000; i++) {
 //         //     base.put_len(0, i*11+9);
 //         //     base.put_num(0, i*7);
 //         // }
-// 
+//
 //     }
 //     {
 //         FILE *fh = fopen(fname, "r");
 //         assert(fh);
 //         bool valid;
-// 
+//
 //         FilerLoad filer(fh, &valid) ;
 //         assert(filer.is_valid());
 //         RecBase base ;
 //         BZERO(base);
 //         base.range_init();
 //         base.rcoder.init(&filer);
-// 
+//
 //         // UCHAR str[1000];
 //         // UCHAR* p = base.get_str(0, str);
 //         // assert(0 == strcmp((const char*)str, (const char*)mystr));
 //         // assert(p == str + mystr_len);
-// 
+//
 //         // for (int i = -1000; i < 2000; i++) {
 //         //     int len = base.get_len(0);
 //         //     assert(len == i*11+9);
 //         //     long long num = base.get_num(0);
 //         //     assert(num == i*7);
-//         // }        
+//         // }
 //     }
 // }
 

@@ -30,11 +30,11 @@ private:
     FilerSave* m_out;
 
 public:
-    void init(FilerSave* f_out) { 
+    void init(FilerSave* f_out) {
         m_out = f_out;
         m_in  = NULL;
-        low=0;  
-        range=(UINT32)-1; 
+        low=0;
+        range=(UINT32)-1;
     }
 
     void init(FilerLoad* f_in) {
@@ -89,7 +89,7 @@ public:
         low  += temp;
         code -= temp;
         range*= freq;
- 
+
         while( range<TOP ) {
             rarely_if ( (low^(low+range)) & (0xffULL<<56) )
                 range = ((UINT32(low)|(TOP-1))-UINT32(low));

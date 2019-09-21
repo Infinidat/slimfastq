@@ -36,7 +36,7 @@ void test_big_file() {
         assert(not unlink_failed);
         printf("Delete %s\n", tst_filename);
     }
-        
+
 }
 
 int main(int, char**) {

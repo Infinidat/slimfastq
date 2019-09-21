@@ -51,7 +51,7 @@ protected:
 class XFileSave : private XFileBase {
     FilerSave* filer;
     void init();
-    
+
 public:
     XFileSave(const char* filename);
     ~XFileSave();

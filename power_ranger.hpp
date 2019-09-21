@@ -33,8 +33,6 @@
 
 #include <string.h>
 
-class BFileSave ;
-class BFileLoad ;
 class PowerRanger {
     enum {
         STEP=14,
@@ -51,7 +49,7 @@ class PowerRanger {
 
     void normalize() {
         for (UINT32 i = total = 0; i < iend; i++)
-            total += (freq[i] >>= 1 ); 
+            total += (freq[i] >>= 1 );
     }
 
     inline UCHAR down_level(int i) {
@@ -118,7 +116,7 @@ public:
               i < NSYM;
               i ++ ) {
 
-            rarely_if(iend    == i) 
+            rarely_if(iend    == i)
                 syms[ iend++ ] = i;
 
             if (sumf +  freq[i] + 1 <= prob)

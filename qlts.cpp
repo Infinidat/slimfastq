@@ -81,7 +81,7 @@ void QltSave::save_1(const UCHAR* buf, size_t size) {
             exranger.put(&rcoder, b);
             m_last.extra_hi_qlt ++ ;
         }
-        last = calc_last_1(last, b); 
+        last = calc_last_1(last, b);
     }
 }
 
@@ -98,7 +98,7 @@ void QltSave::save_2(const UCHAR* buf, size_t size) {
             exranger.put(&rcoder, b);
             m_last.extra_hi_qlt ++ ;
         }
-        last = calc_last_2(last, b); 
+        last = calc_last_2(last, b);
     }
 }
 
@@ -194,11 +194,11 @@ UINT32 QltLoad::load_2(UCHAR* buf, const size_t size) {
 
 UINT32 QltLoad::load_3(UCHAR* buf, const size_t size) {
 
-    UINT32 last = 0 ; 
+    UINT32 last = 0 ;
     UINT32 delta = 5;
     UCHAR  q1 = 0, q2 = 0;
     UINT32 di = 0;
-    
+
     for (UCHAR* p = buf; p < buf + size ; p++) {
         PREFETCH(ranger + last);
         UCHAR b = ranger[last].get(&rcoder);

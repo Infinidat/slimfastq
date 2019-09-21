@@ -86,7 +86,7 @@ private:
     UINT64 estimate_rec_limit();
 
     bool   m_valid;
-    UCHAR  m_buff[PLL_LAST+10]; 
+    UCHAR  m_buff[PLL_LAST+10];
     size_t m_page_count;
     int m_cur, m_end;
     FILE  *m_in;

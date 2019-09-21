@@ -121,9 +121,9 @@ public:
               i < NSYM;
               i ++ ) {
 
-            rarely_if(iend    == i) 
+            rarely_if(iend    == i)
                 syms[ iend++ ] = i;
-        
+
             if (sumf +  freq[i] + 1 <= prob)
                 sumf += freq[i] + 1;
             else

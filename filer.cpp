@@ -79,7 +79,7 @@ struct OneFile {
         // Note: -D_FILE_OFFSET_BITS=64 is required
         UINT64 offs = offset;
         offs *= FILER_PAGE;
-        fseek(m_in, offs , SEEK_SET); 
+        fseek(m_in, offs , SEEK_SET);
         UINT32 cnt = fread(page, 1, FILER_PAGE, m_in);
         if (cnt != FILER_PAGE)
             croak("Failed reading page index %d: %s", offset);
@@ -283,7 +283,7 @@ void FilerLoad::load_page() {
         assert(m_node_i == 0);
         onef.read_page(onef.files[m_onef_i].first, m_buff);
         m_node_p = onef.files[m_onef_i].node;
-        if (m_node_p) 
+        if (m_node_p)
             onef.read_page(m_node_p, (UCHAR*) m_node);
         m_node_i = 0;
     }
