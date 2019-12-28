@@ -150,7 +150,6 @@ Usage: \n\
 -f comp-filename : required - compressed\n\
 -d               : decode (instead of encoding) \n\
 -O               : silently overwrite existing files\n\
--q               : suppress verbose messages after compression \n\
 -l level         : compression level 1 to 4 (default is 3 ) \n\
 -1, -2, -3, -4   : alias for -l 1, -l 2, etc \n\
  Where levels are:\n\
@@ -162,19 +161,24 @@ Usage: \n\
 -v               : version : internal version \n\
 -h               : help : this message \n\
 -s               : stat : information about a compressed file \n\
+-q               : (redundant, will be removed) \n\
 \n\
-Do what I mean - Intuitive use of 'slimfastq A B' : \n\
+DWIM (Do what I mean) - Intuitive use of 'slimfastq A B' : \n\
 If A appears to be a fastq file, and:\n\
     B does not exists, or -O option is used: compress A to B \n\
 If A appears to be a slimfastq file, and: \n\
     B does not exist, or -O option is used: decompress A to B \n\
-    B is not specified: decompress A to stdout \n\
+    B is omitted: decompress A to stdout \n\
 Examples: \n\
 %% slimfastq *file.fastq* *new-file.sfq*   : compress *file.fastq* to *new-file.sfq* \n\
 %% slimfastq -1 *file.fastq* *new-file.sfq*: compress *file.fastq* to *new-file.sfq*, using level 1 \n\
 %% slimfastq *file.sfq*                    : decompress *file.sfq* to stdout \n\
 %% slimfastq *file.sfq* *file.fastq        : decompress *file.sfq* to *file.fastq*\n\
 %% gzip -dc *file.fastq.gz* | slimfastq -f *file.sfq* : convert from gzip to sfq format\n\
+Verification example:\n\
+%% md5sum *file.fastq*                      : remember checksum \n\
+%% slimfastq *file.fastq* *new-file.sfq*    : compress \n\
+%% slimfastq *new-file | md5sum -           : decompress pipe to md5sum, compare checksums \n\
 \n\
 ");
     exit(0);
@@ -201,7 +205,7 @@ Config::Config(){
 
     version = 0;
 
-    quiet = false;
+    quiet = true;
     profiling = false;
     encode = true;
     level = 3;
