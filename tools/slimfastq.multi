@@ -1,0 +1,189 @@
+# -*- cperl -*-
+
+#  This program was written by Josef Ezra  <jezra@infinidat.com>, <jezra@cpan.org>                                     #
+#  Copyright (c) 2019, Infinidat                                                                                       #
+#  All rights reserved.                                                                                                #
+#                                                                                                                      #
+#  Redistribution and use in source and binary forms, with or without modification, are permitted provided that        #
+#  the following conditions are met:                                                                                   #
+#                                                                                                                      #
+#  Redistributions of source code must retain the above copyright notice, this list of conditions and the following    #
+#  disclaimer.                                                                                                         #
+#  Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following #
+#  disclaimer in the documentation and/or other materials provided with the distribution.                              #
+#  Neither the name of the Infinidat nor the names of its contributors may be used to endorse or promote products      #
+#  derived from this software without specific prior written permission.                                               #
+
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,  #
+#  INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE   #
+#  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,  #
+#  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR     #
+#  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,   #
+#  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE    #
+#  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                                            #
+
+# **********    README  ************
+#  This script was written with easy editing, by non perl expecrts, in mind. If you need to
+#  change anything - go for it!
+
+# /usr/bin/perl is the default perl location on most unix systems.
+eval 'exec /usr/bin/perl $0 $*'
+    if 0 ;
+
+use 5.6.0 ;
+use warnings ;
+use strict ;
+use integer ;
+use bytes ;
+
+use threads ;
+use threads::shared ;
+use File::Basename;
+use Getopt::Long;
+
+sub helpthem() { die <<Help; }
+
+compress/decompress multi fastq files in parallel via slimfastq.
+Usage:
+  $0 [OPTIONS] directories/files
+
+OPTIONS are:
+-d -decompress      : decompress sfq files (default is compress operation)
+-r -recursively     : if argument is a directory, iterate it recursively
+-t -tgt_dir <dir>   : default is compress/decompress in the same dir
+-f -fq_suffix <arg> : comma separated  list, default is 'fastq,fq' (decompression uses the first in list)
+-s -sfq_suffix <arg>: default is 'sfq'
+-c -count <num>     : concurrent parallel compressions, default is based on 'lscpu' command or 8 (if not available)
+-e -exec <cmd>      : slimfastq command location (default searched in \$PATH, script's dir, and one up).
+-help               : show this message
+
+Examples:
+$0 -t my/dir/SFQ my/dir/FQ     : compress all '*.fastq', '*.fq' files in my/dir/FQ into my/dir/SFQ/*.sfq
+$0 -d -t my/dir/FQ my/dir/SFQ  : decompress all '*.sfq' files in my/dir/SFQ into my/dir/FQ/*.fastq
+
+Note:
+Editing this script was meant to be easy. Do it to make this script work with other compression software or
+to change other default behaviors.
+
+Help
+
+my %arg;                       # global arg holds the user options
+GetOptions(map {/(\w+)/; $_, \$arg{$1 || $_}}
+           qw/help
+              decompress
+              recursively
+              tgt_dir=s
+              fq_suffix=s
+              sfq_suffix=s
+              count=n
+              exec=s
+             /);
+
+helpthem if $arg{help};
+
+# First init some globals, for fast access
+
+my $comp = not $arg{decompress};
+
+my @fq_suffix = split /\s*,\s*/, ($arg{fq_suffix} || '');
+@fq_suffix = ('fastq', 'fq') unless @fq_suffix;
+
+my $sfq_suffix = $arg{sfq_suffix} || 'sfq';
+
+my @glob_suffix = $comp ? (@fq_suffix) : ($sfq_suffix) ;
+
+my @files : shared ;
+@files = @ARGV ;
+# while (my $f = shift) {
+#    ? check each one ?
+#     push @files, $f;
+# }
+die "Missing directories or files to " . ($comp ? 'compress' : 'decompress') . " in the command arguments\n"
+  unless @files ;
+
+my $tgt_dir = $arg{tgt_dir} || '.';
+mkdir $tgt_dir or die "Can't create $tgt_dir: $!\n" unless -d $tgt_dir;
+# ^-- if not exists, attemp to create one level only
+
+my $num_t = get_threads_count() ;
+sub get_threads_count {
+    # return the number of threads to run. First of user arg, system cores, or 8
+    return $arg{count} if $arg{count} and 0+$arg{count};
+    my $lscpu = qx/lscpu/ || '';
+    my $cnt = 8;
+    if ($lscpu =~ /CPU\W*s?\W+(\d+)/i) {
+        $cnt = $1;
+        if ($lscpu =~ /thread[\W]*s?\W*per core\W+(\d+)/i) {
+            $cnt *= $1;
+        }
+    }
+    $cnt
+}
+
+my $exec = get_exec();
+sub get_exec {
+    # return the slimfastq executable path
+    my $e = $arg{exec};
+    if ($e) {
+        die "$e: not a valid executable\n" unless -e $e ;
+        return $e;
+    }
+    -x "$_/slimfastq" and return "$_/slimfastq" for (split (':', $ENV{PATH} ), dirname($0), dirname($0) . "/..", '.', '..');
+    die "Can't find a slimfastq executable. Please use the -exec option\n";
+}
+
+# play the game
+
+sub getfile() {
+    lock   @files;
+    while (@files) {
+        my $f = shift @files;
+        $f =~ s/\/+$//;
+        return $f if -f $f ;
+        if (-d _ ) {
+            push @files, grep {-f $_} glob join ' ', map {"$f/*.$_"} @glob_suffix;
+            push @files, grep {-d $_} glob "$f/*" if $arg{recursively};
+        }
+        else {
+            warn "$f: not a file nor a directory\n";
+        }
+    }
+    undef
+}
+
+sub compress {
+    while (my $u = getfile()) {
+        print "$u\n";
+    }
+}
+
+sub decompress {
+    while (my $u = getfile()) {
+        print "$u\n";
+    }
+}
+
+# sub just_doit {
+#     while (my $u = getfile()) {
+#         my $b = basename $u, '.fastq', '.fq' ;
+#         my $f = "$tdir/$b.sfq";
+#         system "$sfq -q -u $u -f $f";
+#     }
+# }
+
+my @threads;
+sub thread_push(){
+    push @threads, threads->create( $comp ? \&compress : \&decompress ) ;
+}
+sub thread_pop(){
+    my $t = shift @threads;
+    $t->join;
+}
+
+# Main code - create $num_t threads, each triggering compress/decompress in a loop untill all files are done
+while (@files) {
+    thread_push;
+    thread_pop if @threads > $num_t;
+}   thread_pop while @threads;
+
+

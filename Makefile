@@ -114,3 +114,24 @@ test-filer:
 playground:
 	@ echo $(filter-out molder.cpp, $(shell echo *.cpp))
 
+install:
+ifeq ("$(wildcard ./slimfastq)","")
+	@echo "Please compile slimfastq first. You can do it by running:";
+	@echo "% make"
+	@echo "(optional) %make test"
+	@echo "% make install"
+	@echo "(Note that 'make slimfastq install' would not work as expected)"
+	@false
+else
+	sudo install -t /usr/local/bin/ ./slimfastq tools/slimfastq.*
+	@echo "\nAll done!"
+endif
+
+uninstall:
+	@for FILE in ./slimfastq tools/slimfastq.*; do      \
+		echo "rm /usr/local/bin/`basename $$FILE`"; \
+		sudo rm /usr/local/bin/`basename $$FILE` ;  \
+	done
+
+
+

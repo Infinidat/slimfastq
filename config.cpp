@@ -178,7 +178,11 @@ Examples: \n\
 Verification example:\n\
 %% md5sum *file.fastq*                      : remember checksum \n\
 %% slimfastq *file.fastq* *new-file.sfq*    : compress \n\
-%% slimfastq *new-file | md5sum -           : decompress pipe to md5sum, compare checksums \n\
+%% slimfastq *new-file.sfq* | md5sum -      : decompress pipe to md5sum, compare checksums \n\
+\n\
+Note: to support pipes and reduce the use of resources, slimfastq was coded to run in a \n\
+single thread. For a multi-session example (efficiently compressing multiple files in \n\
+parallel) please see: tools/multi.sessions.example.pl \n\
 \n\
 ");
     exit(0);
