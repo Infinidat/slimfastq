@@ -57,17 +57,15 @@ Some testing tips to check your own fastq files:
 (if md5sum don't match, one can use ./tools/mydiff.pl to the bad line. And I'll be grateful for a bug report)
 2) use time. Example:
 % /usr/bin/time -f  " IO : io=%I faults=%F\n MEM: max=%M kb Average=%K kb\n CPU: Percentage=%P real=%e sys=%S user=%U"  slimfastq large-file.fq /tmp/a.tst -O
-3) Performance wise, a single file compression/decompression is not very interesting. Try to use the scripts tools/slimfastq.dir.compress and
-tools/slimfastq.dir.decompress to check performance on a whole direcotry of fastq files. You can easily edit these scripts to adjust them to
-other compression softwares (general or fastq specific).
-4) Using to dir compression scripts, try to increase/decrease the max number of parallel process to as much as your system can handle efficiently. That would
-set a ceiling for the maximum speed expectation.
+3) Performance wise, a single file compression/decompression is not very interesting. The script tools/slimfastq.multi can be used to evaluate performance of
+concurrent files compression/decompression. This script can be edited to use with other compression softwares - general or fastq specific.
+4) Using slimfastq.multi, try to increase/decrease thread count to find the optimal number for a specific system.
 
 Install
 -------
 After compile
-* run "make install"
-* Alternatively to "make install", copy the "slimfastq" executable and the "tools/slimfastq.*" scripts to any location.
+* run "sudo make install"
+* Alternatively to "make install", copy the "slimfastq" executable and the "tools/slimfastq.multi" script to any location.
 
 License
 -------

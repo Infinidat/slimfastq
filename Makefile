@@ -123,15 +123,12 @@ ifeq ("$(wildcard ./slimfastq)","")
 	@echo "(Note that 'make slimfastq install' would not work as expected)"
 	@false
 else
-	sudo install -t /usr/local/bin/ ./slimfastq tools/slimfastq.*
+	install -t /usr/local/bin/ ./slimfastq tools/slimfastq.multi
 	@echo "\nAll done!"
 endif
 
 uninstall:
-	@for FILE in ./slimfastq tools/slimfastq.*; do      \
-		echo "rm /usr/local/bin/`basename $$FILE`"; \
-		sudo rm /usr/local/bin/`basename $$FILE` ;  \
-	done
+	rm /usr/local/bin/slimfastq* || /bin/true
 
 
 

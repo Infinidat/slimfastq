@@ -40,6 +40,7 @@ use threads ;
 use threads::shared ;
 use File::Basename;
 use Getopt::Long;
+use List::Util 'first' ;
 
 sub helpthem() { die <<Help; }
 
@@ -51,10 +52,11 @@ OPTIONS are:
 -d -decompress      : decompress sfq files (default is compress operation)
 -r -recursively     : if argument is a directory, iterate it recursively
 -t -tgt_dir <dir>   : default is compress/decompress in the same dir
--f -fq_suffix <arg> : comma separated  list, default is 'fastq,fq' (decompression uses the first in list)
--s -sfq_suffix <arg>: default is 'sfq'
+-f -fq_suffix <arg> : comma separated  list, default is '.fastq,.fq' (decompression uses the first in list)
+-s -sfq_suffix <arg>: default is '.sfq'
 -c -count <num>     : concurrent parallel compressions, default is based on 'lscpu' command or 8 (if not available)
 -e -exec <cmd>      : slimfastq command location (default searched in \$PATH, script's dir, and one up).
+-v -verbose         : log to stdout
 -help               : show this message
 
 Examples:
@@ -69,7 +71,7 @@ Help
 
 my %arg;                       # global arg holds the user options
 GetOptions(map {/(\w+)/; $_, \$arg{$1 || $_}}
-           qw/help
+           qw/help verbose
               decompress
               recursively
               tgt_dir=s
@@ -86,9 +88,10 @@ helpthem if $arg{help};
 my $comp = not $arg{decompress};
 
 my @fq_suffix = split /\s*,\s*/, ($arg{fq_suffix} || '');
-@fq_suffix = ('fastq', 'fq') unless @fq_suffix;
+@fq_suffix = ('.fastq', '.fq') unless @fq_suffix;
+my $fq_suffix = $fq_suffix[0];
 
-my $sfq_suffix = $arg{sfq_suffix} || 'sfq';
+my $sfq_suffix = $arg{sfq_suffix} || '.sfq';
 
 my @glob_suffix = $comp ? (@fq_suffix) : ($sfq_suffix) ;
 
@@ -98,19 +101,35 @@ my @files : shared ;
 #    ? check each one ?
 #     push @files, $f;
 # }
-die "Missing directories or files to " . ($comp ? 'compress' : 'decompress') . " in the command arguments\n"
+die "Missing directories or files to " . ($comp ? 'compress' : 'decompress') . " in the command arguments\n for more details, try '$0 -h'\n"
   unless @files ;
 
-my $tgt_dir = $arg{tgt_dir} || '.';
-mkdir $tgt_dir or die "Can't create $tgt_dir: $!\n" unless -d $tgt_dir;
-# ^-- if not exists, attemp to create one level only
+my $verbose_lock : shared;
+sub verb(@) {
+    # log function - here you can add date, print to file, etc.
+    return unless $arg{verbose};
+    lock $verbose_lock;
+    print @_, "\n"
+}
 
-my $num_t = get_threads_count() ;
+my $tgt_dir = get_tgt_dir();
+my $num_t = get_threads_count() || 8 ;
+my $exec = get_exec() or die "Can't find a slimfastq executable. Please use the -exec option\n";
+
+verb "Running $num_t threads. Exec is $exec";
+
+sub get_tgt_dir {
+    my $d = $arg{tgt_dir} or return;
+    mkdir $d or die "Can't create $d: $!\n" unless -d $d;
+    # ^-- if not exists, attemp to create one level only
+    $d
+}
+
 sub get_threads_count {
     # return the number of threads to run. First of user arg, system cores, or 8
     return $arg{count} if $arg{count} and 0+$arg{count};
     my $lscpu = qx/lscpu/ || '';
-    my $cnt = 8;
+    my $cnt;
     if ($lscpu =~ /CPU\W*s?\W+(\d+)/i) {
         $cnt = $1;
         if ($lscpu =~ /thread[\W]*s?\W*per core\W+(\d+)/i) {
@@ -120,7 +139,6 @@ sub get_threads_count {
     $cnt
 }
 
-my $exec = get_exec();
 sub get_exec {
     # return the slimfastq executable path
     my $e = $arg{exec};
@@ -128,21 +146,21 @@ sub get_exec {
         die "$e: not a valid executable\n" unless -e $e ;
         return $e;
     }
-    -x "$_/slimfastq" and return "$_/slimfastq" for (split (':', $ENV{PATH} ), dirname($0), dirname($0) . "/..", '.', '..');
-    die "Can't find a slimfastq executable. Please use the -exec option\n";
+    first {-x } map {"$_/slimfastq"} (dirname($0), dirname($0) . "/..", split (':', $ENV{PATH} ), '.', '..');
 }
 
-# play the game
+# All initialized, now do the actual task
 
 sub getfile() {
+    # this thread protected sub will parse direcotries (if needed) and provide the caller one unique filename
     lock   @files;
     while (@files) {
         my $f = shift @files;
         $f =~ s/\/+$//;
         return $f if -f $f ;
         if (-d _ ) {
-            push @files, grep {-f $_} glob join ' ', map {"$f/*.$_"} @glob_suffix;
-            push @files, grep {-d $_} glob "$f/*" if $arg{recursively};
+            push @files, grep {-f $_} glob join ' ', map {"$f/*$_"} @glob_suffix;
+            push @files, grep {-d $_} glob "$f/*" if $arg{recursively}; # double reading the directory is less efficeint than a single scan, but this seems to be neglectable
         }
         else {
             warn "$f: not a file nor a directory\n";
@@ -153,13 +171,34 @@ sub getfile() {
 
 sub compress {
     while (my $u = getfile()) {
-        print "$u\n";
+        my $b = basename $u, @fq_suffix;
+        my $d = $tgt_dir || dirname $u;
+        my $f = "$d/$b$sfq_suffix";
+        system "$exec -u $u -f $f -O ";
+        if ($arg{verbose}) {
+            my $su = (-s $u)/1000_000 ;
+            my $sf = (-s $f)/1000_000 ;
+            verb "comp $u (${su}MB) -> $f (${sf}MB)"
+        }
     }
 }
 
 sub decompress {
-    while (my $u = getfile()) {
-        print "$u\n";
+    while (my $f = getfile()) {
+        my $stat = qx/head -6 $f/;
+        if ($stat !~ /whoami\=slimfastq/) {
+            verb "ERR: $f doesn't seem to be a valid slimfastq file";
+            continue;
+        }
+        my $b = $stat =~ /orig.filename=(.*?)\s*$/m ? $1 : (basename $f, $sfq_suffix) . "$fq_suffix" ;
+        my $d = $tgt_dir || dirname $f;
+        my $u = "$d/$b";
+        system "$exec -u $u -f $f -O ";
+        if ($arg{verbose}) {
+            my $su = (-s $u)/1000_000 ;
+            my $sf = (-s $f)/1000_000 ;
+            verb "decomp $u (${su}MB) <- $f (${sf}MB)"
+        }
     }
 }
 
