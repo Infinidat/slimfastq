@@ -190,10 +190,10 @@ sub decompress {
             verb "ERR: $f doesn't seem to be a valid slimfastq file";
             continue;
         }
-        my $b = $stat =~ /orig.filename=(.*?)\s*$/m ? $1 : (basename $f, $sfq_suffix) . "$fq_suffix" ;
+        my $b = $stat =~ /orig.filename=(.*?)\s*$/m ? (basename $1) : (basename $f, $sfq_suffix) . "$fq_suffix" ;
         my $d = $tgt_dir || dirname $f;
         my $u = "$d/$b";
-        system "$exec -u $u -f $f -O ";
+        system "$exec -d -u $u -f $f ";
         if ($arg{verbose}) {
             my $su = (-s $u)/1000_000 ;
             my $sf = (-s $f)/1000_000 ;
