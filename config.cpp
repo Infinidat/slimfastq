@@ -36,6 +36,7 @@
 #include <map>
 #include <iostream>
 #include <fstream>
+#include <stdarg.h>             // Variadic
 
 #include "config.hpp"
 
@@ -47,19 +48,27 @@ typedef std::map<std::string, std::string> info_t;
 typedef std::pair<std::string, std::string> info_pair;
 info_t info_map;
 
-void croak(const char* msg) {
+void croak(const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    fprintf(stderr, "slimfastq: %s %s: ",
+            ( conf.encode ? "encoding" : "decoding"),
+            conf.get_info("orig.filename"));
+
     if (errno)
-        fprintf(stderr, "error: %s: %s\n", msg, strerror(errno));
-    else
-        fprintf(stderr, "error: %s\n", msg);
+        fprintf(stderr, "err=%s", strerror(errno));
+
+    vfprintf(stderr, format, args);
+    fprintf(stderr, "\n");
+
     exit(1);
 }
 
-void croak(const char* fmt, long long num) {
-    fprintf(stderr, fmt, num);
-    fprintf(stderr, "\n");
-    exit(1);
-}
+// void croak(const char* fmt, long long num) {
+//     fprintf(stderr, fmt, num);
+//     fprintf(stderr, "\n");
+//     exit(1);
+// }
 
 void Config::statistics_dump() const {
     fprintf(stderr, ":::: Info ::::\n");
@@ -102,10 +111,10 @@ bool Config::has_info(const char* key) const {
 
 const char* Config::get_info(const char* key) const {
     const char* something = info_map[key].c_str();
-    if (0 == strlen(something)) {
-        // fprintf(stderr, "%s: no value for '%s'\n", m_info_filename, key);
-        exit(1);
-    }
+    if (0 == strlen(something))
+        // croak("%s: no value for '%s'\n", m_info_filename, ke);
+        return "";
+
     return something;
 }
 

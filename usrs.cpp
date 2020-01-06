@@ -132,13 +132,13 @@ void UsrSave::update(exception_t type, UINT16 dat) {
 void UsrSave::expect(UCHAR chr) {
     likely_if (m_buff[m_cur++] == chr)
         return;
-    fprintf(stderr, "fastq file: expecting '%c', got '%c' after record %llu\n", chr, m_buff[m_cur-1], g_record_count);
-    exit (1);
+
+    croak("fastq file: expecting '%c', got '%c' after record %llu", chr, m_buff[m_cur-1], g_record_count);
 }
 
 bool UsrSave::mid_rec_msg() const {
-    fprintf(stderr, "fastq file: record seems truncated  after record %llu\n", g_record_count);
-    exit (1);
+
+    croak("fastq file: record seems truncated  after record %llu", g_record_count);
 }
 
 void UsrSave::load_check() {

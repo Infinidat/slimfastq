@@ -31,8 +31,9 @@ The multi threads FAQ
 ---------------------
 The main reason slimfastq is a single thread application is to avoid the overhead of semaphores, L2 flushes, and context
 switches. The goal is to focus on the speed of N files compression/decompression instead of a single file.
-...
-
+Use slimfastq.multi script (located under tools/) to compress/decompress multiple files in parallel. The '-h' argument, as
+expected, will provide help. This script can be easily edited for a sepcial setup. Please do not hesitate to email me if
+any help is needed.
 
 Compile
 -------

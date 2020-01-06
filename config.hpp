@@ -30,8 +30,7 @@
 
 class Config;
 
-void croak(const char* msg               ) __attribute__ ((noreturn, cold));
-void croak(const char* fmt, long long num) __attribute__ ((noreturn, cold));
+void croak(const char *format, ...)__attribute__ ((noreturn, cold));
 
 class Config {
     // Singleton - croaks if already exists
