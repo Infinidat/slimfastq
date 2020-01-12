@@ -55,8 +55,8 @@ void croak(const char *format, ...) {
             ( conf.encode ? "encoding" : "decoding"),
             conf.get_info("orig.filename"));
 
-    if (errno)
-        fprintf(stderr, "err=%s", strerror(errno));
+    // if (errno)
+    //     fprintf(stderr, "err=%s", strerror(errno));
 
     vfprintf(stderr, format, args);
     fprintf(stderr, "\n");

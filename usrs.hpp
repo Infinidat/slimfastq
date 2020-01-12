@@ -94,6 +94,8 @@ private:
     int   m_llen;
     bool  m_solid;
     XFileSave* x_llen;
+    // XFileSave* gen_len;
+    // XFileSave* qlt_len;
     XFileSave* x_sgen;
     XFileSave* x_sqlt;
     XFileSave* x_lgen;
@@ -127,6 +129,7 @@ private:
     // UINT64 m_rec_total;
     bool   m_2nd_rec, m_solid;
     UINT32 m_rec_size;
+    long   cache_version;
 
     bool  flip;
     UCHAR m_rep[MAX_ID_LLEN + 1 ];
