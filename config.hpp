@@ -40,7 +40,7 @@ public:
     void init (int argc, char **argv, int ver);
     void finit();
     FILE * file_usr() const { return reinterpret_cast<FILE*>(f_usr);}
-    int   version, level;
+    int   version, level, decoder_version;
     bool  encode, profiling, quiet;
 
     void load_info() const;

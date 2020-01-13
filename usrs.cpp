@@ -515,7 +515,7 @@ int UsrLoad::decode() {
     rarely_if( ! n_recs and not m_last.i_long)
         croak("Zero records, what's going on?");
 
-    cache_version = conf.get_long("version");
+    cache_version = conf.decoder_version;
 
     RecLoad rec;
     GenLoad gen;

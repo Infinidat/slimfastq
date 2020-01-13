@@ -367,6 +367,12 @@ void Config::init(int argc, char **argv, int ver) {
         if (comp_size > 0 and
             comp_size != file_size)
             croak("expected compressed file size to be %lld", comp_size);
+
+        decoder_version = conf.get_long("version");
+        if (decoder_version and
+            decoder_version > version)
+            croak("%s was compressed with slimfastq version %d. My version is %d. Please upgrade me before decoing",
+                  fil.c_str(), decoder_version, version);
     }
 }
 

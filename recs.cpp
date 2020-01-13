@@ -375,7 +375,7 @@ void RecSave::save(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, co
 
 size_t RecLoad::load(UCHAR* buf, const UCHAR* prev) {
     rarely_if(not m_last.initilized) {
-        cache_version = conf.get_long("version");
+        cache_version = conf.decoder_version;
         bzero(ctype[0], sizeof(ctype[0])); // clear cache
         bzero(ctype[1], sizeof(ctype[1])); // clear cache
         imap = 0;
