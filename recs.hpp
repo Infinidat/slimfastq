@@ -115,7 +115,7 @@ private:
     UCHAR     get_len (UCHAR i);
     UCHAR*    get_str (UCHAR i, UCHAR* p);
 
-    long cache_version;
+    int comp_version;
 
     FilerLoad* filer;
     XFileLoad* x_file;

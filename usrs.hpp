@@ -125,11 +125,11 @@ private:
 
     FILE *m_out;
 
-    size_t m_llen, m_llen_factor;
+    size_t m_llen, m_llen_factor, m_qlen;
     // UINT64 m_rec_total;
     bool   m_2nd_rec, m_solid;
     UINT32 m_rec_size;
-    long   cache_version;
+    long   comp_version;
 
     bool  flip;
     UCHAR m_rep[MAX_ID_LLEN + 1 ];

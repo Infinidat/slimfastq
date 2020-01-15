@@ -394,9 +394,15 @@ UsrLoad::UsrLoad() {
     m_out = conf.file_usr();
     m_rec[0] = '@' ;
     m_rep[0] = '@' ;
-    m_llen    = conf.get_long("llen");
     m_2nd_rec = conf.get_long("usr.2id");
     m_solid   = conf.get_bool("usr.solid");
+    if (comp_version > 5) {
+        assert(0);              // TODO
+    }
+    else {
+        m_llen = conf.get_long("llen");
+        m_qlen = m_llen;
+    }
 
     if (not m_2nd_rec) {
         m_gen[m_llen+1] = '\n';
@@ -459,11 +465,17 @@ void UsrLoad::update() {
         g_record_count++;
         return update();
     }
-    rarely_if(m_last.i_llen == g_record_count) {
-        m_llen = x_llen -> get();
-        m_last.i_llen += x_llen->get();
-        m_gen[m_llen+1] = '\n';
-        m_gen[m_llen+2] = '+';
+    if (comp_version > 5) {
+        assert(0);              // TODO
+    }
+    else {
+        rarely_if(m_last.i_llen == g_record_count) {
+            m_llen = x_llen -> get();
+            m_qlen = m_llen;
+            m_last.i_llen += x_llen->get();
+            m_gen[m_llen+1] = '\n';
+            m_gen[m_llen+2] = '+';
+        }
     }
     rarely_if(m_solid and
               m_last.i_sgen == g_record_count) {
@@ -495,7 +507,7 @@ void UsrLoad::save() {
     else {
         SAVE(m_gen_ptr, llen + 2);
     }
-    SAVE(m_qlt_ptr, llen);
+    SAVE(m_qlt_ptr, m_qlen + m_llen_factor);
 #undef  SAVE
 
 }
@@ -515,7 +527,7 @@ int UsrLoad::decode() {
     rarely_if( ! n_recs and not m_last.i_long)
         croak("Zero records, what's going on?");
 
-    cache_version = conf.decoder_version;
+    comp_version = conf.decoder_version;
 
     RecLoad rec;
     GenLoad gen;
@@ -537,7 +549,7 @@ int UsrLoad::decode() {
         rarely_if (not m_rec_size)
             croak("premature EOF - %llu records left", n_recs+1);
 
-        qlt.load(b_qlt, m_llen);
+        qlt.load(b_qlt, m_qlen);
         gen.load(b_gen, b_qlt, m_llen);
         save();
     }

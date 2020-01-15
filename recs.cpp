@@ -375,7 +375,7 @@ void RecSave::save(const UCHAR* buf, const UCHAR* end, const UCHAR* prev_buf, co
 
 size_t RecLoad::load(UCHAR* buf, const UCHAR* prev) {
     rarely_if(not m_last.initilized) {
-        cache_version = conf.decoder_version;
+        comp_version = conf.decoder_version;
         bzero(ctype[0], sizeof(ctype[0])); // clear cache
         bzero(ctype[1], sizeof(ctype[1])); // clear cache
         imap = 0;
@@ -396,7 +396,7 @@ size_t RecLoad::load(UCHAR* buf, const UCHAR* prev) {
 
     map_space(prev, 0);         // TODO? optimize by caching prev
 
-    rarely_if (cache_version < 5)
+    rarely_if (comp_version < 5)
         return load_pre5(buf, prev);
 
     UINT64 map = get_num(0);
