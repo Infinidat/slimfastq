@@ -84,8 +84,9 @@ GenSave::~GenSave() {
     if (not conf.quiet and filer and x_Ns and x_Nn)
         fprintf(stderr, "::: GEN comp size: %lu \t| Ns: %lu, Nn: %lu\n",
                 filer->tell(), x_Ns->tell(), x_Nn->tell());
-    DELETE(ranger);
-    DELETE(filer);
+    delete []ranger;
+    delete filer;
+
     DELETE(x_Ns);
     DELETE(x_Nn);
 }
@@ -192,8 +193,8 @@ GenLoad::GenLoad() {
 
 GenLoad::~GenLoad() {
     rcoder.done();
-    DELETE(ranger);
-    DELETE(filer);
+    delete []ranger;
+    delete   filer;
     DELETE(x_Ns);
     DELETE(x_Nn);
 }

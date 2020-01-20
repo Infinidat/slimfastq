@@ -88,9 +88,11 @@ class Log64Ranger {
 
 public:
     Log64Ranger() {
-        // *(UINT64*) iend = 0;
-        // iend = 0, total = 0, count = 0;
+#ifdef HAPPY_VALGRIND
+        bzero(this, sizeof(*this));
+#else
         bzero(&iend, 8);
+#endif
     }
 
     inline void put(RCoder *rc, UCHAR sym) {

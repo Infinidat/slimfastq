@@ -9,9 +9,17 @@ FLAGS_OPT = $(WALL) $(PROF_DIR) $(FLAGS_FAST) -fprofile-use
 FLAGS_PROF= $(WALL) $(PROF_DIR) $(FLAGS_FAST) -fprofile-generate
 FLAGS_OPT2 = $(WALL) $(PROF_DIR) $(FLAGS_FAST) 
 
-SAMPLE_DIR=samples
-TEST_FILES = $(wildcard $(SAMPLE_DIR)/*.fq)
-all:  slimfastq 
+# ifeq ("$(wildcard ./tmp_samples)","")
+ifeq ($(sampdir),)
+	TEST_FILES  = $(wildcard samples/*.fq)
+	TEST_FILES += $(wildcard samples/*.fastq)
+else
+	TEST_FILES  = $(wildcard $(sampdir)/*.fq)
+	TEST_FILES += $(wildcard $(sampdir)/*.fastq)
+endif
+
+
+all:  slimfastq
 opt:  slimfastq.opt
 
 prof-opt.run:
@@ -45,7 +53,11 @@ HEADERS= $(shell echo *.hpp)
 slimfastq.gdb: $(SOURCES) $(HEADERS)
 	g++ $(FLAGS) -o $@ $(SOURCES)
 
-.PHONY: slimfastq slimfastq.gdb test-filer
+valgrind: slimfastq.valgrind
+slimfastq.valgrind: $(SOURCES) $(HEADERS)
+	g++ $(FLAGS) -DHAPPY_VALGRIND -o $@ $(SOURCES)
+
+.PHONY: slimfastq slimfastq.gdb slimfastq.valgrind test-filer
 
 slimfastq:
 	g++ $(FLAGS_OPT2) -o $@ $(SOURCES)

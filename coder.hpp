@@ -26,7 +26,7 @@ private:
     UINT64 code;
     UINT32 range;
 
-    FilerLoad* m_in;
+    FilerLoad* m_in ;
     FilerSave* m_out;
 
 public:

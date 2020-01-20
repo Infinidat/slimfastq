@@ -40,6 +40,7 @@ class UsrBase {
 public:
 enum exception_t {
     ET_LLEN,
+    ET_QLEN,
     ET_SOLPF_GEN,
     ET_SOLPF_QLT,
 
@@ -53,6 +54,7 @@ enum exception_t {
 
     struct {
         UINT64 i_llen;
+        UINT64 i_qlen;
         UINT64 i_sgen;
         UINT64 i_sqlt;
 
@@ -91,11 +93,11 @@ private:
     int m_cur, m_end;
     FILE  *m_in;
     bool  first_cycle;
-    int   m_llen;
+    int   m_llen, m_qlen;
     bool  m_solid;
     XFileSave* x_llen;
-    // XFileSave* gen_len;
-    // XFileSave* qlt_len;
+    XFileSave* x_qlen;
+
     XFileSave* x_sgen;
     XFileSave* x_sqlt;
     XFileSave* x_lgen;
@@ -140,6 +142,7 @@ private:
     UCHAR * m_gen_ptr;
 
     XFileLoad* x_llen;
+    XFileLoad* x_qlen;
     XFileLoad* x_sgen;
     XFileLoad* x_sqlt;
     XFileLoad* x_lgen;

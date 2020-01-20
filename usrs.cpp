@@ -39,10 +39,14 @@ UsrSave::UsrSave() {
     BZERO(mp);
 
     m_valid  = true ;
-    m_cur = m_end = m_page_count = 0;
+    m_cur = 0 ;
+    m_end = 0 ;
+    m_page_count = 0;
     m_llen = 0;
+    m_qlen = 0;
     m_solid = false;
     x_llen = new XFileSave("usr.x");
+    x_qlen = new XFileSave("usr.x.q");
     x_sgen = new XFileSave("usr.pfg");
     x_sqlt = new XFileSave("usr.pfq");
 
@@ -58,14 +62,15 @@ UsrSave::UsrSave() {
 
 UsrSave::~UsrSave(){
     if (not conf.quiet) {
-        fprintf(stderr, "::: USR  num recs: %llu \t| EX size len/sgen/sqlt: %lu/%lu/%lu\n", g_record_count-1,
-                x_llen->tell(), x_sgen->tell(), x_sqlt->tell());
+        fprintf(stderr, "::: USR  num recs: %llu \t| EX size len/qlen/sgen/sqlt: %lu/%lu/%lu/%lu\n", g_record_count-1,
+                x_llen->tell(), x_qlen->tell(), x_sgen->tell(), x_sqlt->tell());
         if (x_lrec and
             x_lrec->tell())
             fprintf(stderr, "::: USR  oversized records: rec/gen/qlt %lu/%lu/%lu\n",
                     x_lrec->tell(), x_lgen->tell(), x_lqlt->tell());
     }
     DELETE(x_llen);
+    DELETE(x_qlen);
     DELETE(x_sgen);
     DELETE(x_sqlt);
 
@@ -109,6 +114,13 @@ void UsrSave::update(exception_t type, UINT16 dat) {
         x_llen -> put ( dat );
         m_last.i_llen = g_record_count;
         m_llen = dat;
+        break;
+
+    case ET_QLEN:
+        x_qlen -> put( g_record_count - m_last.i_qlen );
+        x_qlen -> put( dat );
+        m_last.i_qlen = g_record_count;
+        // m_qlen = dat;
         break;
 
     case ET_SOLPF_GEN:
@@ -309,7 +321,6 @@ bool UsrSave::get_record() {
         m_cur ++;
 
     rarely_if( not sanity)
-        // croak("recrod %llu: gen line too long", g_record_count);
         return get_oversized_record(currec);
 
     rarely_if(update_solid_pf)  // update only after last potential get_oversized_record
@@ -321,10 +332,13 @@ bool UsrSave::get_record() {
 
     expect('\n');
     expect('+' );
-    for (int sanity = MAX_ID_LLEN;
+    for (sanity = MAX_ID_LLEN;
          --  sanity and m_buff[m_cur] != '\n';
          m_cur ++ );
     CHECK_OVERFLOW;
+    rarely_if(not sanity)
+        croak("wierd second id at record %llu", g_record_count);
+
     expect('\n');
 
     if (m_solid) {
@@ -335,7 +349,19 @@ bool UsrSave::get_record() {
     }
 
     mp.qlt = &(m_buff[m_cur]);
-    m_cur += m_llen;
+    // m_cur += m_llen;
+    m_qlen = 0;
+    for (sanity = MAX_GN_LLEN;
+         -- sanity and m_buff[m_cur+m_qlen] != '\n';
+         m_qlen++);
+
+    rarely_if( not sanity)
+        return get_oversized_record(currec);
+
+    rarely_if( m_qlen != m_llen)
+        update(ET_QLEN, m_qlen);
+
+    m_cur += m_qlen;
     CHECK_OVERFLOW;
 
     likely_if (m_cur < m_end)
@@ -350,25 +376,6 @@ bool UsrSave::get_record() {
 #undef  CHECK_OVERFLOW
 }
 
-// UINT64 UsrSave::estimate_rec_limit() {
-//     int  i, cnt;
-//     for (i = m_cur, cnt=0;
-//          i < m_end and cnt < 4;
-//          i ++ )
-//         if (m_buff[i] == '\n')
-//             cnt ++;
-//
-//     if (cnt < 4)
-//         croak("This usr file is too small");
-//
-//     UINT64 limit = conf.partition.size / (i-m_cur);
-//     // if (limit < 500000)
-//     if (limit < 5000) // for debuging
-//         croak("This partition partition is too small (records limit=%lld)", limit);
-//
-//     return limit;
-// }
-
 int UsrSave::encode() {
 
     UINT32  sanity = conf.profiling ? 100000 : 3000000000;
@@ -380,7 +387,7 @@ int UsrSave::encode() {
     while( ++ g_record_count < sanity  and get_record() ) {
         gen.save(mp.gen, mp.qlt, m_llen);
         rec.save(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
-        qlt.save(mp.qlt, m_llen);
+        qlt.save(mp.qlt, m_qlen);
     }
     conf.set_info("num_records", g_record_count-1);
     return 0;
@@ -396,13 +403,8 @@ UsrLoad::UsrLoad() {
     m_rep[0] = '@' ;
     m_2nd_rec = conf.get_long("usr.2id");
     m_solid   = conf.get_bool("usr.solid");
-    if (comp_version > 5) {
-        assert(0);              // TODO
-    }
-    else {
-        m_llen = conf.get_long("llen");
-        m_qlen = m_llen;
-    }
+    m_llen = conf.get_long("llen");
+    m_qlen = m_llen;
 
     if (not m_2nd_rec) {
         m_gen[m_llen+1] = '\n';
@@ -421,10 +423,12 @@ UsrLoad::UsrLoad() {
     }
 
     x_llen = new XFileLoad("usr.x");
+    x_qlen = new XFileLoad("usr.x.q");
     x_sgen = new XFileLoad("usr.pfg");
     x_sqlt = new XFileLoad("usr.pfq");
 
     m_last.i_llen = x_llen->get();
+    m_last.i_qlen = x_qlen->get();
     m_last.i_sgen = x_sgen->get();
     m_last.i_sqlt = x_sqlt->get();
 
@@ -442,6 +446,7 @@ UsrLoad::UsrLoad() {
 
 UsrLoad::~UsrLoad() {
     DELETE(x_llen);
+    DELETE(x_qlen);
     DELETE(x_sgen);
     DELETE(x_sqlt);
 
@@ -465,17 +470,17 @@ void UsrLoad::update() {
         g_record_count++;
         return update();
     }
-    if (comp_version > 5) {
-        assert(0);              // TODO
+
+    rarely_if(m_last.i_llen == g_record_count) {
+        m_llen = x_llen -> get();
+        m_qlen = m_llen;
+        m_last.i_llen += x_llen->get();
+        m_gen[m_llen+1] = '\n';
+        m_gen[m_llen+2] = '+';
     }
-    else {
-        rarely_if(m_last.i_llen == g_record_count) {
-            m_llen = x_llen -> get();
-            m_qlen = m_llen;
-            m_last.i_llen += x_llen->get();
-            m_gen[m_llen+1] = '\n';
-            m_gen[m_llen+2] = '+';
-        }
+    rarely_if(m_last.i_qlen == g_record_count) {
+        m_qlen = x_qlen -> get();
+        m_last.i_qlen += x_qlen->get();
     }
     rarely_if(m_solid and
               m_last.i_sgen == g_record_count) {
