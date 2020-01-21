@@ -86,12 +86,16 @@ class GenSave : private GenBase {
 public:
     GenSave() ;
     ~GenSave();
-    void save(const UCHAR* gen, UCHAR* qlt, size_t size)
-    { save_x(gen, qlt, size , get_mask()); }
+    void save(const UCHAR* gen, UCHAR* qlt, UINT64 llen, UINT64 qlen)
+    {return llen == qlen ?
+            save_x(gen, qlt, llen , get_mask()) :
+            save_x(gen, qlt, llen , qlen, get_mask());
+    }
 
 private:
-    inline UCHAR normalize_gen(UCHAR gen, UCHAR &qlt);
-    void save_x(const UCHAR* gen, UCHAR* qlt, size_t size, const UINT64 mask);
+    inline UCHAR normalize_gen(UCHAR gen, UCHAR qlt);
+    void save_x(const UCHAR* gen, const UCHAR* qlt, UINT64 size, const UINT64 mask);
+    void save_x(const UCHAR* gen, const UCHAR* qlt, UINT64 llen, UINT64 qlen, const UINT64 mask);
 
     FilerSave* filer;
     XFileSave* x_Ns;
@@ -103,11 +107,15 @@ public:
     GenLoad();
     ~GenLoad();
 
-    UINT32 load(UCHAR* gen, const UCHAR* qlt, size_t size)
-    {return load_x(gen, qlt, size, get_mask()); }
+    UINT32 load(UCHAR* gen, const UCHAR* qlt, UINT64 llen, UINT64 qlen)
+    {return llen == qlen ?
+            load_x(gen, qlt, llen, get_mask()) :
+            load_x(gen, qlt, llen, qlen, get_mask());
+    }
 
 private:
-    UINT32 load_x(UCHAR* gen, const UCHAR* qlt, size_t size, const UINT64 mask);
+    UINT32 load_x(UCHAR* gen, const UCHAR* qlt, UINT64 llen, const UINT64 mask);
+    UINT32 load_x(UCHAR* gen, const UCHAR* qlt, UINT64 llen, UINT64 qlen, const UINT64 mask);
     inline void normalize_gen(UCHAR &gen, UCHAR qlt);
 
     // bool   m_validNs, m_validNn;

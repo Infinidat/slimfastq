@@ -385,7 +385,7 @@ int UsrSave::encode() {
     QltSave qlt;
 
     while( ++ g_record_count < sanity  and get_record() ) {
-        gen.save(mp.gen, mp.qlt, m_llen);
+        gen.save(mp.gen, mp.qlt, m_llen, m_qlen);
         rec.save(mp.rec, mp.rec_end, mp.prev_rec, mp.prev_rec_end);
         qlt.save(mp.qlt, m_qlen);
     }
@@ -555,7 +555,7 @@ int UsrLoad::decode() {
             croak("premature EOF - %llu records left", n_recs+1);
 
         qlt.load(b_qlt, m_qlen);
-        gen.load(b_gen, b_qlt, m_llen);
+        gen.load(b_gen, b_qlt, m_llen, m_qlen);
         save();
     }
     // sanity: verify all objects are done (by croak?)

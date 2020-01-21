@@ -91,7 +91,8 @@ GenSave::~GenSave() {
     DELETE(x_Nn);
 }
 
-inline UCHAR GenSave::normalize_gen(UCHAR gen, UCHAR &qlt) {
+// inline UCHAR GenSave::normalize_gen(UCHAR gen, UCHAR &qlt) {
+inline UCHAR GenSave::normalize_gen(UCHAR gen, UCHAR qlt) {
 
     bool bad_n; //  = false;
     const bool bad_q = qlt == '!';
@@ -148,11 +149,22 @@ inline UCHAR GenSave::normalize_gen(UCHAR gen, UCHAR &qlt) {
     return n;
 }
 
-void GenSave::save_x(const UCHAR* gen, UCHAR* qlt, size_t size, const UINT64 mask) {
+void GenSave::save_x(const UCHAR* gen, const UCHAR* qlt, UINT64 size, const UINT64 mask) {
     UINT32 last = 0x007616c7;
-    const UCHAR* g = gen; UCHAR* q = qlt;
+    const UCHAR* g = gen; const UCHAR* q = qlt;
     for (; g < gen + size ; g++, q++) {
         UCHAR n = normalize_gen(*g, *q);
+        last &= mask;
+        PREFETCH(ranger + last);
+        ranger[last].put(&rcoder, n);
+        last = ((last<<2) | n);
+    }
+}
+
+void GenSave::save_x(const UCHAR* gen, const UCHAR* qlt, UINT64 llen, UINT64 qlen, const UINT64 mask) {
+    UINT32 last = 0x007616c7;
+    for (uint i = 0; i < llen; i++) {
+        UCHAR n = normalize_gen(gen[i], i < qlen ? qlt[i] : 40);
         last &= mask;
         PREFETCH(ranger + last);
         ranger[last].put(&rcoder, n);
@@ -214,7 +226,7 @@ void GenLoad::normalize_gen(UCHAR & gen, UCHAR qlt) {
    }
 }
 
-UINT32 GenLoad::load_x(UCHAR* gen, const UCHAR* qlt, size_t size, const UINT64 mask) {
+UINT32 GenLoad::load_x(UCHAR* gen, const UCHAR* qlt, UINT64 size, const UINT64 mask) {
 
     UINT32 last = 0x007616c7;
 
@@ -230,4 +242,22 @@ UINT32 GenLoad::load_x(UCHAR* gen, const UCHAR* qlt, size_t size, const UINT64 m
     }
 
     return m_valid ? size : 0;
+}
+
+UINT32 GenLoad::load_x(UCHAR* gen, const UCHAR* qlt, UINT64 llen, UINT64 qlen, const UINT64 mask) {
+    // rare: mismatch qlt/gen line sizes. This typically happens when padding the gen line. In this
+    // case, assume valid base.
+    UINT32 last = 0x007616c7;
+
+    for (uint i = 0; i < llen; i++) {
+        last &= mask ;
+        PREFETCH(ranger + last);
+        UCHAR b = ranger[last].get(&rcoder);
+
+        gen[i] = m_gencode[ b ];
+        last = ((last<<2) + b);
+        normalize_gen(gen[i], i < qlen ? qlt[i] : 40);
+    }
+
+    return m_valid ? llen : 0;
 }
