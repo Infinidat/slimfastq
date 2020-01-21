@@ -163,14 +163,14 @@ UINT32 QltLoad::load_1(UCHAR* buf, const size_t size) {
     for (UCHAR* p = buf; p < buf + size ; p++) {
         UCHAR b = ranger[last].get(&rcoder);
 
-        likely_if(b < LAST_QLT)
-            *p = UCHAR('!' + b);
-        else {
+        rarely_if(b == LAST_QLT)
             b = exranger.get(&rcoder);
-            *p = UCHAR('!' + b);
-        }
+
+        *p = UCHAR('!' + b);
+
         last = calc_last_1(last, b);
     }
+    buf[size] = '\n';
     return m_valid ? size : 0;
 }
 
@@ -181,14 +181,14 @@ UINT32 QltLoad::load_2(UCHAR* buf, const size_t size) {
         PREFETCH(ranger + last);
         UCHAR b = ranger[last].get(&rcoder);
 
-        likely_if(b < LAST_QLT)
-            *p = UCHAR('!' + b);
-        else {
+        rarely_if(b == LAST_QLT)
             b = exranger.get(&rcoder);
-            *p = UCHAR('!' + b);
-        }
+
+        *p = UCHAR('!' + b);
+
         last = calc_last_2(last, b);
     }
+    buf[size] = '\n';
     return m_valid ? size : 0;
 }
 
@@ -203,12 +203,14 @@ UINT32 QltLoad::load_3(UCHAR* buf, const size_t size) {
         PREFETCH(ranger + last);
         UCHAR b = ranger[last].get(&rcoder);
 
-        likely_if(b < LAST_QLT)
-            *p = UCHAR('!' + b);
-        else {
+        rarely_if(b == LAST_QLT)
             b = exranger.get(&rcoder);
-            *p = UCHAR('!' + b);
-        }
+        // likely_if(b < LAST_QLT)
+        //     *p = UCHAR('!' + b);
+        // else {
+        //     b = exranger.get(&rcoder);
+        //     *p = UCHAR('!' + b);
+        // }
         *p = UCHAR('!' + b);
 
         if (++di & 1) {
@@ -220,6 +222,7 @@ UINT32 QltLoad::load_3(UCHAR* buf, const size_t size) {
             q1 = b;
         }
     }
+    buf[size] = '\n';
     return m_valid ? size : 0;
 }
 

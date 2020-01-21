@@ -30,6 +30,7 @@ private:
     FilerSave* m_out;
 
 public:
+    RCoder() { m_in = NULL; m_out = NULL; }
     void init(FilerSave* f_out) {
         m_out = f_out;
         m_in  = NULL;

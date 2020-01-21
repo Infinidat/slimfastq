@@ -221,7 +221,7 @@ UINT32 GenLoad::load_x(UCHAR* gen, const UCHAR* qlt, size_t size, const UINT64 m
     UCHAR* g = gen; const UCHAR* q = qlt;
     for (; g < gen + size ; g++, q++) {
         last &= mask ;
-        PREFETCH(ranger + last); 
+        PREFETCH(ranger + last);
         UCHAR b = ranger[last].get(&rcoder);
 
         *g = m_gencode [ b ];

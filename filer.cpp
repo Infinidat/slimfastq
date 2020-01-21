@@ -246,11 +246,11 @@ void FilerSave::save_page(bool finit) {
 FilerLoad::FilerLoad(const char* name, bool* valid_ptr) {
 
     m_onef_i = onef.get_findex(name2u(name));
+    m_valid_ptr = valid_ptr;
     if (not m_onef_i) {
         *valid_ptr = m_valid = false;
         return;
     }
-    m_valid_ptr = valid_ptr;
     * valid_ptr = m_valid = true ;
     load_page();
 }

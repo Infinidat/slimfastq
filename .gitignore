@@ -4,3 +4,4 @@ one.prof
 one.opt
 slimfastq
 slimfastq.gdb
+slimfastq.valgrind
