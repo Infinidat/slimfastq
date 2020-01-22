@@ -115,6 +115,7 @@ void QltSave::save_3(const UCHAR* buf, size_t size) {
         likely_if(b < LAST_QLT)
             ranger[last].put(&rcoder, b);
         else {
+            // croak("This qlt rate makes no sence: '%c' (record %d, pos %d)", *p, g_record_count, p-buf);
             ranger[last].put(&rcoder, LAST_QLT);
             exranger.put(&rcoder, b);
             m_last.extra_hi_qlt ++ ;
@@ -204,6 +205,7 @@ UINT32 QltLoad::load_3(UCHAR* buf, const size_t size) {
         UCHAR b = ranger[last].get(&rcoder);
 
         rarely_if(b == LAST_QLT)
+            // croak("extra high qlt. Record %d, pos %d", g_record_count, p-buf);
             b = exranger.get(&rcoder);
         // likely_if(b < LAST_QLT)
         //     *p = UCHAR('!' + b);
@@ -223,6 +225,8 @@ UINT32 QltLoad::load_3(UCHAR* buf, const size_t size) {
         }
     }
     buf[size] = '\n';
+    // buf[size+1] = 0;
+    // printf("%llu: %s", g_record_count, buf);
     return m_valid ? size : 0;
 }
 

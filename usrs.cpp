@@ -364,8 +364,7 @@ bool UsrSave::get_record() {
     m_cur += m_qlen;
     CHECK_OVERFLOW;
 
-    likely_if (m_cur < m_end)
-        expect('\n');
+    expect('\n');
 
     mp.prev_rec = mp.rec;
     mp.prev_rec_end = mp.rec_end;
@@ -482,6 +481,8 @@ void UsrLoad::update() {
         m_qlen = x_qlen -> get();
         m_last.i_qlen += x_qlen->get();
     }
+    else if (m_qlen != m_llen)
+        m_qlen = m_llen;
     rarely_if(m_solid and
               m_last.i_sgen == g_record_count) {
         m_last.solid_pf_gen = m_gen[0] = x_sgen->get_chr();
@@ -496,24 +497,20 @@ void UsrLoad::update() {
 
 void UsrLoad::save() {
 
-    size_t llen = m_llen + m_llen_factor ;
-
-#define SAVE(X, L) putline(X, L)
     UCHAR* p_rec = flip ? m_rep : m_rec ;
     flip = flip ? 0 : 1 ;
 
-    SAVE(p_rec, m_rec_size+1);
+    putline(p_rec, m_rec_size+1);
     if (m_2nd_rec) {
-        SAVE(m_gen_ptr, llen);
+        putline(m_gen_ptr, m_llen + m_llen_factor);
         p_rec[0] = '+';
-        SAVE(p_rec, m_rec_size+1);
+        putline(p_rec, m_rec_size+1);
         p_rec[0] = '@';
     }
     else {
-        SAVE(m_gen_ptr, llen + 2);
+        putline(m_gen_ptr, m_llen + m_llen_factor + 2);
     }
-    SAVE(m_qlt_ptr, m_qlen + m_llen_factor);
-#undef  SAVE
+    putline(m_qlt_ptr, m_qlen + m_llen_factor);
 
 }
 
