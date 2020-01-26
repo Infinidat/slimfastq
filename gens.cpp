@@ -81,9 +81,8 @@ GenSave::GenSave() {
 
 GenSave::~GenSave() {
     rcoder.done();
-    if (not conf.quiet and filer and x_Ns and x_Nn)
-        fprintf(stderr, "::: GEN comp size: %lu \t| Ns: %lu, Nn: %lu\n",
-                filer->tell(), x_Ns->tell(), x_Nn->tell());
+    if (not conf.quiet) {
+    }
     delete []ranger;
     delete filer;
 

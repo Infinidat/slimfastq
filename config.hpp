@@ -37,7 +37,7 @@ class Config {
 public:
     Config();
     ~Config();
-    void init (int argc, char **argv, int ver);
+    void init (int argc, char **argv);
     void finit();
     FILE * file_usr() const { return reinterpret_cast<FILE*>(f_usr);}
     int   version, level, decoder_version;

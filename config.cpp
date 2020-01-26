@@ -41,6 +41,9 @@
 #include "config.hpp"
 
 // Globals
+static const int internal_version = 6;   // inernal version
+static const char*   user_version="2.03";
+
 unsigned long long g_record_count = 0;
 unsigned long long g_genofs_count = 0;
 
@@ -170,7 +173,7 @@ Usage: \n\
 -v               : version : internal version \n\
 -h               : help : this message \n\
 -s               : stat : information about a compressed file \n\
--q               : (redundant, will be removed) \n\
+-q               : suppress extra stats info that could have been seen by -s \n\
 \n\
 DWIM (Do what I mean) - Intuitive use of 'slimfastq A B' : \n\
 If A appears to be a fastq file, and:\n\
@@ -216,9 +219,9 @@ static void check_op(int something, char chr) {
 
 Config::Config(){
 
-    version = 0;
+    version = internal_version;
 
-    quiet = true;
+    quiet = false;
     profiling = false;
     encode = true;
     level = 3;
@@ -233,12 +236,11 @@ static int range_level(int level) {
 }
 
 static bool initialized = false;
-void Config::init(int argc, char **argv, int ver) {
+void Config::init(int argc, char **argv) {
     if (initialized)
         croak("Internal error: 2nd Config init");
 
     initialized = true;
-    version = ver;
 
     std::string usr, fil;
     bool overwrite = false;
@@ -264,7 +266,7 @@ void Config::init(int argc, char **argv, int ver) {
         case 'P': profiling  = true ; break;
         case 'q': quiet      = true ; break;
         case 'v':
-            printf("Version %u\n", version);
+            printf("Version %s\nInternal format version=%u\n", user_version, version);
             exit(0);
         case 'h':
             usage();

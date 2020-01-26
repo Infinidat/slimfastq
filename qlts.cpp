@@ -54,8 +54,11 @@ QltSave::QltSave()  {
 
 QltSave::~QltSave() {
     rcoder.done();
-    if (not conf.quiet and filer)
-        fprintf(stderr, "::: QLT comp size: %lu \t| high qlt cnt: %u\n", filer->tell(), m_last.extra_hi_qlt);
+    if (not conf.quiet) {
+        if (m_last.extra_hi_qlt) {
+            conf.set_info("qlt.extra.hi", m_last.extra_hi_qlt);
+        }
+    }
 
     delete [] ranger;
     delete    filer;

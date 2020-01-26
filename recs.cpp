@@ -50,10 +50,8 @@ RecSave::RecSave() {
 
 RecSave::~RecSave() {
     rcoder.done();
-    if (not conf.quiet and filer and x_file)
-        fprintf(stderr, "::: REC comp size: %lu \t| EX size: %lu | bigint: %u | str num/size: %u/%u | newline num/size: %u/%u\n",
-                filer->tell(), x_file->tell(),
-                stats.big_i, stats.str_n, stats.str_l, stats.new_n, stats.new_l);
+    if (not conf.quiet) {
+    }
 
     DELETE(filer);
     DELETE(x_file);

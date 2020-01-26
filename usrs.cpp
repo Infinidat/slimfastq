@@ -62,12 +62,26 @@ UsrSave::UsrSave() {
 
 UsrSave::~UsrSave(){
     if (not conf.quiet) {
-        fprintf(stderr, "::: USR  num recs: %llu \t| EX size len/qlen/sgen/sqlt: %lu/%lu/%lu/%lu\n", g_record_count-1,
-                x_llen->tell(), x_qlen->tell(), x_sgen->tell(), x_sqlt->tell());
-        if (x_lrec and
-            x_lrec->tell())
-            fprintf(stderr, "::: USR  oversized records: rec/gen/qlt %lu/%lu/%lu\n",
-                    x_lrec->tell(), x_lgen->tell(), x_lqlt->tell());
+        char b[0x100];
+        UINT64 long_gen=x_llen->tell();
+        UINT64 long_qlt=x_qlen->tell();
+        if (long_gen or long_qlt) {
+            sprintf(b, "gen:%llu qlt:%llu", long_gen, long_qlt);
+            conf.set_info("log.size.change", b);
+        }
+        UINT64 sol_gen_pf=x_sgen->tell();
+        UINT64 sol_qlt_pf=x_sqlt->tell();
+        if (sol_gen_pf or sol_qlt_pf) {
+            sprintf(b, "gen:%llu qlt:%llu", sol_gen_pf, sol_qlt_pf);
+            conf.set_info("log.solid.pf", b);
+        }
+        UINT64 os_rec=x_lrec->tell();
+        UINT64 os_gen=x_lgen->tell();
+        UINT64 os_qlt=x_lqlt->tell();
+        if (os_rec or os_gen or os_qlt) {
+            sprintf(b, "rec:%llu gen:%llu qlt:%llu", os_rec, os_gen, os_qlt);
+            conf.set_info("log.oversize", b);
+        }
     }
     DELETE(x_llen);
     DELETE(x_qlen);

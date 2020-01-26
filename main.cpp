@@ -43,8 +43,6 @@
 #include <errno.h>
 #include <stdlib.h>
 
-static const int version = 6;   // inernal version
-
 #include "common.hpp"
 #include "config.hpp"
 #include "usrs.hpp"
@@ -52,7 +50,7 @@ static const int version = 6;   // inernal version
 Config conf;
 int main(int argc, char** argv) {
 
-    conf.init(argc, argv, version);
+    conf.init(argc, argv);
     int ret =
         conf.encode ?
         UsrSave () . encode() :
