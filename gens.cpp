@@ -90,25 +90,26 @@ GenSave::~GenSave() {
 
 void GenSave::bad_q_or_bad_n(UCHAR gen, UCHAR qlt, bool bad_n, bool bad_q)
 {
-    if(bad_n) {
-        rarely_if(not m_N_byte) {
-            // TODO: make a single m_last - exceptions file
-            m_N_byte = gen;
-            if ('N' != gen)
-                conf.set_info("gen.N_byte", gen);
-        }
-        // TODO: eliminate this temp sanity
-        rarely_if (gen != m_N_byte)
-            croak("switched N_byte: %c", gen);
-
-        if (not bad_q) {
-            x_Ns->put(g_genofs_count - m_last.Ns_index);
-            m_last.Ns_index = g_genofs_count ;
-        }
-    }
-    else { // bad_q only
+    if (not bad_n) {
+        // bad_q only
         x_Nn->put(g_genofs_count - m_last.Nn_index);
         m_last.Nn_index = g_genofs_count;
+        return;
+    }
+
+    rarely_if(not m_N_byte) {
+        // TODO: make a single m_last - exceptions file
+        m_N_byte = gen;
+        if ('N' != gen)
+            conf.set_info("gen.N_byte", gen);
+    }
+    // TODO: eliminate this temp sanity
+    rarely_if (gen != m_N_byte)
+        croak("switched N_byte: %c", gen);
+
+    if (not bad_q) {
+        x_Ns->put(g_genofs_count - m_last.Ns_index);
+        m_last.Ns_index = g_genofs_count ;
     }
 }
 

@@ -182,19 +182,19 @@ If A appears to be a slimfastq file, and: \n\
     B does not exist, or -O option is used: decompress A to B \n\
     B is omitted: decompress A to stdout \n\
 Examples: \n\
-%% slimfastq *file.fastq* *new-file.sfq*   : compress *file.fastq* to *new-file.sfq* \n\
-%% slimfastq -1 *file.fastq* *new-file.sfq*: compress *file.fastq* to *new-file.sfq*, using level 1 \n\
-%% slimfastq *file.sfq*                    : decompress *file.sfq* to stdout \n\
-%% slimfastq *file.sfq* *file.fastq        : decompress *file.sfq* to *file.fastq*\n\
-%% gzip -dc *file.fastq.gz* | slimfastq -f *file.sfq* : convert from gzip to sfq format\n\
+%% slimfastq <file.fastq> <new-file.sfq>   : compress <file.fastq> to <new-file.sfq> \n\
+%% slimfastq -1 <file.fastq> <new-file.sfq*: compress <file.fastq> to <new-file.sfq>, using level 1 \n\
+%% slimfastq <file.sfq>                    : decompress <file.sfq> to stdout \n\
+%% slimfastq <file.sfq> <file.fastq        : decompress <file.sfq> to <file.fastq*\n\
+%% gzip -dc <file.fastq.gz> | slimfastq -f <file.sfq> : convert from gzip to sfq format\n\
 Verification example:\n\
-%% md5sum *file.fastq*                      : remember checksum \n\
-%% slimfastq *file.fastq* *new-file.sfq*    : compress \n\
-%% slimfastq *new-file.sfq* | md5sum -      : decompress pipe to md5sum, compare checksums \n\
+%% md5sum <file.fastq>                      : remember checksum \n\
+%% slimfastq <file.fastq> <new-file.sfq>    : compress \n\
+%% slimfastq <new-file.sfq> | md5sum -      : decompress pipe to md5sum, compare checksums \n\
 \n\
 Note: to support pipes and reduce the use of resources, slimfastq was coded to run in a \n\
-single thread. For a multi-session example (efficiently compressing multiple files in \n\
-parallel) please see: tools/multi.sessions.example.pl \n\
+single thread. For a multi-session example - efficiently compressing multiple files in \n\
+parallel - please use tools/slimfastq.multi -h (or make install; slimfastq.multi -h) \n\
 \n\
 ");
     exit(0);
