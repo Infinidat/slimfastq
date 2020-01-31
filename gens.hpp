@@ -65,7 +65,7 @@ protected:
         UINT32 big_gaps;
     } m_stats ;
 
-    bool   m_lossless, m_valid;
+    bool   m_valid;
     UCHAR  m_N_byte;
 
     void range_init();
@@ -93,6 +93,7 @@ public:
     }
 
 private:
+    void bad_q_or_bad_n(UCHAR gen, UCHAR qlt, bool bad_n, bool bad_q);
     inline UCHAR normalize_gen(UCHAR gen, UCHAR qlt);
     void save_x(const UCHAR* gen, const UCHAR* qlt, UINT64 size, const UINT64 mask);
     void save_x(const UCHAR* gen, const UCHAR* qlt, UINT64 llen, UINT64 qlen, const UINT64 mask);

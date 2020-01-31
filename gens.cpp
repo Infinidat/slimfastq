@@ -55,8 +55,6 @@ void GenBase::range_init() {
 static char gencodes[256];
 
 GenSave::GenSave() {
-    m_lossless = true;
-    conf.set_info("gen.lossless", m_lossless);
 
     BZERO(m_stats);
     BZERO(m_last);
@@ -90,23 +88,35 @@ GenSave::~GenSave() {
     DELETE(x_Nn);
 }
 
-// inline UCHAR GenSave::normalize_gen(UCHAR gen, UCHAR &qlt) {
+void GenSave::bad_q_or_bad_n(UCHAR gen, UCHAR qlt, bool bad_n, bool bad_q)
+{
+    if(bad_n) {
+        rarely_if(not m_N_byte) {
+            // TODO: make a single m_last - exceptions file
+            m_N_byte = gen;
+            if ('N' != gen)
+                conf.set_info("gen.N_byte", gen);
+        }
+        // TODO: eliminate this temp sanity
+        rarely_if (gen != m_N_byte)
+            croak("switched N_byte: %c", gen);
+
+        if (not bad_q) {
+            x_Ns->put(g_genofs_count - m_last.Ns_index);
+            m_last.Ns_index = g_genofs_count ;
+        }
+    }
+    else { // bad_q only
+        x_Nn->put(g_genofs_count - m_last.Nn_index);
+        m_last.Nn_index = g_genofs_count;
+    }
+}
+
 inline UCHAR GenSave::normalize_gen(UCHAR gen, UCHAR qlt) {
 
     bool bad_n; //  = false;
     const bool bad_q = qlt == '!';
 
-    // switch(gen[i] | 0x20) { - support lowercase, only if we ever see it in fastq
-    // UCHAR n;
-    // switch(gen) {
-    //     // TODO: optimized with a char table
-    // case '0': case 'A': n = 0; break;
-    // case '1': case 'C': n = 1; break;
-    // case '2': case 'G': n = 2; break;
-    // case '3': case 'T': n = 3; break;
-    // case '.': case 'N': n = 0; bad_n = true; break;
-    // default: croak("unexpected genome char: %c", gen);
-    // }
     UCHAR n = gencodes[gen];
     likely_if (n <= 3)
         bad_n = false;
@@ -116,35 +126,11 @@ inline UCHAR GenSave::normalize_gen(UCHAR gen, UCHAR qlt) {
         bad_n = true;
         n = 0;
     }
-
     g_genofs_count ++;
-    // if (// m_lossless - always is
-    //     true ) {
-        rarely_if(bad_n) {
-            rarely_if(not m_N_byte) {
-                // TODO: make a single m_last - exceptions file
-                m_N_byte = gen;
-                if ('N' != gen)
-                    conf.set_info("gen.N_byte", gen);
-            }
-            // TODO: eliminate this temp sanity
-            rarely_if (gen != m_N_byte)
-                croak("switched N_byte: %c", gen);
 
-            if (not bad_q) {
-                x_Ns->put(g_genofs_count - m_last.Ns_index);
-                m_last.Ns_index = g_genofs_count ;
-            }
-        }
-        else rarely_if (bad_q) {
-                x_Nn->put(g_genofs_count - m_last.Nn_index);
-                m_last.Nn_index = g_genofs_count;
-            }
-    // }
-    // else {
-    //     rarely_if (bad_n)
-    //         qlt = '!';
-    // }
+    rarely_if(bad_n or bad_q)
+        bad_q_or_bad_n(gen, qlt, bad_n, bad_q);
+
     return n;
 }
 
@@ -178,7 +164,7 @@ void GenSave::save_x(const UCHAR* gen, const UCHAR* qlt, UINT64 llen, UINT64 qle
 GenLoad::GenLoad() {
     BZERO(m_last);
     m_valid = true;
-    m_lossless = true; // *conf.get_info("gen.lossless") == '0' ? false : true ;
+
     m_N_byte          = conf.get_long("gen.N_byte", 'N') ;
     bool is_solid     = conf.get_bool("usr.solid");
     bool is_lowercase = false;
