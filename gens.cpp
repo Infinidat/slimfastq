@@ -149,7 +149,7 @@ void GenSave::save_x(const UCHAR* gen, const UCHAR* qlt, UINT64 size, const UINT
 
 void GenSave::save_x(const UCHAR* gen, const UCHAR* qlt, UINT64 llen, UINT64 qlen, const UINT64 mask) {
     UINT32 last = 0x007616c7;
-    for (uint i = 0; i < llen; i++) {
+    for (UINT32 i = 0; i < llen; i++) {
         UCHAR n = normalize_gen(gen[i], i < qlen ? qlt[i] : 40);
         last &= mask;
         PREFETCH(ranger + last);
@@ -235,7 +235,7 @@ UINT32 GenLoad::load_x(UCHAR* gen, const UCHAR* qlt, UINT64 llen, UINT64 qlen, c
     // case, assume valid base.
     UINT32 last = 0x007616c7;
 
-    for (uint i = 0; i < llen; i++) {
+    for (UINT32 i = 0; i < llen; i++) {
         last &= mask ;
         PREFETCH(ranger + last);
         UCHAR b = ranger[last].get(&rcoder);
