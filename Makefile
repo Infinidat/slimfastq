@@ -9,6 +9,9 @@ FLAGS_OPT = $(WALL) $(PROF_DIR) $(FLAGS_FAST) -fprofile-use
 FLAGS_PROF= $(WALL) $(PROF_DIR) $(FLAGS_FAST) -fprofile-generate
 FLAGS_OPT2 = $(WALL) $(PROF_DIR) $(FLAGS_FAST) 
 
+# harmless in non-macOS env
+export MACOSX_DEPLOYMENT_TARGET=10.14
+
 # ifeq ("$(wildcard ./tmp_samples)","")
 ifeq ($(sampdir),)
 	TEST_FILES  = $(wildcard samples/*.fq)
