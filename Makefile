@@ -138,7 +138,9 @@ ifeq ("$(wildcard ./slimfastq)","")
 	@echo "(Note that 'make slimfastq install' would not work as expected)"
 	@false
 else
-	install -t /usr/local/bin/ ./slimfastq tools/slimfastq.multi
+	@install -t /usr/local/bin/ ./slimfastq tools/slimfastq.multi 2>/dev/null \
+	|| cp  ./slimfastq tools/slimfastq.multi /usr/local/bin/ \
+	|| echo "failed to install, please use ./slimfastq and tools/slimfastq.multi in place, or copy them to your lookup path"
 	@echo "\nAll done!"
 endif
 
