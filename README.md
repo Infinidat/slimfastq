@@ -80,5 +80,5 @@ slimfastq was developed and optimized for x86_64 GNU/Linux and Darwin OS. For ot
 
 Contact
 -------
-Josef Ezra  (jezra at infinidat.com), (jezra at cpan.org)
+Josef Ezra  (jezra at appple.com), (jezra at cpan.org)
 
