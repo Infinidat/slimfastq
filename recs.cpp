@@ -450,7 +450,11 @@ size_t RecLoad::load(UCHAR* buf, const UCHAR* prev) {
 #undef ITEM
         ctype[imap][i] = (type < ST_STR or type >= ST_DGT_Z) ? 1 : 2;
         cnumb[imap][i] = val;
-        b += sprintf((char*)b, fmt, val);
+        if (val == 0)
+            *b ++ = '0'; // Under certain conditions sprintf(b, '%lld', 0) was printing "00". Yack!
+        else
+            b += sprintf((char*)b, fmt, val);
+
         *b ++ = smap[0].str[i];
     }
     return b-buf-1;
