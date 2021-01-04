@@ -42,7 +42,7 @@
 
 // Globals
 static const int internal_version = 6;   // inernal version
-static const char*   user_version="2.03";
+static const char*   user_version="2.04";
 
 unsigned long long g_record_count = 0;
 unsigned long long g_genofs_count = 0;
